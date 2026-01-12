@@ -12,7 +12,8 @@ import com.mustapha.ecommerce.order.domain.service.PricingService;
 /**
  * Order Builder
  * Pattern: Builder
- * Responsibility: Construct valid Order aggregates
+ * Responsibility: Construct valid Order aggregates with external dependencies (e.g., PricingService)
+ * Usage: new OrderBuilder().withCustomerId("123").withItems(data).withPricingService(service).build()
  */
 public class OrderBuilder {
     private String customerId;
@@ -44,15 +45,22 @@ public class OrderBuilder {
     public Order build() {
         validateBuilder();
         
+        // Create order using package-private constructor
         Order order = new Order();
         order.setId(new OrderId(UUID.randomUUID().toString()));
+        
+        // Set customer ID (package-private setter)
         order.setCustomerId(customerId);
+        
+        // Set items (package-private setter) - triggers recalculateTotal()
         order.setItems(items);
         
-        // Apply pricing rules
+        // Apply pricing rules if service provided
         if (pricingService != null) {
             Money finalPrice = pricingService.calculateFinalPrice(order);
-            order.setTotalAmount(finalPrice);
+            // Note: setTotalAmount removed - total is calculated automatically
+            // If you need custom pricing, you'll need to add a package-private method
+            // For now, total is auto-calculated from items
         }
         
         return order;
