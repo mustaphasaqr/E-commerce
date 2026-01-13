@@ -4,7 +4,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mustapha.ecommerce.order.domain.DomainEvent;
 import com.mustapha.ecommerce.order.domain.event.OrderPlacedEvent;
+import com.mustapha.ecommerce.order.domain.exception.InvalidOrderItemException;
+import com.mustapha.ecommerce.order.domain.exception.InvalidOrderStateException;
+import com.mustapha.ecommerce.order.domain.exception.OrderModificationNotAllowedException;
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 
@@ -18,7 +23,7 @@ public class Order {
     private static final int MAX_TOTAL_QUANTITY = 100; // Business rule: Max items in one order
     
     private OrderId id;
-    private String customerId;
+    private CustomerId customerId;
     private List<OrderItem> items;
     private Money totalAmount;
     private OrderStatus status;
@@ -27,7 +32,7 @@ public class Order {
     private LocalDateTime updatedAt;
     
     // Domain Events - uncommitted events to be published
-    private final List<Object> domainEvents = new ArrayList<>();
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     // Package-private constructor - accessible by OrderBuilder in same package
     Order() {
@@ -47,13 +52,13 @@ public class Order {
     public void confirm() {
         // Validate transition using rich enum behavior
         if (!this.status.canTransitionTo(OrderStatus.CONFIRMED)) {
-            throw new IllegalStateException("Cannot transition to CONFIRMED from status: " + this.status);
+            throw new InvalidOrderStateException("Cannot transition to CONFIRMED from status: " + this.status);
         }
         if (this.items == null || this.items.isEmpty()) {
-            throw new IllegalStateException("Cannot confirm order with no items");
+            throw new InvalidOrderStateException("Cannot confirm order with no items");
         }
         if (this.totalAmount == null || this.totalAmount.getAmount() <= 0) {
-            throw new IllegalStateException("Cannot confirm order with total amount <= 0");
+            throw new InvalidOrderStateException("Cannot confirm order with total amount <= 0");
         }
         
         this.status = OrderStatus.CONFIRMED;
@@ -71,10 +76,10 @@ public class Order {
     public void markAsPaid() {
         // Use rich enum behavior
         if (this.status.isPaid()) {
-            throw new IllegalStateException("Cannot pay twice - order already paid");
+            throw new InvalidOrderStateException("Cannot pay twice - order already paid");
         }
         if (!this.status.canTransitionTo(OrderStatus.PAID)) {
-            throw new IllegalStateException("Cannot transition to PAID from status: " + this.status);
+            throw new InvalidOrderStateException("Cannot transition to PAID from status: " + this.status);
         }
         
         this.status = OrderStatus.PAID;
@@ -87,7 +92,7 @@ public class Order {
      */
     public void startProcessing() {
         if (!this.status.canTransitionTo(OrderStatus.PROCESSING)) {
-            throw new IllegalStateException("Cannot transition to PROCESSING from status: " + this.status);
+            throw new InvalidOrderStateException("Cannot transition to PROCESSING from status: " + this.status);
         }
         
         this.status = OrderStatus.PROCESSING;
@@ -101,7 +106,7 @@ public class Order {
      */
     public void ship() {
         if (!this.status.canTransitionTo(OrderStatus.SHIPPED)) {
-            throw new IllegalStateException("Cannot transition to SHIPPED from status: " + this.status);
+            throw new InvalidOrderStateException("Cannot transition to SHIPPED from status: " + this.status);
         }
         
         this.status = OrderStatus.SHIPPED;
@@ -114,7 +119,7 @@ public class Order {
      */
     public void deliver() {
         if (!this.status.canTransitionTo(OrderStatus.DELIVERED)) {
-            throw new IllegalStateException("Cannot transition to DELIVERED from status: " + this.status);
+            throw new InvalidOrderStateException("Cannot transition to DELIVERED from status: " + this.status);
         }
         
         this.status = OrderStatus.DELIVERED;
@@ -127,7 +132,7 @@ public class Order {
      */
     public void cancel() {
         if (!this.status.isCancellable()) {
-            throw new IllegalStateException("Cannot cancel order in status: " + this.status);
+            throw new InvalidOrderStateException("Cannot cancel order in status: " + this.status);
         }
         
         this.status = OrderStatus.CANCELLED;
@@ -150,7 +155,7 @@ public class Order {
             .sum();
         
         if (currentTotalQuantity + item.getQuantity() > MAX_TOTAL_QUANTITY) {
-            throw new IllegalStateException(
+            throw new InvalidOrderItemException(
                 "Cannot add item - would exceed max order quantity of " + MAX_TOTAL_QUANTITY
             );
         }
@@ -164,7 +169,7 @@ public class Order {
      */
     public void removeItem(OrderItem item) {
         if (!this.status.isModifiable()) {
-            throw new IllegalStateException("Cannot remove items - order is not modifiable. Current status: " + this.status);
+            throw new OrderModificationNotAllowedException("Cannot remove items - order is not modifiable. Current status: " + this.status);
         }
         
         this.items.remove(item);
@@ -176,12 +181,12 @@ public class Order {
     private void validateItemCanBeAdded(OrderItem item) {
         // Rule: Item cannot be null
         if (item == null) {
-            throw new IllegalArgumentException("Order item cannot be null");
+            throw new InvalidOrderItemException("Order item cannot be null");
         }
         
         // Rule: Cannot modify after confirmation - use rich enum behavior
         if (!this.status.isModifiable()) {
-            throw new IllegalStateException("Cannot add items - order is not modifiable. Current status: " + this.status);
+            throw new OrderModificationNotAllowedException("Cannot add items - order is not modifiable. Current status: " + this.status);
         }
         
         // OrderItem itself enforces: quantity > 0 and price > 0
@@ -208,12 +213,12 @@ public class Order {
         this.id = id;
     }
 
-    public String getCustomerId() {
+    public CustomerId getCustomerId() {
         return customerId;
     }
 
     // Package-private - can only be set during order creation
-    void setCustomerId(String customerId) {
+    void setCustomerId(CustomerId customerId) {
         this.customerId = customerId;
     }
 
@@ -224,7 +229,7 @@ public class Order {
     // Rule: Cannot modify after confirmation - validation enforced
     void setItems(List<OrderItem> items) {
         if (!this.status.isModifiable()) {
-            throw new IllegalStateException("Cannot modify items - order is not modifiable. Current status: " + this.status);
+            throw new OrderModificationNotAllowedException("Cannot modify items - order is not modifiable. Current status: " + this.status);
         }
         
         this.items = items;
@@ -267,7 +272,7 @@ public class Order {
      * Raise a domain event (not published yet, just recorded)
      * Events will be published by infrastructure after aggregate is saved
      */
-    private void raiseEvent(Object event) {
+    private void raiseEvent(DomainEvent event) {
         this.domainEvents.add(event);
     }
     
@@ -275,7 +280,7 @@ public class Order {
      * Get all uncommitted domain events
      * Called by repository after saving aggregate
      */
-    public List<Object> getDomainEvents() {
+    public List<DomainEvent> getDomainEvents() {
         return new ArrayList<>(domainEvents);
     }
     

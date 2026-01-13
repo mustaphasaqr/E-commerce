@@ -1,6 +1,8 @@
 package com.mustapha.ecommerce.order.domain.model;
 
+import com.mustapha.ecommerce.order.domain.exception.InvalidOrderItemException;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
+import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 
 /**
  * Order Item Entity
@@ -13,12 +15,12 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
  * - Immutable once created (no setters)
  */
 public class OrderItem {
-    private String productId;
+    private ProductId productId;
     private String productName;
     private int quantity;
     private Money price;
 
-    public OrderItem(String productId, String productName, int quantity, Money price) {
+    public OrderItem(ProductId productId, String productName, int quantity, Money price) {
         // Validate all invariants
         validateProductId(productId);
         validateProductName(productName);
@@ -33,27 +35,28 @@ public class OrderItem {
 
     // ========== Domain Invariants ==========
     
-    private void validateProductId(String productId) {
-        if (productId == null || productId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Product ID cannot be null or empty");
+    private void validateProductId(ProductId productId) {
+        if (productId == null) {
+            throw new InvalidOrderItemException("Product ID cannot be null");
         }
+        // ProductId value object already validates it's not null/blank
     }
     
     private void validateProductName(String productName) {
         if (productName == null || productName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Product name cannot be null or empty");
+            throw new InvalidOrderItemException("Product name cannot be null or empty");
         }
     }
     
     private void validateQuantity(int quantity) {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new InvalidOrderItemException("Quantity must be greater than zero");
         }
     }
     
     private void validatePrice(Money price) {
         if (price == null) {
-            throw new IllegalArgumentException("Price cannot be null");
+            throw new InvalidOrderItemException("Price cannot be null");
         }
         // Money should enforce its own rule: amount >= 0
     }
@@ -67,7 +70,7 @@ public class OrderItem {
     }
 
     // Getters
-    public String getProductId() {
+    public ProductId getProductId() {
         return productId;
     }
 

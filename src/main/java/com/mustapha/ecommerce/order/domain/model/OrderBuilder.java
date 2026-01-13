@@ -5,23 +5,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
-import com.mustapha.ecommerce.order.domain.service.PricingService;
+import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 
 /**
  * Order Builder
  * Pattern: Builder
- * Responsibility: Construct valid Order aggregates with external dependencies (e.g., PricingService)
- * Usage: new OrderBuilder().withCustomerId("123").withItems(data).withPricingService(service).build()
+ * Responsibility: Construct valid Order aggregates
+ * 
+ * Phase 1: Builds Order with items only. Total = Σ items (invariant preserved).
+ * Pricing/discounts handled in Application layer, NOT in domain aggregate.
+ * 
+ * Usage: new OrderBuilder().withCustomerId("123").withItems(data).build()
  */
 public class OrderBuilder {
-    private String customerId;
+    private CustomerId customerId;
     private List<OrderItem> items = new ArrayList<>();
-    private PricingService pricingService;
 
     public OrderBuilder withCustomerId(String customerId) {
-        this.customerId = customerId;
+        this.customerId = new CustomerId(customerId);
         return this;
     }
 
@@ -32,13 +36,8 @@ public class OrderBuilder {
             int quantity = (Integer) data.get("quantity");
             double price = (Double) data.get("price");
             
-            this.items.add(new OrderItem(productId, productName, quantity, new Money(price)));
+            this.items.add(new OrderItem(new ProductId(productId), productName, quantity, new Money(price)));
         }
-        return this;
-    }
-
-    public OrderBuilder withPricingService(PricingService pricingService) {
-        this.pricingService = pricingService;
         return this;
     }
 
@@ -53,21 +52,14 @@ public class OrderBuilder {
         order.setCustomerId(customerId);
         
         // Set items (package-private setter) - triggers recalculateTotal()
+        // Order invariant: total = Σ items (no discounts at this layer)
         order.setItems(items);
-        
-        // Apply pricing rules if service provided
-        if (pricingService != null) {
-            Money finalPrice = pricingService.calculateFinalPrice(order);
-            // Note: setTotalAmount removed - total is calculated automatically
-            // If you need custom pricing, you'll need to add a package-private method
-            // For now, total is auto-calculated from items
-        }
         
         return order;
     }
 
     private void validateBuilder() {
-        if (customerId == null || customerId.isEmpty()) {
+        if (customerId == null) {
             throw new IllegalStateException("Customer ID is required");
         }
         if (items.isEmpty()) {
