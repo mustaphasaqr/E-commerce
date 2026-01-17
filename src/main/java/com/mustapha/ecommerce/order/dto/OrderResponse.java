@@ -1,7 +1,6 @@
 package com.mustapha.ecommerce.order.dto;
 
 import com.mustapha.ecommerce.order.domain.model.Order;
-import com.mustapha.ecommerce.order.domain.model.OrderStatus;
 
 /**
  * Order Response DTO
@@ -11,13 +10,13 @@ public class OrderResponse {
     private String orderId;
     private String customerId;
     private double totalAmount;
-    private OrderStatus status;
+    private String status;
 
     // Constructors
     public OrderResponse() {
     }
 
-    public OrderResponse(String orderId, String customerId, double totalAmount, OrderStatus status) {
+    public OrderResponse(String orderId, String customerId, double totalAmount, String status) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.totalAmount = totalAmount;
@@ -27,9 +26,9 @@ public class OrderResponse {
     public static OrderResponse from(Order order) {
         return new OrderResponse(
                 order.getId().getValue(),
-                order.getCustomerId(),
+                order.getCustomerId().getValue(),
                 order.getTotalAmount().getAmount(),
-                order.getStatus()
+                order.getStatus().name()
         );
     }
 
@@ -58,11 +57,11 @@ public class OrderResponse {
         this.totalAmount = totalAmount;
     }
 
-    public OrderStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(OrderStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 }

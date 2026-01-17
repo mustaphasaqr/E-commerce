@@ -2,58 +2,79 @@ package com.mustapha.ecommerce.order.domain.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
-import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
-import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 
 /**
  * Order Builder
  * Pattern: Builder
  * Responsibility: Construct valid Order aggregates
  * 
- * Phase 1: Builds Order with items only. Total = Σ items (invariant preserved).
- * Pricing/discounts handled in Application layer, NOT in domain aggregate.
+ * Refactored to:
+ * - Accept CustomerId value object (DDD alignment)
+ * - Support incremental item addition via addItem()
+ * - Total automatically calculated from items (invariant preserved)
  * 
- * Usage: new OrderBuilder().withCustomerId("123").withItems(data).build()
+ * Usage:
+ * new OrderBuilder()
+ *     .withCustomerId(customerIdValueObject)
+ *     .addItem(orderItem1)
+ *     .addItem(orderItem2)
+ *     .build()
  */
 public class OrderBuilder {
     private CustomerId customerId;
     private List<OrderItem> items = new ArrayList<>();
 
-    public OrderBuilder withCustomerId(String customerId) {
-        this.customerId = new CustomerId(customerId);
+    /**
+     * Set customer ID using value object
+     * 
+     * @param customerId CustomerId value object
+     * @return this builder for chaining
+     */
+    public OrderBuilder withCustomerId(CustomerId customerId) {
+        this.customerId = customerId;
         return this;
     }
 
-    public OrderBuilder withItems(List<Map<String, Object>> itemData) {
-        for (Map<String, Object> data : itemData) {
-            String productId = (String) data.get("productId");
-            String productName = (String) data.get("productName");
-            int quantity = (Integer) data.get("quantity");
-            double price = (Double) data.get("price");
-            
-            this.items.add(new OrderItem(new ProductId(productId), productName, quantity, new Money(price)));
+    /**
+     * Add a single item to the order
+     * Allows incremental item addition
+     * 
+     * @param item OrderItem to add
+     * @return this builder for chaining
+     */
+    public OrderBuilder addItem(OrderItem item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Order item cannot be null");
         }
+        this.items.add(item);
         return this;
     }
 
+    /**
+     * Build the Order aggregate
+     * Validates required fields and creates order in PENDING state
+     * Uses Order.addItem() to ensure all domain validations are applied
+     * 
+     * @return Order in PENDING state with generated ID
+     */
     public Order build() {
         validateBuilder();
         
         // Create order using package-private constructor
         Order order = new Order();
-        order.setId(new OrderId(UUID.randomUUID().toString()));
+        order.setId(OrderId.generate());
         
         // Set customer ID (package-private setter)
         order.setCustomerId(customerId);
         
-        // Set items (package-private setter) - triggers recalculateTotal()
-        // Order invariant: total = Σ items (no discounts at this layer)
-        order.setItems(items);
+        // Add items using domain method (applies MAX_TOTAL_QUANTITY validation)
+        // This ensures all domain invariants are enforced
+        for (OrderItem item : items) {
+            order.addItem(item);
+        }
         
         return order;
     }

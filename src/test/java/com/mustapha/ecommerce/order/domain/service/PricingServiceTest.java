@@ -2,6 +2,7 @@ package com.mustapha.ecommerce.order.domain.service;
 
 import com.mustapha.ecommerce.order.domain.model.Order;
 import com.mustapha.ecommerce.order.domain.model.OrderBuilder;
+import com.mustapha.ecommerce.order.domain.model.OrderItem;
 import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
@@ -260,14 +261,10 @@ class PricingServiceTest {
     // ========== Helper Methods ==========
     
     private Order createOrderWithTotal(double total) {
+        OrderItem item = OrderItem.create(productId, "Test Product", 1, new Money(total));
         return new OrderBuilder()
-                .withCustomerId(customerId.getValue())
-                .withItems(List.of(
-                    java.util.Map.of(
-                        "productId", productId.getValue(),
-                        "productName", "Test Product",
-                        "quantity", 1,
-                        "price", total
+                .withCustomerId(customerId)
+                .addItem(item
                     )
                 ))
                 .build();

@@ -43,7 +43,7 @@ class OrderTest {
         productId2 = ProductId.generate();
         
         orderBuilder = new OrderBuilder()
-            .withCustomerId(customerId.getValue());
+            .withCustomerId(customerId);
     }
 
     // ========== Order Creation Tests ==========
@@ -56,17 +56,10 @@ class OrderTest {
         @DisplayName("Should create order with items successfully")
         void shouldCreateOrderWithItems() {
             // Given
-            List<java.util.Map<String, Object>> items = List.of(
-                java.util.Map.of(
-                    "productId", productId1.getValue(),
-                    "productName", "Product 1",
-                    "quantity", 2,
-                    "price", 50.0
-                )
-            );
+            OrderItem item = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
             
             // When
-            Order order = orderBuilder.withItems(items).build();
+            Order order = orderBuilder.addItem(item).build();
             
             // Then
             assertNotNull(order);
@@ -83,17 +76,11 @@ class OrderTest {
         void shouldFailWhenCustomerIdMissing() {
             // Given
             OrderBuilder builderWithoutCustomer = new OrderBuilder();
+            OrderItem item = OrderItem.create(productId1, "Product 1", 1, new Money(100.0));
             
             // When/Then
             assertThrows(IllegalStateException.class, () -> {
-                builderWithoutCustomer.withItems(List.of(
-                    java.util.Map.of(
-                        "productId", productId1.getValue(),
-                        "productName", "Product 1",
-                        "quantity", 1,
-                        "price", 100.0
-                    )
-                )).build();
+                builderWithoutCustomer.addItem(item).build();
             }, "Customer ID is required");
         }
         
@@ -110,23 +97,15 @@ class OrderTest {
         @DisplayName("Should calculate total correctly for multiple items")
         void shouldCalculateTotalCorrectly() {
             // Given
-            List<java.util.Map<String, Object>> items = List.of(
-                java.util.Map.of(
-                    "productId", productId1.getValue(),
-                    "productName", "Product 1",
-                    "quantity", 2,
-                    "price", 50.0
-                ),
-                java.util.Map.of(
-                    "productId", productId2.getValue(),
-                    "productName", "Product 2",
-                    "quantity", 3,
-                    "price", 30.0
-                )
-            );
+        @Test
+        @DisplayName("Should calculate total correctly for multiple items")
+        void shouldCalculateTotalCorrectly() {
+            // Given
+            OrderItem item1 = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
+            OrderItem item2 = OrderItem.create(productId2, "Product 2", 3, new Money(30.0));
             
             // When
-            Order order = orderBuilder.withItems(items).build();
+            Order order = orderBuilder.addItem(item1).addItem(item2).build();
             
             // Then
             // (2 * 50) + (3 * 30) = 100 + 90 = 190
@@ -623,30 +602,13 @@ class OrderTest {
     // ========== Helper Methods ==========
     
     private Order createOrderWithOneItem() {
-        return orderBuilder.withItems(List.of(
-            java.util.Map.of(
-                "productId", productId1.getValue(),
-                "productName", "Test Product",
-                "quantity", 1,
-                "price", 100.0
-            )
-        )).build();
+        OrderItem item = OrderItem.create(productId1, "Test Product", 1, new Money(100.0));
+        return orderBuilder.addItem(item).build();
     }
     
     private Order createOrderWithTwoItems() {
-        return orderBuilder.withItems(List.of(
-            java.util.Map.of(
-                "productId", productId1.getValue(),
-                "productName", "Product 1",
-                "quantity", 2,
-                "price", 50.0
-            ),
-            java.util.Map.of(
-                "productId", productId2.getValue(),
-                "productName", "Product 2",
-                "quantity", 1,
-                "price", 30.0
-            )
-        )).build();
+        OrderItem item1 = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
+        OrderItem item2 = OrderItem.create(productId2, "Product 2", 1, new Money(30.0));
+        return orderBuilder.addItem(item1).addItem(item2).build();
     }
 }
