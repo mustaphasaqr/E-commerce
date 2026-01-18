@@ -2,6 +2,7 @@ package com.mustapha.ecommerce.order.infrastructure.messaging;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import com.mustapha.ecommerce.order.application.port.DomainEventPublisher;
@@ -17,6 +18,7 @@ import com.mustapha.ecommerce.order.domain.DomainEvent;
  * - Publish to RabbitMQ
  * - Use Spring ApplicationEventPublisher
  */
+@Primary
 @Component
 public class DomainEventPublisherAdapter implements DomainEventPublisher {
     

@@ -56,7 +56,7 @@ class OrderTest {
         @DisplayName("Should create order with items successfully")
         void shouldCreateOrderWithItems() {
             // Given
-            OrderItem item = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
+            OrderItem item = new OrderItem(productId1, "Product 1", 2, new Money(50.0));
             
             // When
             Order order = orderBuilder.addItem(item).build();
@@ -76,7 +76,7 @@ class OrderTest {
         void shouldFailWhenCustomerIdMissing() {
             // Given
             OrderBuilder builderWithoutCustomer = new OrderBuilder();
-            OrderItem item = OrderItem.create(productId1, "Product 1", 1, new Money(100.0));
+            OrderItem item = new OrderItem(productId1, "Product 1", 1, new Money(100.0));
             
             // When/Then
             assertThrows(IllegalStateException.class, () -> {
@@ -97,12 +97,8 @@ class OrderTest {
         @DisplayName("Should calculate total correctly for multiple items")
         void shouldCalculateTotalCorrectly() {
             // Given
-        @Test
-        @DisplayName("Should calculate total correctly for multiple items")
-        void shouldCalculateTotalCorrectly() {
-            // Given
-            OrderItem item1 = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
-            OrderItem item2 = OrderItem.create(productId2, "Product 2", 3, new Money(30.0));
+            OrderItem item1 = new OrderItem(productId1, "Product 1", 2, new Money(50.0));
+            OrderItem item2 = new OrderItem(productId2, "Product 2", 3, new Money(30.0));
             
             // When
             Order order = orderBuilder.addItem(item1).addItem(item2).build();
@@ -185,7 +181,7 @@ class OrderTest {
             order.startProcessing();
             
             // When
-            order.ship();
+            order.ship("TRACK123", "FedEx");
             
             // Then
             assertEquals(OrderStatus.SHIPPED, order.getStatus());
@@ -198,10 +194,10 @@ class OrderTest {
             order.confirm();
             order.markAsPaid();
             order.startProcessing();
-            order.ship();
+            order.ship("TRACK123", "FedEx");
             
             // When
-            order.deliver();
+            order.deliver(LocalDateTime.now());
             
             // Then
             assertEquals(OrderStatus.DELIVERED, order.getStatus());
@@ -214,8 +210,8 @@ class OrderTest {
             order.confirm();
             order.markAsPaid();
             order.startProcessing();
-            order.ship();
-            order.deliver();
+            order.ship("TRACK123", "FedEx");
+            order.deliver(LocalDateTime.now());
             
             // Then
             assertEquals(OrderStatus.DELIVERED, order.getStatus());
@@ -286,7 +282,7 @@ class OrderTest {
             
             // When/Then
             assertThrows(InvalidOrderStateException.class, () -> {
-                order.ship();
+                order.ship("TRACK123", "FedEx");
             });
         }
         
@@ -301,7 +297,7 @@ class OrderTest {
             
             // When/Then
             assertThrows(InvalidOrderStateException.class, () -> {
-                order.deliver();
+                order.deliver(LocalDateTime.now());
             });
         }
     }
@@ -319,7 +315,7 @@ class OrderTest {
             Order order = createOrderWithOneItem();
             
             // When
-            order.cancel();
+            order.cancel("Customer requested");
             
             // Then
             assertEquals(OrderStatus.CANCELLED, order.getStatus());
@@ -333,7 +329,7 @@ class OrderTest {
             order.confirm();
             
             // When
-            order.cancel();
+            order.cancel("Customer requested");
             
             // Then
             assertEquals(OrderStatus.CANCELLED, order.getStatus());
@@ -348,7 +344,7 @@ class OrderTest {
             order.markAsPaid();
             
             // When
-            order.cancel();
+            order.cancel("Customer requested");
             
             // Then
             assertEquals(OrderStatus.CANCELLED, order.getStatus());
@@ -362,11 +358,11 @@ class OrderTest {
             order.confirm();
             order.markAsPaid();
             order.startProcessing();
-            order.ship();
+            order.ship("TRACK123", "FedEx");
             
             // When/Then
             assertThrows(InvalidOrderStateException.class, () -> {
-                order.cancel();
+                order.cancel("Customer requested");
             }, "Cannot cancel shipped order");
         }
         
@@ -378,12 +374,12 @@ class OrderTest {
             order.confirm();
             order.markAsPaid();
             order.startProcessing();
-            order.ship();
-            order.deliver();
+            order.ship("TRACK123", "FedEx");
+            order.deliver(LocalDateTime.now());
             
             // When/Then
             assertThrows(InvalidOrderStateException.class, () -> {
-                order.cancel();
+                order.cancel("Customer requested");
             }, "Cannot cancel delivered order");
         }
     }
@@ -591,10 +587,10 @@ class OrderTest {
             order.startProcessing();
             assertTrue(order.isPaid()); // PROCESSING (still paid)
             
-            order.ship();
+            order.ship("TRACK123", "FedEx");
             assertTrue(order.isPaid()); // SHIPPED (still paid)
             
-            order.deliver();
+            order.deliver(LocalDateTime.now());
             assertTrue(order.isPaid()); // DELIVERED (still paid)
         }
     }
@@ -602,13 +598,13 @@ class OrderTest {
     // ========== Helper Methods ==========
     
     private Order createOrderWithOneItem() {
-        OrderItem item = OrderItem.create(productId1, "Test Product", 1, new Money(100.0));
+        OrderItem item = new OrderItem(productId1, "Test Product", 1, new Money(100.0));
         return orderBuilder.addItem(item).build();
     }
     
     private Order createOrderWithTwoItems() {
-        OrderItem item1 = OrderItem.create(productId1, "Product 1", 2, new Money(50.0));
-        OrderItem item2 = OrderItem.create(productId2, "Product 2", 1, new Money(30.0));
+        OrderItem item1 = new OrderItem(productId1, "Product 1", 2, new Money(50.0));
+        OrderItem item2 = new OrderItem(productId2, "Product 2", 1, new Money(30.0));
         return orderBuilder.addItem(item1).addItem(item2).build();
     }
 }

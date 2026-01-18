@@ -29,8 +29,9 @@ public interface NotificationPort {
      * @param customerId Customer to notify
      * @param orderId Order that was shipped
      * @param trackingNumber Shipping tracking number
+     * @param carrier Shipping carrier (e.g., "FedEx", "UPS", "DHL")
      */
-    void sendOrderShipped(CustomerId customerId, OrderId orderId, String trackingNumber);
+    void sendOrderShipped(CustomerId customerId, OrderId orderId, String trackingNumber, String carrier);
     
     /**
      * Send order delivered notification

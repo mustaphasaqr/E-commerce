@@ -5,11 +5,12 @@ import org.springframework.stereotype.Component;
 import com.mustapha.ecommerce.order.domain.model.Order;
 import com.mustapha.ecommerce.order.domain.model.OrderItem;
 import com.mustapha.ecommerce.order.domain.model.OrderStatus;
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
+import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 import com.mustapha.ecommerce.order.infrastructure.persistence.entity.OrderItemJpaEntity;
 import com.mustapha.ecommerce.order.infrastructure.persistence.entity.OrderJpaEntity;
-import com.mustapha.ecommerce.order.infrastructure.persistence.entity.OrderStatusEntity;
 
 import java.util.stream.Collectors;
 
@@ -23,11 +24,15 @@ public class OrderMapper {
     public OrderJpaEntity toEntity(Order order) {
         OrderJpaEntity entity = new OrderJpaEntity();
         entity.setId(order.getId().getValue());
-        entity.setCustomerId(order.getCustomerId());
-        entity.setTotalAmount(order.getTotalAmount().getAmount());
-        entity.setStatus(OrderStatusEntity.valueOf(order.getStatus().name()));
+        entity.setCustomerId(order.getCustomerId().getValue()); // Convert CustomerId → String
+        entity.setTotalAmount(order.getTotalAmount().getAmountAsBigDecimal()); // Convert Money → BigDecimal
+        entity.setStatus(order.getStatus()); // Use domain enum directly
         entity.setCreatedAt(order.getCreatedAt());
         entity.setUpdatedAt(order.getUpdatedAt());
+        entity.setTrackingNumber(order.getTrackingNumber());
+        entity.setCarrier(order.getCarrier());
+        entity.setDeliveredAt(order.getDeliveredAt());
+        entity.setCancellationReason(order.getCancellationReason());
         
         entity.setItems(order.getItems().stream()
                 .map(this::toItemEntity)
@@ -37,31 +42,39 @@ public class OrderMapper {
     }
 
     public Order toDomain(OrderJpaEntity entity) {
-        Order order = new Order();
-        order.setId(new OrderId(entity.getId()));
-        order.setCustomerId(entity.getCustomerId());
-        order.setTotalAmount(new Money(entity.getTotalAmount()));
-        order.setStatus(OrderStatus.valueOf(entity.getStatus().name()));
-        
-        order.setItems(entity.getItems().stream()
+        // Convert JPA entity items to domain OrderItems
+        var items = entity.getItems().stream()
                 .map(this::toItemDomain)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
         
-        return order;
+        // Use reconstitute to restore order with original state from database
+        // This preserves ID, status, and timestamps (unlike OrderBuilder which creates NEW orders)
+        return Order.reconstitute(
+                new OrderId(entity.getId()),
+                new CustomerId(entity.getCustomerId()),
+                items,
+                entity.getStatus(), // Use domain enum directly
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getTrackingNumber(),
+                entity.getCarrier(),
+                entity.getDeliveredAt(),
+                entity.getCancellationReason()
+        );
     }
 
     private OrderItemJpaEntity toItemEntity(OrderItem item) {
         OrderItemJpaEntity entity = new OrderItemJpaEntity();
-        entity.setProductId(item.getProductId());
+        entity.setProductId(item.getProductId().getValue()); // Convert ProductId → String
         entity.setProductName(item.getProductName());
         entity.setQuantity(item.getQuantity());
-        entity.setPrice(item.getPrice().getAmount());
+        entity.setPrice(item.getPrice().getAmountAsBigDecimal()); // Convert Money → BigDecimal
         return entity;
     }
 
     private OrderItem toItemDomain(OrderItemJpaEntity entity) {
         return new OrderItem(
-                entity.getProductId(),
+                new ProductId(entity.getProductId()), // Convert String → ProductId
                 entity.getProductName(),
                 entity.getQuantity(),
                 new Money(entity.getPrice())

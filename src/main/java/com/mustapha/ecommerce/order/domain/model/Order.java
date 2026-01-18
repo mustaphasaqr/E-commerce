@@ -31,6 +31,16 @@ public class Order {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    // Shipping information - populated when order is shipped
+    private String trackingNumber;
+    private String carrier;
+    
+    // Cancellation information - populated when order is cancelled
+    private String cancellationReason;
+    
+    // Delivery information - populated when order is delivered
+    private LocalDateTime deliveredAt;
+    
     // Domain Events - uncommitted events to be published
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
@@ -39,6 +49,49 @@ public class Order {
         this.items = new ArrayList<>();
         this.status = OrderStatus.PENDING;
         this.createdAt = LocalDateTime.now();
+    }
+
+    /**
+     * Factory method for reconstituting Order from persistence (JPA/database)
+     * Used by OrderMapper to restore orders with their original state
+     * Bypasses business validation since historical data might not match current rules
+     * 
+     * @param id Original OrderId from database
+     * @param customerId CustomerId from database
+     * @param items List of OrderItems from database
+     * @param status OrderStatus from database
+     * @param createdAt Creation timestamp
+     * @param updatedAt Last update timestamp
+     * @param trackingNumber Shipping tracking number (null if not shipped)
+     * @param carrier Shipping carrier (null if not shipped)
+     * @param deliveredAt Delivery timestamp (null if not delivered)
+     * @param cancellationReason Cancellation reason (null if not cancelled)
+     * @return Reconstituted Order with all original state
+     */
+    public static Order reconstitute(
+            OrderId id,
+            CustomerId customerId,
+            List<OrderItem> items,
+            OrderStatus status,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            String trackingNumber,
+            String carrier,
+            LocalDateTime deliveredAt,
+            String cancellationReason) {
+        Order order = new Order();
+        order.id = id;
+        order.customerId = customerId;
+        order.items = new ArrayList<>(items);
+        order.status = status;
+        order.createdAt = createdAt;
+        order.updatedAt = updatedAt;
+        order.trackingNumber = trackingNumber;
+        order.carrier = carrier;
+        order.deliveredAt = deliveredAt;
+        order.cancellationReason = cancellationReason;
+        order.recalculateTotal(); // Ensure total matches loaded items
+        return order;
     }
 
     // ========== Business Rules: Order Lifecycle ==========
@@ -104,11 +157,13 @@ public class Order {
      * Payment is guaranteed by status (PROCESSING means already PAID)
      * Status: PROCESSING → SHIPPED
      */
-    public void ship() {
+    public void ship(String trackingNumber, String carrier) {
         if (!this.status.canTransitionTo(OrderStatus.SHIPPED)) {
             throw new InvalidOrderStateException("Cannot transition to SHIPPED from status: " + this.status);
         }
         
+        this.trackingNumber = trackingNumber;
+        this.carrier = carrier;
         this.status = OrderStatus.SHIPPED;
         this.updatedAt = LocalDateTime.now();
     }
@@ -117,11 +172,12 @@ public class Order {
      * Rule: Cannot deliver if not shipped
      * Status: SHIPPED → DELIVERED
      */
-    public void deliver() {
+    public void deliver(LocalDateTime deliveredAt) {
         if (!this.status.canTransitionTo(OrderStatus.DELIVERED)) {
             throw new InvalidOrderStateException("Cannot transition to DELIVERED from status: " + this.status);
         }
         
+        this.deliveredAt = deliveredAt;
         this.status = OrderStatus.DELIVERED;
         this.updatedAt = LocalDateTime.now();
     }
@@ -130,11 +186,12 @@ public class Order {
      * Rule: Cannot cancel if shipped/delivered
      * Status: Any → CANCELLED
      */
-    public void cancel() {
+    public void cancel(String reason) {
         if (!this.status.isCancellable()) {
             throw new InvalidOrderStateException("Cannot cancel order in status: " + this.status);
         }
         
+        this.cancellationReason = reason;
         this.status = OrderStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
     }
@@ -256,6 +313,22 @@ public class Order {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+    
+    public String getCarrier() {
+        return carrier;
+    }
+    
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+    
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
     }
     
     /**

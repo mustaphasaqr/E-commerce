@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 /**
  * Order Item JPA Entity
@@ -22,8 +23,8 @@ public class OrderItemJpaEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "price", nullable = false)
-    private double price;
+    @Column(name = "price", nullable = false, precision = 19, scale = 2)
+    private BigDecimal price;
 
     // Constructors
     public OrderItemJpaEntity() {
@@ -62,11 +63,11 @@ public class OrderItemJpaEntity {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 }

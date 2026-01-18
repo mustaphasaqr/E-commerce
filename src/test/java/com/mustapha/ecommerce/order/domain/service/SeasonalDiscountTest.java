@@ -349,14 +349,10 @@ class SeasonalDiscountTest {
     // ========== Helper Methods ==========
     
     private Order createOrderWithTotal(double total) {
-        OrderItem item = OrderItem.create(productId, "Test Product", 1, new Money(total));
+        OrderItem item = new OrderItem(productId, "Test Product", 1, new Money(total));
         return new OrderBuilder()
                 .withCustomerId(customerId)
-                .addItem(item
-                        "quantity", 1,
-                        "price", total
-                    )
-                ))
+                .addItem(item)
                 .build();
     }
 }

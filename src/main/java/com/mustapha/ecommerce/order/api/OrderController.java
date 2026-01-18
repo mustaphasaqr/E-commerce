@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.order.api;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest request) {
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
         OrderResponse response = orderFacade.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -36,9 +37,36 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<Void> cancelOrder(@PathVariable String orderId) {
-        orderFacade.cancelOrder(orderId);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/{orderId}/pay")
+    public ResponseEntity<OrderResponse> payOrder(
+            @PathVariable String orderId,
+            @RequestParam String paymentMethod,
+            @RequestParam String paymentToken,
+            @RequestParam double amount) {
+        OrderResponse response = orderFacade.payOrder(orderId, paymentMethod, paymentToken, amount);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{orderId}/ship")
+    public ResponseEntity<OrderResponse> shipOrder(
+            @PathVariable String orderId,
+            @RequestParam String trackingNumber,
+            @RequestParam String carrier) {
+        OrderResponse response = orderFacade.shipOrder(orderId, trackingNumber, carrier);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{orderId}/deliver")
+    public ResponseEntity<OrderResponse> deliverOrder(@PathVariable String orderId) {
+        OrderResponse response = orderFacade.deliverOrder(orderId, java.time.LocalDateTime.now());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable String orderId,
+            @RequestParam String reason) {
+        OrderResponse response = orderFacade.cancelOrder(orderId, reason);
+        return ResponseEntity.ok(response);
     }
 }

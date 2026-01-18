@@ -26,6 +26,15 @@ public interface PaymentPort {
     PaymentResult processPayment(OrderId orderId, Money amount, String paymentMethod, String paymentToken);
     
     /**
+     * Refund payment for a cancelled order
+     * 
+     * @param orderId Order being refunded
+     * @param amount Amount to refund
+     * @return Payment result with status and transaction ID
+     */
+    PaymentResult refundPayment(OrderId orderId, Money amount);
+    
+    /**
      * Payment Result
      * Encapsulates the result of a payment processing attempt
      */
@@ -35,17 +44,21 @@ public interface PaymentPort {
         String message
     ) {
         public PaymentResult {
-            if (transactionId == null || transactionId.isBlank()) {
-                throw new IllegalArgumentException("Transaction ID cannot be null or blank");
+            if (success && (transactionId == null || transactionId.isBlank())) {
+                throw new IllegalArgumentException("Transaction ID cannot be null or blank for successful payments");
             }
         }
         
-        public boolean isSuccessful() {
+        public boolean isSuccess() {
             return success;
         }
         
         public boolean isFailed() {
             return !success;
+        }
+        
+        public String errorMessage() {
+            return message;
         }
     }
 }

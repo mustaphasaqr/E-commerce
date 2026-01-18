@@ -1,14 +1,26 @@
 package com.mustapha.ecommerce.order.application.facade;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.mustapha.ecommerce.order.application.command.CancelOrderCommand;
+import com.mustapha.ecommerce.order.application.command.DeliverOrderCommand;
+import com.mustapha.ecommerce.order.application.command.GetOrderQuery;
+import com.mustapha.ecommerce.order.application.command.PayOrderCommand;
 import com.mustapha.ecommerce.order.application.command.PlaceOrderCommand;
+import com.mustapha.ecommerce.order.application.command.ShipOrderCommand;
+import com.mustapha.ecommerce.order.application.usecase.CancelOrderUseCase;
+import com.mustapha.ecommerce.order.application.usecase.DeliverOrderUseCase;
+import com.mustapha.ecommerce.order.application.usecase.GetOrderUseCase;
+import com.mustapha.ecommerce.order.application.usecase.PayOrderUseCase;
 import com.mustapha.ecommerce.order.application.usecase.PlaceOrderUseCase;
+import com.mustapha.ecommerce.order.application.usecase.ShipOrderUseCase;
 import com.mustapha.ecommerce.order.domain.model.Order;
 import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
+import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
@@ -35,13 +47,24 @@ import com.mustapha.ecommerce.order.dto.OrderResponse;
 public class OrderFacade {
 
     private final PlaceOrderUseCase placeOrderUseCase;
-    // TODO: Add GetOrderUseCase when implemented
-    // TODO: Add CancelOrderUseCase when implemented
-    // TODO: Add ConfirmOrderUseCase when implemented
-    // TODO: Add PayOrderUseCase when implemented
+    private final GetOrderUseCase getOrderUseCase;
+    private final PayOrderUseCase payOrderUseCase;
+    private final ShipOrderUseCase shipOrderUseCase;
+    private final DeliverOrderUseCase deliverOrderUseCase;
+    private final CancelOrderUseCase cancelOrderUseCase;
 
-    public OrderFacade(PlaceOrderUseCase placeOrderUseCase) {
+    public OrderFacade(PlaceOrderUseCase placeOrderUseCase,
+                      GetOrderUseCase getOrderUseCase,
+                      PayOrderUseCase payOrderUseCase,
+                      ShipOrderUseCase shipOrderUseCase,
+                      DeliverOrderUseCase deliverOrderUseCase,
+                      CancelOrderUseCase cancelOrderUseCase) {
         this.placeOrderUseCase = placeOrderUseCase;
+        this.getOrderUseCase = getOrderUseCase;
+        this.payOrderUseCase = payOrderUseCase;
+        this.shipOrderUseCase = shipOrderUseCase;
+        this.deliverOrderUseCase = deliverOrderUseCase;
+        this.cancelOrderUseCase = cancelOrderUseCase;
     }
 
     /**
@@ -59,10 +82,10 @@ public class OrderFacade {
             new CustomerId(request.getCustomerId()),
             request.getItems().stream()
                 .map(item -> new PlaceOrderCommand.OrderItemData(
-                    new ProductId(item.get("productId").toString()),
-                    item.get("productName").toString(),
-                    (Integer) item.get("quantity"),
-                    new Money((Double) item.get("price"))
+                    new ProductId(item.getProductId()),
+                    item.getProductName(),
+                    item.getQuantity(),
+                    new Money(item.getPrice())
                 ))
                 .collect(Collectors.toList())
         );
@@ -76,17 +99,61 @@ public class OrderFacade {
 
     /**
      * Get Order by ID
-     * TODO: Implement GetOrderUseCase first
      */
     public OrderResponse getOrder(String orderId) {
-        throw new UnsupportedOperationException("GetOrderUseCase not implemented yet");
+        GetOrderQuery query = new GetOrderQuery(new OrderId(orderId));
+        Order order = getOrderUseCase.execute(query);
+        return OrderResponse.from(order);
+    }
+
+    /**
+     * Pay for Order
+     */
+    public OrderResponse payOrder(String orderId, String paymentMethod, String paymentToken, double amount) {
+        PayOrderCommand command = new PayOrderCommand(
+            new OrderId(orderId),
+            paymentMethod,
+            paymentToken,
+            new Money(amount)
+        );
+        Order order = payOrderUseCase.execute(command);
+        return OrderResponse.from(order);
+    }
+
+    /**
+     * Ship Order
+     */
+    public OrderResponse shipOrder(String orderId, String trackingNumber, String carrier) {
+        ShipOrderCommand command = new ShipOrderCommand(
+            new OrderId(orderId),
+            trackingNumber,
+            carrier
+        );
+        Order order = shipOrderUseCase.execute(command);
+        return OrderResponse.from(order);
+    }
+
+    /**
+     * Deliver Order
+     */
+    public OrderResponse deliverOrder(String orderId, LocalDateTime deliveredAt) {
+        DeliverOrderCommand command = new DeliverOrderCommand(
+            new OrderId(orderId),
+            deliveredAt
+        );
+        Order order = deliverOrderUseCase.execute(command);
+        return OrderResponse.from(order);
     }
 
     /**
      * Cancel Order
-     * TODO: Implement CancelOrderUseCase first
      */
-    public void cancelOrder(String orderId) {
-        throw new UnsupportedOperationException("CancelOrderUseCase not implemented yet");
+    public OrderResponse cancelOrder(String orderId, String reason) {
+        CancelOrderCommand command = new CancelOrderCommand(
+            new OrderId(orderId),
+            reason
+        );
+        Order order = cancelOrderUseCase.execute(command);
+        return OrderResponse.from(order);
     }
 }

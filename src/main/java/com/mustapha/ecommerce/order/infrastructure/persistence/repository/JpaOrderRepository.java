@@ -3,6 +3,8 @@ package com.mustapha.ecommerce.order.infrastructure.persistence.repository;
 import org.springframework.stereotype.Repository;
 
 import com.mustapha.ecommerce.order.domain.model.Order;
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
+import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 import com.mustapha.ecommerce.order.domain.repository.OrderRepository;
 import com.mustapha.ecommerce.order.infrastructure.persistence.entity.OrderJpaEntity;
 import com.mustapha.ecommerce.order.infrastructure.persistence.mapper.OrderMapper;
@@ -36,20 +38,30 @@ public class JpaOrderRepository implements OrderRepository {
     }
 
     @Override
-    public Optional<Order> findById(String id) {
-        return springDataRepository.findById(id)
+    public Optional<Order> findById(OrderId id) {
+        return springDataRepository.findById(id.getValue()) // Convert OrderId → String
                 .map(orderMapper::toDomain);
     }
 
     @Override
-    public List<Order> findByCustomerId(String customerId) {
-        return springDataRepository.findByCustomerId(customerId).stream()
+    public List<Order> findByCustomerId(CustomerId customerId) {
+        return springDataRepository.findByCustomerId(customerId.getValue()).stream() // Convert CustomerId → String
                 .map(orderMapper::toDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public void delete(String id) {
-        springDataRepository.deleteById(id);
+    public boolean existsById(OrderId id) {
+        return springDataRepository.existsById(id.getValue()); // Convert OrderId → String
+    }
+
+    @Override
+    public void deleteById(OrderId id) {
+        springDataRepository.deleteById(id.getValue()); // Convert OrderId → String
+    }
+
+    @Override
+    public long count() {
+        return springDataRepository.count();
     }
 }

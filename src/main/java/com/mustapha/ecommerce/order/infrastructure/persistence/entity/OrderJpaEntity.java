@@ -1,9 +1,12 @@
 package com.mustapha.ecommerce.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.mustapha.ecommerce.order.domain.model.OrderStatus;
 
 /**
  * Order JPA Entity
@@ -23,18 +26,33 @@ public class OrderJpaEntity {
     @JoinColumn(name = "order_id")
     private List<OrderItemJpaEntity> items = new ArrayList<>();
 
-    @Column(name = "total_amount", nullable = false)
-    private double totalAmount;
+    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal totalAmount;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatusEntity status;
+    private OrderStatus status;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Shipping information - populated when order is shipped
+    @Column(name = "tracking_number")
+    private String trackingNumber;
+
+    @Column(name = "carrier")
+    private String carrier;
+
+    // Cancellation information - populated when order is cancelled
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
+    // Delivery information - populated when order is delivered
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
 
     // Constructors
     public OrderJpaEntity() {
@@ -65,19 +83,19 @@ public class OrderJpaEntity {
         this.items = items;
     }
 
-    public double getTotalAmount() {
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(double totalAmount) {
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
 
-    public OrderStatusEntity getStatus() {
+    public OrderStatus getStatus() {
         return status;
     }
 
-    public void setStatus(OrderStatusEntity status) {
+    public void setStatus(OrderStatus status) {
         this.status = status;
     }
 
@@ -95,5 +113,37 @@ public class OrderJpaEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public void setTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+    }
+
+    public String getCarrier() {
+        return carrier;
+    }
+
+    public void setCarrier(String carrier) {
+        this.carrier = carrier;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
     }
 }

@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * PayPal Client
+ * PayPal Client (Legacy)
  * Responsibility: External PayPal integration
  */
-@Component
+@Component("legacyPaypalClient")
 public class PaypalClient {
 
     public void executePayment(double amount, Map<String, String> details) {

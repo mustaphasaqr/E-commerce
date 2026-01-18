@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.mustapha.ecommerce.order.domain.model.Order;
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 
 /**
@@ -39,7 +40,7 @@ public interface OrderRepository {
      * @param customerId the customer identifier
      * @return list of orders (empty list if none found)
      */
-    List<Order> findByCustomerId(String customerId);
+    List<Order> findByCustomerId(CustomerId customerId);
     
     /**
      * Check if order exists
