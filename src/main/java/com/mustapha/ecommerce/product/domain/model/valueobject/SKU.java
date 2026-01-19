@@ -18,10 +18,17 @@ public class SKU {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("SKU cannot be null or empty");
         }
-        if (!value.matches("^[A-Z0-9\\-]+$")) {
-            throw new IllegalArgumentException("SKU must contain only uppercase letters, numbers, and hyphens");
+        
+        String normalized = value.toUpperCase().trim();
+        
+        // Business Rule: SKU must be 6-30 characters, uppercase letters, numbers, and hyphens only
+        if (!normalized.matches("^[A-Z0-9\\-]{6,30}$")) {
+            throw new IllegalArgumentException(
+                "SKU must be 6-30 characters and contain only uppercase letters, numbers, and hyphens. Got: " + value
+            );
         }
-        return new SKU(value.toUpperCase());
+        
+        return new SKU(normalized);
     }
 
     public String getValue() {

@@ -6,20 +6,23 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Domain event published when a product is created
+ * Domain Event: Product Discontinued
+ * Triggered when: Product enters terminal discontinued state
+ * 
+ * Use cases:
+ * - Remove from search index
+ * - Update catalog
+ * - Stop recommendations
+ * - Trigger reporting/analytics
  */
-public final class ProductCreatedEvent implements ProductDomainEvent {
+public class ProductDiscontinuedEvent implements ProductDomainEvent {
     private final String eventId;
     private final ProductId productId;
-    private final String sku;
-    private final String name;
     private final LocalDateTime occurredAt;
 
-    public ProductCreatedEvent(ProductId productId, String sku, String name) {
+    public ProductDiscontinuedEvent(ProductId productId) {
         this.eventId = UUID.randomUUID().toString();
         this.productId = productId;
-        this.sku = sku;
-        this.name = name;
         this.occurredAt = LocalDateTime.now();
     }
 
@@ -37,11 +40,8 @@ public final class ProductCreatedEvent implements ProductDomainEvent {
         return productId;
     }
 
-    public String getSku() {
-        return sku;
-    }
-
-    public String getName() {
-        return name;
+    @Override
+    public String toString() {
+        return "ProductDiscontinuedEvent{productId=" + productId.getValue() + "}";
     }
 }

@@ -23,6 +23,14 @@ public class ProductId {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Product ID cannot be null or empty");
         }
+        
+        // Validate UUID format to ensure data integrity
+        try {
+            UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Product ID must be a valid UUID format. Got: " + value, e);
+        }
+        
         return new ProductId(value);
     }
 
