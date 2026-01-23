@@ -27,6 +27,8 @@ import com.mustapha.ecommerce.order.application.port.InventoryPort;
 import com.mustapha.ecommerce.order.application.port.NotificationPort;
 import com.mustapha.ecommerce.order.application.port.PaymentPort;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentResult;
+import com.mustapha.ecommerce.order.application.port.ProductPort;
+import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderItemRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
@@ -71,6 +73,9 @@ class OrderIntegrationTest {
     @MockBean
     private NotificationPort notificationPort;
 
+    @MockBean
+    private ProductPort productPort;
+
     @BeforeEach
     void setupExternalMocks() {
         // Stub payment to always succeed
@@ -81,6 +86,35 @@ class OrderIntegrationTest {
         when(paymentPort.refundPayment(any(), any()))
             .thenReturn(new PaymentResult(true, "refund_test_success", "Refund successful"));
         
+        
+        // Stub product service - always return true for existence and match prices from test data
+        when(productPort.productExists(any())).thenReturn(true);
+        when(productPort.getAvailableStock(any())).thenReturn(1000); // Large stock for all products
+        when(productPort.isDiscontinued(any())).thenReturn(false); // Not discontinued
+        when(productPort.getProductPrice(any())).thenAnswer(invocation -> {
+            // Return the price that matches what's in the test data
+            // This map matches all product IDs used in the Order integration tests
+            var productId = invocation.getArgument(0, com.mustapha.ecommerce.order.domain.model.valueobject.ProductId.class);
+            String id = productId.getValue();
+            BigDecimal price = switch (id) {
+                case "PROD-001" -> new BigDecimal("999.99");
+                case "PROD-002" -> new BigDecimal("29.99");
+                case "PROD-003" -> new BigDecimal("79.99");
+                case "PROD-LIFE-001" -> new BigDecimal("100.0");
+                case "PROD-A" -> new BigDecimal("19.99");
+                case "PROD-B" -> new BigDecimal("25.50");
+                case "PROD-C" -> new BigDecimal("99.99");
+                case "PROD-X" -> new BigDecimal("10.0");
+                case "PROD-Y" -> new BigDecimal("20.0");
+                case "PROD-Z" -> new BigDecimal("30.0");
+                case "PROD-P1" -> new BigDecimal("33.33");
+                case "PROD-P2" -> new BigDecimal("19.99");
+                case "PROD-C1" -> new BigDecimal("50.0");
+                case "PROD-C2" -> new BigDecimal("75.0");
+                default -> new BigDecimal("100.0");
+            };
+            return new Money(price);
+        });
         // Stub inventory check to always succeed
         when(inventoryPort.checkAvailability(any(), anyInt()))
             .thenReturn(true);
@@ -304,7 +338,7 @@ class OrderIntegrationTest {
             OrderRequest request = new OrderRequest();
             request.setCustomerId("CUST-STATE-001");
             request.setItems(Arrays.asList(
-                new OrderItemRequest("PROD-001", "Product", 1, 50.0)
+                new OrderItemRequest("PROD-001", "Product", 1, 999.99)
             ));
 
             MvcResult createResult = mockMvc.perform(post("/api/orders")
@@ -393,14 +427,14 @@ class OrderIntegrationTest {
             OrderRequest request1 = new OrderRequest();
             request1.setCustomerId(customerId);
             request1.setItems(Arrays.asList(
-                new OrderItemRequest("PROD-001", "First Order Product", 1, 100.0)
+                new OrderItemRequest("PROD-001", "First Order Product", 1, 999.99)
             ));
 
             // Create second order
             OrderRequest request2 = new OrderRequest();
             request2.setCustomerId(customerId);
             request2.setItems(Arrays.asList(
-                new OrderItemRequest("PROD-002", "Second Order Product", 2, 50.0)
+                new OrderItemRequest("PROD-002", "Second Order Product", 2, 29.99)
             ));
 
             // Act - Create both orders
@@ -426,14 +460,14 @@ class OrderIntegrationTest {
                 .findFirst().orElseThrow();
             assertThat(order1.getItems()).hasSize(1);
             assertThat(order1.getItems().get(0).getProductId()).isEqualTo("PROD-001");
-            assertThat(order1.getTotalAmount()).isEqualByComparingTo(new BigDecimal("100.0"));
+            assertThat(order1.getTotalAmount()).isEqualByComparingTo(new BigDecimal("999.99"));
             // Validate second order details (filter by product ID to ensure correct order)
             OrderJpaEntity order2 = customerOrders.stream()
                 .filter(o -> o.getItems().stream().anyMatch(item -> item.getProductId().equals("PROD-002")))
                 .findFirst().orElseThrow();
             assertThat(order2.getItems()).hasSize(1);
             assertThat(order2.getItems().get(0).getProductId()).isEqualTo("PROD-002");
-            assertThat(order2.getTotalAmount()).isEqualByComparingTo(new BigDecimal("100.0"));
+            assertThat(order2.getTotalAmount()).isEqualByComparingTo(new BigDecimal("59.98"));
         }
 
         @Test

@@ -142,7 +142,19 @@ public class Product {
         // Execute state change (idempotent - Stock handles duplicate OrderId)
         int previousQuantity = stock.getQuantity();
         int previousReserved = stock.getReservedQuantity();
-        this.stock = stock.reserveForOrder(orderId, quantity);
+        try {
+            this.stock = stock.reserveForOrder(orderId, quantity);
+        } catch (IllegalArgumentException e) {
+            // Translate stock-level exception to domain exception with product context
+            if (e.getMessage().contains("Insufficient available stock")) {
+                throw new InsufficientStockException(
+                    id.getValue(),
+                    stock.getAvailableQuantity(),
+                    quantity
+                );
+            }
+            throw e; // Re-throw other IllegalArgumentExceptions
+        }
         
         // Only update if reservation actually happened (not idempotent return)
         if (this.stock.getReservedQuantity() != previousReserved) {

@@ -59,6 +59,45 @@ public class ProductMapper {
     }
 
     /**
+     * Update existing JPA entity with domain aggregate data
+     * Pattern: Merge existing Hibernate-managed entity to avoid detached entity conflicts
+     * 
+     * @param entity Existing JPA entity (managed by Hibernate)
+     * @param product Domain aggregate with updated values
+     * @return Updated entity (same instance, preserving Hibernate session)
+     */
+    public ProductJpaEntity updateEntity(ProductJpaEntity entity, Product product) {
+        // Update all fields except ID (immutable)
+        entity.setSku(product.getSku().getValue());
+        entity.setName(product.getName());
+        entity.setDescription(product.getDescription());
+        entity.setPrice(product.getPrice().getAmount());
+        entity.setCurrency(product.getPrice().getCurrency().getCurrencyCode());
+        entity.setTotalStock(product.getStock().getQuantity());
+        entity.setAvailableStock(product.getStock().getAvailableQuantity());
+        entity.setReservedStock(product.getStock().getReservedQuantity());
+        entity.setActive(product.isActive());
+        entity.setVisible(product.isVisible());
+        entity.setAvailableForPurchase(product.isAvailableForPurchase());
+        entity.setDiscontinued(product.isDiscontinued());
+        entity.setUpdatedAt(product.getUpdatedAt());
+        
+        // Update reservations map
+        entity.getReservations().clear();
+        Map<String, Integer> reservationMap = product.getStock()
+            .getReservations()
+            .values()
+            .stream()
+            .collect(Collectors.toMap(
+                Reservation::getOrderId,
+                Reservation::getQuantity
+            ));
+        entity.getReservations().putAll(reservationMap);
+        
+        return entity;
+    }
+
+    /**
      * Convert JPA entity to domain aggregate
      * 
      * @param entity JPA entity

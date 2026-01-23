@@ -26,14 +26,14 @@ import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
 import com.mustapha.ecommerce.order.infrastructure.exception.OrderNotFoundException;
 import com.mustapha.ecommerce.order.api.OrderController;
-import com.mustapha.ecommerce.order.api.GlobalExceptionHandler;
+import com.mustapha.ecommerce.order.api.OrderGlobalExceptionHandler;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 
 /**
  * REST API tests for OrderController.
  * Tests HTTP layer, request/response serialization, status codes, and error handling.
  */
-@WebMvcTest({OrderController.class, GlobalExceptionHandler.class})
+@WebMvcTest({OrderController.class, OrderGlobalExceptionHandler.class})
 @DisplayName("OrderController REST API Tests")
 class OrderControllerTest {
 

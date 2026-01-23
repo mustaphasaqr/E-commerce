@@ -41,11 +41,18 @@ public class PlaceOrderUseCase {
 
     @Transactional
     public Order execute(PlaceOrderCommand command) {
-        // Step 1: Validate products exist and prices match (THE KNOT!)
+        // Step 1: Validate products exist, prices match, stock available, and not discontinued
         for (PlaceOrderCommand.OrderItemData itemData : command.getItems()) {
             // Validate product exists
             if (!productPort.productExists(itemData.getProductId())) {
                 throw new ProductNotFoundException(itemData.getProductId());
+            }
+            
+            // Validate product is not discontinued (production business rule)
+            if (productPort.isDiscontinued(itemData.getProductId())) {
+                throw new IllegalArgumentException(
+                    "Product " + itemData.getProductId().getValue() + " is discontinued and cannot be ordered"
+                );
             }
             
             // Validate price matches catalog
@@ -54,6 +61,15 @@ public class PlaceOrderUseCase {
                 throw new IllegalArgumentException(
                     "Price mismatch for product " + itemData.getProductId().getValue() +
                     ": expected " + catalogPrice + ", got " + itemData.getUnitPrice()
+                );
+            }
+            
+            // Validate stock availability (production business rule)
+            int availableStock = productPort.getAvailableStock(itemData.getProductId());
+            if (itemData.getQuantity() > availableStock) {
+                throw new IllegalArgumentException(
+                    "Insufficient stock for product " + itemData.getProductId().getValue() +
+                    ": requested " + itemData.getQuantity() + ", available " + availableStock
                 );
             }
         }
@@ -81,6 +97,15 @@ public class PlaceOrderUseCase {
         
         // Step 4: Save & publish events
         Order savedOrder = orderRepository.save(order);
+        
+        // Step 5: Reserve stock in Product module (Order→Product integration)
+        for (PlaceOrderCommand.OrderItemData itemData : command.getItems()) {
+            productPort.reserveStock(
+                itemData.getProductId(),
+                savedOrder.getId().getValue(),
+                itemData.getQuantity()
+            );
+        }
         
         // Publish domain events
         savedOrder.getDomainEvents().forEach(eventPublisher::publish);

@@ -66,7 +66,7 @@ class GetOrderUseCaseTest {
 
         // When/Then
         assertThatThrownBy(() -> useCase.execute(query))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(com.mustapha.ecommerce.order.infrastructure.exception.OrderNotFoundException.class)
             .hasMessageContaining("Order not found");
     }
 }

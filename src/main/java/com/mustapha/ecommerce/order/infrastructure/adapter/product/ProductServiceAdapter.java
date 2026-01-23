@@ -76,4 +76,43 @@ public class ProductServiceAdapter implements ProductPort {
             throw new ProductNotFoundException(productId);
         }
     }
+
+    @Override
+    public int getAvailableStock(ProductId productId) {
+        try {
+            // Translate Order ProductId → String (facade accepts primitives)
+            ProductResponse response = productFacade.getProductById(productId.getValue());
+            return response.getAvailableStock();
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            // Anti-corruption layer: Translate Product exception → Order exception
+            throw new ProductNotFoundException(productId);
+        }
+    }
+
+    @Override
+    public boolean isDiscontinued(ProductId productId) {
+        try {
+            // Translate Order ProductId → String (facade accepts primitives)
+            ProductResponse response = productFacade.getProductById(productId.getValue());
+            return response.isDiscontinued();
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            // Anti-corruption layer: Translate Product exception → Order exception
+            throw new ProductNotFoundException(productId);
+        }
+    }
+
+    @Override
+    public void reserveStock(ProductId productId, String orderId, int quantity) {
+        try {
+            // Translate Order ProductId → String (facade accepts primitives)
+            // This calls Product module to reduce available stock and increase reserved stock
+            productFacade.reserveStock(productId.getValue(), orderId, quantity);
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            // Anti-corruption layer: Translate Product exception → Order exception
+            throw new ProductNotFoundException(productId);
+        } catch (IllegalArgumentException e) {
+            // Re-throw validation errors (e.g., insufficient stock)
+            throw e;
+        }
+    }
 }

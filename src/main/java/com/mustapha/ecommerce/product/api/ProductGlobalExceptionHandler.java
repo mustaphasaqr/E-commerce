@@ -25,8 +25,8 @@ import com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundEx
  * Pattern: Exception Translation (Domain → HTTP)
  * SOLID: SRP (HTTP error handling only)
  */
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice("com.mustapha.ecommerce.product")
+public class ProductGlobalExceptionHandler {
 
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException ex) {
@@ -107,6 +107,32 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        // Business rule violations (conflicts) vs validation errors (bad requests)
+        String message = ex.getMessage();
+        
+        // Duplicate SKU is a conflict (resource already exists)
+        if (message != null && message.contains("already exists")) {
+            ErrorResponse error = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Resource conflict",
+                ex.getMessage(),
+                LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+        
+        // Insufficient stock is a conflict (handled elsewhere, but safety net)
+        if (message != null && message.contains("Insufficient")) {
+            ErrorResponse error = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Insufficient stock",
+                ex.getMessage(),
+                LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+        
+        // All other IllegalArgumentException are validation errors (bad request)
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "Invalid request",

@@ -20,9 +20,9 @@ import com.mustapha.ecommerce.order.domain.DomainEvent;
  */
 @Primary
 @Component
-public class DomainEventPublisherAdapter implements DomainEventPublisher {
+public class OrderDomainEventPublisherAdapter implements DomainEventPublisher {
     
-    private static final Logger logger = LoggerFactory.getLogger(DomainEventPublisherAdapter.class);
+    private static final Logger logger = LoggerFactory.getLogger(OrderDomainEventPublisherAdapter.class);
     
     // TODO: Inject Kafka/RabbitMQ/Spring ApplicationEventPublisher when ready
     

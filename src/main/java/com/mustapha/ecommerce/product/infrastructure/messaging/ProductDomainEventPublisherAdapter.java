@@ -20,13 +20,13 @@ import com.mustapha.ecommerce.product.domain.ProductDomainEvent;
  */
 @Primary
 @Component
-public class DomainEventPublisherAdapter implements DomainEventPublisher {
+public class ProductDomainEventPublisherAdapter implements DomainEventPublisher {
     
-    private static final Logger logger = LoggerFactory.getLogger(DomainEventPublisherAdapter.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProductDomainEventPublisherAdapter.class);
     
     private final ApplicationEventPublisher applicationEventPublisher;
     
-    public DomainEventPublisherAdapter(ApplicationEventPublisher applicationEventPublisher) {
+    public ProductDomainEventPublisherAdapter(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
     

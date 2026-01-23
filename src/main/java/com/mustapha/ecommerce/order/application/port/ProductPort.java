@@ -42,6 +42,38 @@ public interface ProductPort {
     ProductInfo getProductInfo(ProductId productId);
     
     /**
+     * Get available stock for a product
+     * Used to validate order quantity doesn't exceed available inventory
+     * 
+     * @param productId Product to check stock for
+     * @return Available stock quantity
+     * @throws ProductNotFoundException if product doesn't exist
+     */
+    int getAvailableStock(ProductId productId);
+    
+    /**
+     * Check if product is discontinued
+     * Discontinued products should not be available for purchase
+     * 
+     * @param productId Product to check
+     * @return true if product is discontinued, false otherwise
+     * @throws ProductNotFoundException if product doesn't exist
+     */
+    boolean isDiscontinued(ProductId productId);
+    
+    /**
+     * Reserve stock for an order
+     * Reduces available inventory and increases reserved stock
+     * 
+     * @param productId Product to reserve stock for
+     * @param orderId Order ID for tracking reservation
+     * @param quantity Quantity to reserve
+     * @throws ProductNotFoundException if product doesn't exist
+     * @throws IllegalArgumentException if quantity exceeds available stock
+     */
+    void reserveStock(ProductId productId, String orderId, int quantity);
+    
+    /**
      * Product Information DTO
      * Data returned from product catalog
      */

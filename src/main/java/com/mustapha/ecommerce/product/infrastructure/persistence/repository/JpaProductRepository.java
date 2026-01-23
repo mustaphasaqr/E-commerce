@@ -28,7 +28,18 @@ public class JpaProductRepository implements ProductRepository {
 
     @Override
     public Product save(Product product) {
-        ProductJpaEntity entity = mapper.toEntity(product);
+        // Check if entity already exists to avoid detached entity issues
+        Optional<ProductJpaEntity> existingEntity = springDataRepository.findById(product.getId().getValue());
+        
+        ProductJpaEntity entity;
+        if (existingEntity.isPresent()) {
+            // Update existing entity (merge pattern)
+            entity = mapper.updateEntity(existingEntity.get(), product);
+        } else {
+            // Create new entity
+            entity = mapper.toEntity(product);
+        }
+        
         ProductJpaEntity saved = springDataRepository.save(entity);
         return mapper.toDomain(saved);
     }

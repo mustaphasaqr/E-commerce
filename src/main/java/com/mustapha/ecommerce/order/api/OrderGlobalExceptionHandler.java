@@ -22,8 +22,8 @@ import com.mustapha.ecommerce.order.infrastructure.exception.OrderNotFoundExcept
  * Pattern: Exception Translation (Domain → HTTP)
  * SOLID: SRP (HTTP error handling only)
  */
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice("com.mustapha.ecommerce.order")
+public class OrderGlobalExceptionHandler {
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex) {

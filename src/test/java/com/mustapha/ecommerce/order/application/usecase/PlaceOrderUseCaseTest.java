@@ -40,12 +40,16 @@ class PlaceOrderUseCaseTest {
         eventPublisher = mock(DomainEventPublisher.class);
         useCase = new PlaceOrderUseCase(orderRepository, productPort, eventPublisher);
         
-        // Setup default ProductPort behavior
+        // Setup default ProductPort behavior - accept any price for tests
         when(productPort.productExists(any(ProductId.class))).thenReturn(true);
-        when(productPort.getProductPrice(any(ProductId.class))).thenAnswer(invocation -> {
-            // Return the price that matches what's in the command (prevent price mismatch)
-            return new Money(50.0);
-        });
+        when(productPort.getAvailableStock(any(ProductId.class))).thenReturn(1000); // Large stock by default
+        when(productPort.isDiscontinued(any(ProductId.class))).thenReturn(false); // Not discontinued by default
+        // Mock will be configured per test to return specific prices
+    }
+    
+    private void setupProductPrices(Money... prices) {
+        when(productPort.getProductPrice(any(ProductId.class)))
+            .thenReturn(prices[0], prices.length > 1 ? java.util.Arrays.copyOfRange(prices, 1, prices.length) : new Money[0]);
     }
 
     @Nested
@@ -56,6 +60,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should create order with single item")
         void shouldCreateOrderWithSingleItem() {
             // Arrange
+            setupProductPrices(new Money(50.0));
             CustomerId customerId = new CustomerId("CUST-001");
             PlaceOrderCommand command = new PlaceOrderCommand(
                 customerId,
@@ -84,6 +89,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should create order with multiple items")
         void shouldCreateOrderWithMultipleItems() {
             // Arrange
+            setupProductPrices(new Money(50.0), new Money(30.0), new Money(20.0));
             CustomerId customerId = new CustomerId("CUST-001");
             PlaceOrderCommand command = new PlaceOrderCommand(
                 customerId,
@@ -142,6 +148,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should save order with correct customer ID")
         void shouldSaveOrderWithCorrectCustomerId() {
             // Arrange
+            setupProductPrices(new Money(100.0));
             CustomerId customerId = new CustomerId("CUST-123");
             PlaceOrderCommand command = new PlaceOrderCommand(
                 customerId,
@@ -188,6 +195,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should publish event with correct order details")
         void shouldPublishEventWithCorrectOrderDetails() {
             // Arrange
+            setupProductPrices(new Money(75.0));
             CustomerId customerId = new CustomerId("CUST-999");
             PlaceOrderCommand command = new PlaceOrderCommand(
                 customerId,
@@ -239,6 +247,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should calculate total for single item")
         void shouldCalculateTotalForSingleItem() {
             // Arrange
+            setupProductPrices(new Money(20.0));
             PlaceOrderCommand command = new PlaceOrderCommand(
                 new CustomerId("CUST-001"),
                 List.of(new PlaceOrderCommand.OrderItemData(
@@ -261,6 +270,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should calculate total for multiple items correctly")
         void shouldCalculateTotalForMultipleItems() {
             // Arrange
+            setupProductPrices(new Money(25.0), new Money(15.5), new Money(100.0));
             PlaceOrderCommand command = new PlaceOrderCommand(
                 new CustomerId("CUST-001"),
                 Arrays.asList(
@@ -287,6 +297,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should handle order with large quantity")
         void shouldHandleOrderWithLargeQuantity() {
             // Arrange
+            setupProductPrices(new Money(10.0));
             PlaceOrderCommand command = new PlaceOrderCommand(
                 new CustomerId("CUST-001"),
                 List.of(new PlaceOrderCommand.OrderItemData(
@@ -311,6 +322,7 @@ class PlaceOrderUseCaseTest {
         @DisplayName("Should handle order with decimal prices")
         void shouldHandleOrderWithDecimalPrices() {
             // Arrange
+            setupProductPrices(new Money(19.99));
             PlaceOrderCommand command = new PlaceOrderCommand(
                 new CustomerId("CUST-001"),
                 List.of(new PlaceOrderCommand.OrderItemData(
@@ -332,6 +344,7 @@ class PlaceOrderUseCaseTest {
 
     // Helper method to create valid command
     private PlaceOrderCommand createValidCommand() {
+        setupProductPrices(new Money(50.0));
         return new PlaceOrderCommand(
             new CustomerId("CUST-001"),
             List.of(new PlaceOrderCommand.OrderItemData(
