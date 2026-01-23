@@ -5,12 +5,22 @@ import com.mustapha.ecommerce.product.domain.model.Product;
 /**
  * In Stock Products Specification
  * 
- * Business Rule: "Product is in stock"
- * Criteria: Product is active AND has available stock
+ * Business Rule: "Product is in stock and available for purchase"
+ * 
+ * Criteria:
+ * - Product is active (not deactivated)
+ * - Product is available for purchase (orderable)
+ * - Product is not discontinued (terminal state)
+ * - Product has available stock (getAvailableQuantity() > 0)
  * 
  * Pattern: Specification Pattern
+ * 
+ * Use this for:
+ * - Filtering catalog products
+ * - Checking product availability
+ * - Search/filter queries
  */
-public class InStockSpecification implements ProductSpecification {
+public final class InStockSpecification implements ProductSpecification {
     
     @Override
     public boolean isSatisfiedBy(Product product) {
@@ -18,6 +28,9 @@ public class InStockSpecification implements ProductSpecification {
             return false;
         }
         
-        return product.isActive() && product.getStock().isAvailable();
+        return product.isActive() 
+            && product.isAvailableForPurchase()
+            && !product.isDiscontinued()
+            && product.getStock().getAvailableQuantity() > 0;
     }
 }

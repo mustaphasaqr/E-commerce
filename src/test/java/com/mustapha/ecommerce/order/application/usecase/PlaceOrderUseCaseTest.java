@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.mustapha.ecommerce.order.application.command.PlaceOrderCommand;
 import com.mustapha.ecommerce.order.application.port.DomainEventPublisher;
+import com.mustapha.ecommerce.order.application.port.ProductPort;
 import com.mustapha.ecommerce.order.domain.DomainEvent;
 import com.mustapha.ecommerce.order.domain.event.OrderPlacedEvent;
 import com.mustapha.ecommerce.order.domain.model.Order;
@@ -28,14 +29,23 @@ import com.mustapha.ecommerce.order.domain.repository.OrderRepository;
 class PlaceOrderUseCaseTest {
 
     private OrderRepository orderRepository;
+    private ProductPort productPort;
     private DomainEventPublisher eventPublisher;
     private PlaceOrderUseCase useCase;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
+        productPort = mock(ProductPort.class);
         eventPublisher = mock(DomainEventPublisher.class);
-        useCase = new PlaceOrderUseCase(orderRepository, eventPublisher);
+        useCase = new PlaceOrderUseCase(orderRepository, productPort, eventPublisher);
+        
+        // Setup default ProductPort behavior
+        when(productPort.productExists(any(ProductId.class))).thenReturn(true);
+        when(productPort.getProductPrice(any(ProductId.class))).thenAnswer(invocation -> {
+            // Return the price that matches what's in the command (prevent price mismatch)
+            return new Money(50.0);
+        });
     }
 
     @Nested

@@ -8,40 +8,55 @@ import java.util.UUID;
 /**
  * Domain event published when a product is created
  */
-public final class ProductCreatedEvent implements ProductDomainEvent {
-    private final String eventId;
-    private final ProductId productId;
-    private final String sku;
-    private final String name;
-    private final LocalDateTime occurredAt;
-
+public record ProductCreatedEvent(
+    String eventId,
+    ProductId productId,
+    String sku,
+    String name,
+    LocalDateTime occurredAt
+) implements ProductDomainEvent {
+    
     public ProductCreatedEvent(ProductId productId, String sku, String name) {
-        this.eventId = UUID.randomUUID().toString();
-        this.productId = productId;
-        this.sku = sku;
-        this.name = name;
-        this.occurredAt = LocalDateTime.now();
+        this(
+            UUID.randomUUID().toString(),
+            productId,
+            sku,
+            name,
+            LocalDateTime.now()
+        );
+        
+        // Validation in compact constructor pattern
+        if (productId == null) {
+            throw new IllegalArgumentException("Product ID cannot be null");
+        }
+        if (sku == null || sku.trim().isEmpty()) {
+            throw new IllegalArgumentException("SKU cannot be null or empty");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Product name cannot be null or empty");
+        }
     }
-
+    
     @Override
     public String getEventId() {
         return eventId;
     }
-
+    
     @Override
     public LocalDateTime getOccurredAt() {
         return occurredAt;
     }
-
-    public ProductId getProductId() {
-        return productId;
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProductCreatedEvent that = (ProductCreatedEvent) o;
+        return eventId.equals(that.eventId);
     }
-
-    public String getSku() {
-        return sku;
-    }
-
-    public String getName() {
-        return name;
+    
+    @Override
+    public int hashCode() {
+        return eventId.hashCode();
     }
 }

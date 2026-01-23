@@ -288,17 +288,13 @@ public class Product {
         
         validateProductName(name);
         
-        // Track old values for event
-        String oldName = this.name;
-        String oldDescription = this.description;
-        
         this.name = name;
         this.description = description;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
         
         // Raise domain event AFTER successful state change
-        domainEvents.add(new ProductDetailsUpdatedEvent(id, oldName, name, oldDescription, description));
+        domainEvents.add(new ProductDetailsUpdatedEvent(id, name, description));
     }
     
     /**
