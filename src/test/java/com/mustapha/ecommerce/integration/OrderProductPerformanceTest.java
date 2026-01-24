@@ -9,7 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -194,6 +197,8 @@ class OrderProductPerformanceTest {
         CountDownLatch latch = new CountDownLatch(numberOfOrders);
         
         AtomicInteger successCount = new AtomicInteger(0);
+        Map<String, AtomicInteger> errorCounts = new ConcurrentHashMap<>();
+        List<String> errorDetails = Collections.synchronizedList(new ArrayList<>());
         long startTime = System.currentTimeMillis();
 
         for (int i = 0; i < numberOfOrders; i++) {
@@ -216,7 +221,19 @@ class OrderProductPerformanceTest {
                     
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    // Log error but don't fail test
+                    // Track error types and details
+                    String errorType = e.getClass().getSimpleName();
+                    errorCounts.computeIfAbsent(errorType, k -> new AtomicInteger(0)).incrementAndGet();
+                    
+                    String errorMsg = String.format("Order #%d failed: %s - %s", 
+                        orderNum, errorType, e.getMessage());
+                    errorDetails.add(errorMsg);
+                    
+                    // Log first few errors for debugging
+                    if (errorDetails.size() <= 5) {
+                        System.err.println(errorMsg);
+                        e.printStackTrace();
+                    }
                 } finally {
                     latch.countDown();
                 }
@@ -228,14 +245,31 @@ class OrderProductPerformanceTest {
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
 
-        // Assert - Allow some failures due to race conditions/timing (70% success rate minimum)
-        assertThat(successCount.get()).isGreaterThanOrEqualTo((int) (numberOfOrders * 0.7));
+        // Print detailed diagnostics
+        System.out.println("\n=== THROUGHPUT TEST DIAGNOSTICS ===");
+        System.out.println("Total requests: " + numberOfOrders);
+        System.out.println("Successful: " + successCount.get());
+        System.out.println("Failed: " + (numberOfOrders - successCount.get()));
+        System.out.println("Success rate: " + String.format("%.1f%%", (successCount.get() * 100.0 / numberOfOrders)));
+        System.out.println("Duration: " + duration + "ms");
+        
+        if (!errorCounts.isEmpty()) {
+            System.out.println("\nError Breakdown:");
+            errorCounts.forEach((errorType, count) -> 
+                System.out.println("  " + errorType + ": " + count.get() + " occurrences")
+            );
+            
+            System.out.println("\nFirst 5 Error Details:");
+            errorDetails.stream().limit(5).forEach(System.out::println);
+        }
         
         double ordersPerSecond = (successCount.get() * 1000.0) / duration;
-        System.out.println("Throughput Test Results:");
-        System.out.println("  Total orders: " + successCount.get());
-        System.out.println("  Duration: " + duration + "ms");
+        System.out.println("\nPerformance Metrics:");
         System.out.println("  Orders/second: " + String.format("%.2f", ordersPerSecond));
+        System.out.println("===================================\n");
+
+        // Assert - Allow some failures due to race conditions/timing (70% success rate minimum)
+        assertThat(successCount.get()).isGreaterThanOrEqualTo((int) (numberOfOrders * 0.7));
         
         // Should process at least 5 orders per second under load
         assertThat(ordersPerSecond).isGreaterThan(5.0);
