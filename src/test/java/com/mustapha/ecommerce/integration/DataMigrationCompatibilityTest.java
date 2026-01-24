@@ -71,6 +71,9 @@ class DataMigrationCompatibilityTest {
 
     @Autowired
     private OrderRepository orderRepository;
+    
+    @Autowired
+    private com.mustapha.ecommerce.order.infrastructure.persistence.repository.SpringDataOrderRepository springDataOrderRepository;
 
     @MockBean
     private PaymentPort paymentPort;
@@ -132,7 +135,7 @@ class DataMigrationCompatibilityTest {
         assertThat(retrievedOrder.getCustomerId()).isEqualTo(customerId);
         assertThat(retrievedOrder.getItems()).hasSize(1);
         assertThat(retrievedOrder.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-        assertThat(retrievedOrder.getTotalAmount()).isEqualByComparingTo(new BigDecimal("100.00"));
+        assertThat(retrievedOrder.getTotalAmount().getAmountAsBigDecimal()).isEqualByComparingTo(new BigDecimal("100.00"));
         
         System.out.println("Legacy order (without stock reservation) works correctly");
     }
@@ -274,7 +277,7 @@ class DataMigrationCompatibilityTest {
     @Test
     @DisplayName("Should migrate legacy order to new format when shipped")
     void shouldMigrateLegacyOrderOnStatusChange() {
-        // Arrange - Create legacy order in CONFIRMED state
+        // Arrange - Create legacy order in PROCESSING state (ready to ship)
         OrderId orderId = OrderId.generate();
         List<OrderItem> items = Arrays.asList(
             new OrderItem(
@@ -289,7 +292,7 @@ class DataMigrationCompatibilityTest {
             orderId,
             new CustomerId("MIGRATION-CUST-003"),
             items,
-            OrderStatus.CONFIRMED,
+            OrderStatus.PROCESSING, // Must be PROCESSING to ship
             LocalDateTime.now().minusDays(5),
             LocalDateTime.now().minusDays(5),
             null, null, null, null
@@ -308,7 +311,7 @@ class DataMigrationCompatibilityTest {
         assertThat(shippedOrder.getCarrier()).isEqualTo("FedEx");
         
         // Order maintains data integrity through migration
-        assertThat(shippedOrder.getTotalAmount()).isEqualByComparingTo(new BigDecimal("100.00"));
+        assertThat(shippedOrder.getTotalAmount().getAmountAsBigDecimal()).isEqualByComparingTo(new BigDecimal("100.00"));
         
         System.out.println("Legacy order successfully migrated through status change");
     }
@@ -341,8 +344,10 @@ class DataMigrationCompatibilityTest {
             orderRepository.save(legacyOrder);
         }
 
-        // Act - Retrieve all orders
-        List<Order> allOrders = orderRepository.findAll();
+        // Act - Retrieve all orders (using Spring Data repository)
+        List<Order> allOrders = springDataOrderRepository.findAll().stream()
+            .map(entity -> orderRepository.findById(new OrderId(entity.getId())).orElseThrow())
+            .toList();
 
         // Assert - All legacy orders retrieved successfully
         assertThat(allOrders).hasSizeGreaterThanOrEqualTo(20);
@@ -362,7 +367,7 @@ class DataMigrationCompatibilityTest {
     void shouldVerifyDataIntegrityAfterMigration() {
         // Arrange - Create order with specific values that must be preserved
         OrderId orderId = OrderId.generate();
-        BigDecimal precisePrice = new BigDecimal("123.456789"); // High precision
+        BigDecimal precisePrice = new BigDecimal("123.46"); // Money uses 2 decimal places (SCALE=2)
         
         List<OrderItem> items = Arrays.asList(
             new OrderItem(
@@ -396,11 +401,11 @@ class DataMigrationCompatibilityTest {
             .isEqualTo("PRECISION-PROD-001");
         
         // Verify BigDecimal precision maintained
-        BigDecimal storedPrice = retrievedOrder.getItems().get(0).getUnitPrice().getAmount();
+        BigDecimal storedPrice = retrievedOrder.getItems().get(0).getPrice().getAmountAsBigDecimal();
         assertThat(storedPrice).isEqualByComparingTo(precisePrice);
         
         // Verify total calculation is correct
-        assertThat(retrievedOrder.getTotalAmount()).isEqualByComparingTo(precisePrice);
+        assertThat(retrievedOrder.getTotalAmount().getAmountAsBigDecimal()).isEqualByComparingTo(precisePrice);
         
         System.out.println("Data integrity verified - precision maintained through migration");
     }
@@ -445,7 +450,7 @@ class DataMigrationCompatibilityTest {
         
         // Order should still be functional
         assertThat(retrievedOrder.getStatus()).isEqualTo(OrderStatus.PENDING);
-        assertThat(retrievedOrder.getTotalAmount()).isEqualByComparingTo(new BigDecimal("25.00"));
+        assertThat(retrievedOrder.getTotalAmount().getAmountAsBigDecimal()).isEqualByComparingTo(new BigDecimal("25.00"));
         
         System.out.println("Legacy order with null fields handled gracefully");
     }
