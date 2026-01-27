@@ -10,6 +10,7 @@ import java.util.Objects;
  */
 public record UserActivatedEvent(
     UserId userId,
+    String activationNote,  // Optional note for manual activation (admin use case)
     Instant occurredAt
 ) implements DomainEvent {
     
@@ -18,8 +19,8 @@ public record UserActivatedEvent(
         Objects.requireNonNull(occurredAt, "Occurred at cannot be null");
     }
     
-    public UserActivatedEvent(UserId userId) {
-        this(userId, Instant.now());
+    public UserActivatedEvent(UserId userId, String activationNote) {
+        this(userId, activationNote, Instant.now());
     }
     
     @Override

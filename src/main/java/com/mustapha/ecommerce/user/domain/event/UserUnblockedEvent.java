@@ -18,6 +18,7 @@ import java.util.Objects;
  */
 public record UserUnblockedEvent(
     UserId userId,
+    String reason,  // Optional reason for unblocking (audit trail)
     Instant occurredAt
 ) implements DomainEvent {
     
@@ -26,8 +27,8 @@ public record UserUnblockedEvent(
         Objects.requireNonNull(occurredAt, "Occurred at cannot be null");
     }
     
-    public UserUnblockedEvent(UserId userId) {
-        this(userId, Instant.now());
+    public UserUnblockedEvent(UserId userId, String reason) {
+        this(userId, reason, Instant.now());
     }
     
     @Override

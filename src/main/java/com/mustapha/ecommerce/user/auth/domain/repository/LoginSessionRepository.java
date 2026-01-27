@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.user.auth.domain.repository;
 
 import com.mustapha.ecommerce.user.auth.domain.model.LoginSession;
+import com.mustapha.ecommerce.user.domain.model.valueobject.UserId;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +15,8 @@ import java.util.Optional;
 public interface LoginSessionRepository {
     LoginSession save(LoginSession session);
     Optional<LoginSession> findBySessionId(String sessionId);
-    List<LoginSession> findActiveSessionsByUserId(String userId); // List all active sessions for user
+    List<LoginSession> findActiveSessionsByUserId(UserId userId);
     void delete(String sessionId);
-    void deleteAllByUserId(String userId); // Logout all devices
+    void deleteAllByUserId(UserId userId);
+    void deleteAllByUserIdExcept(UserId userId, String currentSessionId); // Logout all devices except current
 }

@@ -154,8 +154,10 @@ public class User {
      * Rule: User must accept terms before activation (GDPR compliance)
      * Rule: Email must be verified before activation (security best practice)
      * Status: PENDING → ACTIVE or INACTIVE → ACTIVE
+     * 
+     * @param activationNote Optional note for manual activation (admin use case)
      */
-    public void activate() {
+    public void activate(String activationNote) {
         if (status == UserStatus.ACTIVE) {
             throw new InvalidUserStateException("User is already active");
         }
@@ -178,7 +180,7 @@ public class User {
         this.status = UserStatus.ACTIVE;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
-        domainEvents.add(new UserActivatedEvent(id));
+        domainEvents.add(new UserActivatedEvent(id, activationNote));
     }
 
     /**
@@ -207,8 +209,10 @@ public class User {
      * Unblocks a previously blocked user
      * Rule: User must be in BLOCKED status
      * Raises: UserUnblockedEvent for support systems, risk engines, audit logs
+     * 
+     * @param reason Optional reason for unblocking (audit trail)
      */
-    public void unblock() {
+    public void unblock(String reason) {
         if (status != UserStatus.BLOCKED) {
             throw new InvalidUserStateException("User is not blocked");
         }
@@ -217,7 +221,7 @@ public class User {
         this.blockReason = null;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
-        domainEvents.add(new UserUnblockedEvent(id));
+        domainEvents.add(new UserUnblockedEvent(id, reason));
     }
 
     /**
@@ -225,8 +229,10 @@ public class User {
      * Rule: Cannot deactivate blocked user
      * Status: ACTIVE → INACTIVE
      * Raises: UserDeactivatedEvent for analytics, notifications, license management
+     * 
+     * @param reason Optional reason for deactivation (audit trail)
      */
-    public void deactivate() {
+    public void deactivate(String reason) {
         ensureNotBlocked();
         
         if (status == UserStatus.INACTIVE) {
@@ -236,7 +242,7 @@ public class User {
         this.status = UserStatus.INACTIVE;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
-        domainEvents.add(new UserDeactivatedEvent(id));
+        domainEvents.add(new UserDeactivatedEvent(id, reason));
     }
 
     // ========== Business Rules: Email Management ==========
@@ -302,6 +308,27 @@ public class User {
         this.password = newPassword;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
+        
+        domainEvents.add(new PasswordChangedEvent(id));
+    }
+
+    /**
+     * Resets password without current password verification (for password reset flow via token)
+     * Rule: User must not be blocked or deleted
+     * Rule: Only called from password reset flow after token validation
+     * 
+     * NOTE: This bypasses current password check - only use after validating reset token!
+     */
+    public void resetPassword(Password newPassword) {
+        ensureNotDeleted();
+        ensureNotBlocked();
+        Objects.requireNonNull(newPassword, "New password cannot be null");
+        
+        this.password = newPassword;
+        this.updatedAt = LocalDateTime.now();
+        incrementVersion();
+        
+        domainEvents.add(new PasswordChangedEvent(id));
     }
 
     /**

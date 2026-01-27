@@ -18,6 +18,7 @@ import java.util.Objects;
  */
 public record UserDeactivatedEvent(
     UserId userId,
+    String reason,  // Optional reason for deactivation (audit trail)
     Instant occurredAt
 ) implements DomainEvent {
     
@@ -26,8 +27,8 @@ public record UserDeactivatedEvent(
         Objects.requireNonNull(occurredAt, "Occurred at cannot be null");
     }
     
-    public UserDeactivatedEvent(UserId userId) {
-        this(userId, Instant.now());
+    public UserDeactivatedEvent(UserId userId, String reason) {
+        this(userId, reason, Instant.now());
     }
     
     @Override
