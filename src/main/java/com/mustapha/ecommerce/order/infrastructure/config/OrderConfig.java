@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.config;
+package com.mustapha.ecommerce.order.infrastructure.config;
 
 import org.springframework.context.annotation.Configuration;
 

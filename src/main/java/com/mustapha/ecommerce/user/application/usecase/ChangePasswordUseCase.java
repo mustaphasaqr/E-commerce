@@ -6,6 +6,7 @@ import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Password;
 import com.mustapha.ecommerce.user.domain.model.valueobject.PasswordHasher;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +16,7 @@ public class ChangePasswordUseCase {
     private final PasswordHasher passwordHasher;
     private final DomainEventPublisher eventPublisher;
 
-    public ChangePasswordUseCase(UserRepository userRepository, PasswordHasher passwordHasher, DomainEventPublisher eventPublisher) {
+    public ChangePasswordUseCase(UserRepository userRepository, PasswordHasher passwordHasher, @Qualifier("userDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
         this.eventPublisher = eventPublisher;

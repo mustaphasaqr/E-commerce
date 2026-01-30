@@ -1,12 +1,15 @@
 package com.mustapha.ecommerce.user.auth.application.facade;
 
+import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
 import com.mustapha.ecommerce.user.auth.application.command.*;
 import com.mustapha.ecommerce.user.auth.application.usecase.*;
 import com.mustapha.ecommerce.user.auth.domain.model.valueobject.Credentials;
+import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Email;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Password;
 import com.mustapha.ecommerce.user.domain.model.valueobject.PasswordHasher;
 import com.mustapha.ecommerce.user.domain.model.valueobject.UserId;
+import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 import com.mustapha.ecommerce.user.dto.*;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +36,9 @@ public class AuthFacade {
     private final PasswordResetCompleteUseCase passwordResetCompleteUseCase;
     private final LogoutAllDevicesUseCase logoutAllDevicesUseCase;
     private final PasswordHasher passwordHasher;
+    private final JwtTokenGenerator jwtTokenGenerator;
+    private final UserRepository userRepository;
+    private final com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository refreshTokenRepository;
 
     public AuthFacade(LoginUseCase loginUseCase,
                      LogoutUseCase logoutUseCase,
@@ -40,7 +46,10 @@ public class AuthFacade {
                      PasswordResetRequestUseCase passwordResetRequestUseCase,
                      PasswordResetCompleteUseCase passwordResetCompleteUseCase,
                      LogoutAllDevicesUseCase logoutAllDevicesUseCase,
-                     PasswordHasher passwordHasher) {
+                     PasswordHasher passwordHasher,
+                     JwtTokenGenerator jwtTokenGenerator,
+                     UserRepository userRepository,
+                     com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository refreshTokenRepository) {
         this.loginUseCase = loginUseCase;
         this.logoutUseCase = logoutUseCase;
         this.refreshTokenUseCase = refreshTokenUseCase;
@@ -48,6 +57,9 @@ public class AuthFacade {
         this.passwordResetCompleteUseCase = passwordResetCompleteUseCase;
         this.logoutAllDevicesUseCase = logoutAllDevicesUseCase;
         this.passwordHasher = passwordHasher;
+        this.jwtTokenGenerator = jwtTokenGenerator;
+        this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     /**
@@ -70,8 +82,15 @@ public class AuthFacade {
         // Build response
         UserResponse userResponse = UserResponse.fromDomain(result.getUser());
         
+        // Generate JWT access token with sessionId
+        String accessToken = jwtTokenGenerator.generateAccessToken(
+            result.getUser().getId().getValue().toString(),
+            result.getUser().getRole().name(),
+            result.getSessionId()
+        );
+        
         return new LoginResponse(
-            "JWT_ACCESS_TOKEN_PLACEHOLDER", // TODO: Generate JWT in infrastructure
+            accessToken,
             result.getRefreshToken(),
             result.getSessionId(),
             3600, // 1 hour
@@ -93,8 +112,15 @@ public class AuthFacade {
     /**
      * Refresh Token
      */
-    public TokenResponse refreshToken(String userId, RefreshTokenRequest request, 
+    public TokenResponse refreshToken(RefreshTokenRequest request, 
                                       String ipAddress, String userAgent) {
+        // Get userId from the refresh token itself
+        com.mustapha.ecommerce.user.auth.domain.model.RefreshToken existingToken = 
+            refreshTokenRepository.findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+        
+        String userId = existingToken.getUserId();
+        
         RefreshTokenCommand command = new RefreshTokenCommand(
             UserId.of(UUID.fromString(userId)),
             request.getRefreshToken(),
@@ -104,8 +130,19 @@ public class AuthFacade {
         
         RefreshTokenUseCase.RefreshResult result = refreshTokenUseCase.execute(command);
         
+        // Fetch current user role (may have changed since token issued)
+        User user = userRepository.findById(UserId.of(UUID.fromString(userId)))
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        // Generate new JWT access token with current role and new sessionId
+        String accessToken = jwtTokenGenerator.generateAccessToken(
+            userId,
+            user.getRole().name(),
+            result.getSessionId()
+        );
+        
         return new TokenResponse(
-            "JWT_ACCESS_TOKEN_PLACEHOLDER", // TODO: Generate JWT
+            accessToken,
             result.getRefreshToken(),
             3600 // 1 hour
         );

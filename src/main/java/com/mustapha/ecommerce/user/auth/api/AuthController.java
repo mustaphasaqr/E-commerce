@@ -5,6 +5,7 @@ import com.mustapha.ecommerce.user.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -61,9 +62,9 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
-        // TODO: Get from SecurityContext (Spring Security)
-        String userId = "CURRENT_USER_ID_FROM_JWT";
-        String sessionId = "CURRENT_SESSION_ID_FROM_JWT";
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = (String) authentication.getPrincipal();
+        String sessionId = (String) authentication.getDetails();
         
         authFacade.logout(userId, sessionId);
         return ResponseEntity.noContent().build();
@@ -73,20 +74,18 @@ public class AuthController {
      * Refresh Token
      * POST /api/auth/refresh
      * 
-     * Requires authentication (refresh token in request body)
-     * TODO: Extract userId from JWT
+     * Requires refresh token in request body
+     * Extracts userId from the refresh token itself
      */
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request,
             HttpServletRequest httpRequest) {
         
-        // TODO: Get userId from SecurityContext
-        String userId = "CURRENT_USER_ID_FROM_JWT";
         String ipAddress = extractIpAddress(httpRequest);
         String userAgent = extractUserAgent(httpRequest);
         
-        TokenResponse response = authFacade.refreshToken(userId, request, ipAddress, userAgent);
+        TokenResponse response = authFacade.refreshToken(request, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 
@@ -100,9 +99,9 @@ public class AuthController {
      */
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAllDevices() {
-        // TODO: Get from SecurityContext
-        String userId = "CURRENT_USER_ID_FROM_JWT";
-        String currentSessionId = "CURRENT_SESSION_ID_FROM_JWT";
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = (String) authentication.getPrincipal();
+        String currentSessionId = (String) authentication.getDetails();
         
         authFacade.logoutAllDevices(userId, currentSessionId);
         return ResponseEntity.noContent().build();

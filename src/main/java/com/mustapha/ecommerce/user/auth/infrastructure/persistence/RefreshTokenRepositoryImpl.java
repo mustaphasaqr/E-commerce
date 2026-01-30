@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.user.auth.infrastructure.persistence;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mustapha.ecommerce.user.auth.domain.model.RefreshToken;
 import com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository;
 import com.mustapha.ecommerce.user.domain.model.valueobject.UserId;
@@ -7,6 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +31,13 @@ import java.util.concurrent.TimeUnit;
 public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
     private static final String KEY_PREFIX = "refresh_token:";
     private static final long TTL_DAYS = 30;
 
-    public RefreshTokenRepositoryImpl(RedisTemplate<String, Object> redisTemplate) {
+    public RefreshTokenRepositoryImpl(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -47,7 +51,24 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     public Optional<RefreshToken> findByToken(String tokenValue) {
         String key = KEY_PREFIX + tokenValue;
         Object value = redisTemplate.opsForValue().get(key);
-        return Optional.ofNullable(value).map(v -> (RefreshToken) v);
+        
+        if (value == null) {
+            return Optional.empty();
+        }
+        
+        // Handle case where Redis returns LinkedHashMap instead of RefreshToken
+        if (value instanceof LinkedHashMap) {
+            try {
+                RefreshToken token = objectMapper.convertValue(value, RefreshToken.class);
+                return Optional.of(token);
+            } catch (IllegalArgumentException e) {
+                // Log and return empty if conversion fails
+                return Optional.empty();
+            }
+        }
+        
+        // Direct cast if already RefreshToken
+        return Optional.of((RefreshToken) value);
     }
 
     @Override

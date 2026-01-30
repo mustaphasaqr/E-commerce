@@ -4,6 +4,7 @@ import com.mustapha.ecommerce.user.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.user.auth.application.command.LogoutCommand;
 import com.mustapha.ecommerce.user.auth.domain.model.LoginSession;
 import com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +13,7 @@ public class LogoutUseCase {
     private final LoginSessionRepository loginSessionRepository;
     private final DomainEventPublisher eventPublisher;
 
-    public LogoutUseCase(LoginSessionRepository loginSessionRepository, DomainEventPublisher eventPublisher) {
+    public LogoutUseCase(LoginSessionRepository loginSessionRepository, @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.loginSessionRepository = loginSessionRepository;
         this.eventPublisher = eventPublisher;
     }

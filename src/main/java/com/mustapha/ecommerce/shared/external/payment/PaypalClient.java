@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.infrastructure.external.payment;
+package com.mustapha.ecommerce.shared.external.payment;
 
 import org.springframework.stereotype.Component;
 

@@ -5,6 +5,8 @@ import com.mustapha.ecommerce.user.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -45,9 +47,9 @@ public class UserController {
 
     /**
      * Register new user
-     * POST /api/users/register
+     * POST /api/users
      */
-    @PostMapping("/register")
+    @PostMapping
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterUserRequest request) {
         UserResponse response = userFacade.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -62,9 +64,8 @@ public class UserController {
      * TODO: Extract userId from JWT SecurityContext
      */
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser() {
-        // TODO: Get userId from SecurityContext (Spring Security)
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> getCurrentUser(
+            @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.getUserById(userId);
         return ResponseEntity.ok(response);
     }
@@ -76,8 +77,9 @@ public class UserController {
      * TODO: Extract userId from JWT
      */
     @PutMapping("/me/email")
-    public ResponseEntity<UserResponse> changeEmail(@Valid @RequestBody ChangeEmailRequest request) {
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> changeEmail(
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody ChangeEmailRequest request) {
         UserResponse response = userFacade.changeEmail(userId, request);
         return ResponseEntity.ok(response);
     }
@@ -89,8 +91,9 @@ public class UserController {
      * TODO: Extract userId from JWT
      */
     @PutMapping("/me/password")
-    public ResponseEntity<UserResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> changePassword(
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
         UserResponse response = userFacade.changePassword(userId, request);
         return ResponseEntity.ok(response);
     }
@@ -103,8 +106,8 @@ public class UserController {
      * Note: In production, this would be called after clicking verification link with token
      */
     @PostMapping("/me/email/verify")
-    public ResponseEntity<UserResponse> verifyEmail() {
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> verifyEmail(
+            @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.verifyEmail(userId);
         return ResponseEntity.ok(response);
     }
@@ -116,8 +119,8 @@ public class UserController {
      * TODO: Extract userId from JWT
      */
     @PostMapping("/me/marketing/grant")
-    public ResponseEntity<UserResponse> grantMarketingConsent() {
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> grantMarketingConsent(
+            @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.grantMarketingConsent(userId);
         return ResponseEntity.ok(response);
     }
@@ -129,8 +132,8 @@ public class UserController {
      * TODO: Extract userId from JWT
      */
     @DeleteMapping("/me/marketing")
-    public ResponseEntity<UserResponse> revokeMarketingConsent() {
-        String userId = "CURRENT_USER_ID_FROM_JWT";
+    public ResponseEntity<UserResponse> revokeMarketingConsent(
+            @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.revokeMarketingConsent(userId);
         return ResponseEntity.ok(response);
     }
@@ -140,9 +143,8 @@ public class UserController {
     /**
      * Get user by ID
      * GET /api/users/{id}
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         UserResponse response = userFacade.getUserById(id);
@@ -152,9 +154,8 @@ public class UserController {
     /**
      * Get user by email
      * GET /api/users/email/{email}
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @GetMapping("/email/{email}")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         UserResponse response = userFacade.getUserByEmail(email);
@@ -164,9 +165,8 @@ public class UserController {
     /**
      * Get user by username
      * GET /api/users/username/{username}
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @GetMapping("/username/{username}")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         UserResponse response = userFacade.getUserByUsername(username);
@@ -178,9 +178,8 @@ public class UserController {
     /**
      * Activate user
      * POST /api/users/{id}/activate
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{id}/activate")
     public ResponseEntity<UserResponse> activateUser(@PathVariable String id) {
         UserResponse response = userFacade.activateUser(id);
@@ -190,9 +189,8 @@ public class UserController {
     /**
      * Deactivate user
      * POST /api/users/{id}/deactivate
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{id}/deactivate")
     public ResponseEntity<UserResponse> deactivateUser(@PathVariable String id) {
         UserResponse response = userFacade.deactivateUser(id);
@@ -202,9 +200,8 @@ public class UserController {
     /**
      * Block user
      * POST /api/users/{id}/block?reason={reason}
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{id}/block")
     public ResponseEntity<UserResponse> blockUser(@PathVariable String id, @RequestParam String reason) {
         UserResponse response = userFacade.blockUser(id, reason);
@@ -214,9 +211,8 @@ public class UserController {
     /**
      * Unblock user
      * POST /api/users/{id}/unblock
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{id}/unblock")
     public ResponseEntity<UserResponse> unblockUser(@PathVariable String id) {
         UserResponse response = userFacade.unblockUser(id);
@@ -226,9 +222,8 @@ public class UserController {
     /**
      * Delete user (soft delete)
      * DELETE /api/users/{id}?reason={reason}
-     * 
-     * TODO: Secure with @PreAuthorize("hasRole('ADMIN')")
      */
+    @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<UserResponse> deleteUser(@PathVariable String id, @RequestParam String reason) {
         UserResponse response = userFacade.deleteUser(id, reason);

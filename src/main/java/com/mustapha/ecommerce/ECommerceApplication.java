@@ -2,6 +2,7 @@ package com.mustapha.ecommerce;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 /**
  * E-Commerce Application Bootstrap
@@ -16,6 +17,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - config/         : Composition Root (Dependency Injection)
  */
 @SpringBootApplication
+@EntityScan(basePackages = "com.mustapha.ecommerce.*.infrastructure.persistence.entity")
 public class ECommerceApplication {
 
     public static void main(String[] args) {

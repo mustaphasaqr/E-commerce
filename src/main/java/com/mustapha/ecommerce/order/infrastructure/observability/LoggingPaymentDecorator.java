@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.shared.observability.paymentgateway;
+package com.mustapha.ecommerce.order.infrastructure.observability;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +13,8 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
  * Logging Payment Decorator
  * Responsibility: Add logging to payment operations
  * Pattern: Decorator (Transparent logging wrapper)
+ * 
+ * Location: Order BC infrastructure (decorates Order's port to payment gateway)
  */
 @Component
 public class LoggingPaymentDecorator implements PaymentPort {

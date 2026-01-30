@@ -13,6 +13,7 @@ import com.mustapha.ecommerce.user.domain.model.valueobject.PasswordHasher;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Username;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +45,7 @@ public class LoginUseCase {
                        LoginSessionRepository loginSessionRepository,
                        LoginRateLimitPolicy rateLimitPolicy,
                        PasswordHasher passwordHasher,
-                       DomainEventPublisher eventPublisher) {
+                       @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginSessionRepository = loginSessionRepository;

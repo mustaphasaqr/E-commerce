@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.shared.observability.inventoryport;
+package com.mustapha.ecommerce.order.infrastructure.observability;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +12,8 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
  * Logging Inventory Decorator
  * Responsibility: Add logging to inventory operations
  * Pattern: Decorator (Transparent logging wrapper)
+ * 
+ * Location: Order BC infrastructure (decorates Order's port to Product BC)
  */
 @Component
 public class LoggingInventoryDecorator implements InventoryPort {

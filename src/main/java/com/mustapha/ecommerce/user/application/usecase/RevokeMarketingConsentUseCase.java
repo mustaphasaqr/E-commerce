@@ -4,6 +4,7 @@ import com.mustapha.ecommerce.user.application.command.RevokeMarketingConsentCom
 import com.mustapha.ecommerce.user.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +13,7 @@ public class RevokeMarketingConsentUseCase {
     private final UserRepository userRepository;
     private final DomainEventPublisher eventPublisher;
 
-    public RevokeMarketingConsentUseCase(UserRepository userRepository, DomainEventPublisher eventPublisher) {
+    public RevokeMarketingConsentUseCase(UserRepository userRepository, @Qualifier("userDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
     }

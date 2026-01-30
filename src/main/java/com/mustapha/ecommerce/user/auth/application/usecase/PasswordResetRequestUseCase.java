@@ -8,6 +8,7 @@ import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 import com.mustapha.ecommerce.user.application.port.EmailService;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class PasswordResetRequestUseCase {
     public PasswordResetRequestUseCase(UserRepository userRepository,
                                        PasswordResetTokenRepository tokenRepository,
                                        EmailService emailService,
-                                       DomainEventPublisher eventPublisher) {
+                                       @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;

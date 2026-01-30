@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,7 +14,12 @@ import com.mustapha.ecommerce.order.domain.model.OrderStatus;
  * Responsibility: Database mapping for Order aggregate
  */
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", indexes = {
+    @Index(name = "idx_order_customer", columnList = "customer_id"),
+    @Index(name = "idx_order_status", columnList = "status"),
+    @Index(name = "idx_order_created", columnList = "created_at")
+})
+@Check(name = "chk_order_total_positive", constraints = "total_amount >= 0")
 public class OrderJpaEntity {
 
     @Id

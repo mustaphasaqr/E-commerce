@@ -6,6 +6,7 @@ import com.mustapha.ecommerce.user.auth.domain.model.LoginSession;
 import com.mustapha.ecommerce.user.auth.domain.model.RefreshToken;
 import com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository;
 import com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class RefreshTokenUseCase {
 
     public RefreshTokenUseCase(RefreshTokenRepository refreshTokenRepository,
                               LoginSessionRepository loginSessionRepository,
-                              DomainEventPublisher eventPublisher) {
+                              @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginSessionRepository = loginSessionRepository;
         this.eventPublisher = eventPublisher;

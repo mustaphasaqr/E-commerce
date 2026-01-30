@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.user.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 
 /**
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_user_email", columnList = "email", unique = true),
     @Index(name = "idx_user_username", columnList = "username", unique = true)
 })
+@Check(name = "chk_username_min_length", constraints = "LENGTH(username) >= 3")
+@Check(name = "chk_email_format", constraints = "email LIKE '%@%'")
 public class UserJpaEntity {
 
     @Id

@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.product.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,7 +18,11 @@ import java.util.Map;
 @Entity
 @Table(name = "products", indexes = {
     @Index(name = "idx_product_sku", columnList = "sku", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uk_product_sku", columnNames = "sku")
 })
+@Check(name = "chk_product_price_positive", constraints = "price >= 0")
+@Check(name = "chk_product_stock_positive", constraints = "total_stock >= 0 AND available_stock >= 0 AND reserved_stock >= 0")
 public class ProductJpaEntity {
 
     @Id
@@ -70,9 +75,12 @@ public class ProductJpaEntity {
      * Stored as JSON in database
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "product_reservations", joinColumns = @JoinColumn(name = "product_id"))
+    @CollectionTable(name = "product_reservations", 
+                     joinColumns = @JoinColumn(name = "product_id"),
+                     foreignKey = @ForeignKey(name = "fk_reservation_product"))
     @MapKeyColumn(name = "order_id")
     @Column(name = "quantity")
+    @Check(name = "chk_reservation_qty_positive", constraints = "quantity > 0")
     private Map<String, Integer> reservations = new HashMap<>();
 
     /**

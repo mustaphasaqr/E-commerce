@@ -8,6 +8,7 @@ import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.UserId;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class PasswordResetCompleteUseCase {
 
     public PasswordResetCompleteUseCase(UserRepository userRepository,
                                         PasswordResetTokenRepository tokenRepository,
-                                        DomainEventPublisher eventPublisher) {
+                                        @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.eventPublisher = eventPublisher;

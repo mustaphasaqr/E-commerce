@@ -1,13 +1,18 @@
 package com.mustapha.ecommerce.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import java.math.BigDecimal;
 
 /**
  * Order Item JPA Entity
  */
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_items", indexes = {
+    @Index(name = "idx_order_item_product", columnList = "product_id")
+})
+@Check(name = "chk_order_item_qty_positive", constraints = "quantity > 0")
+@Check(name = "chk_order_item_price_positive", constraints = "price >= 0")
 public class OrderItemJpaEntity {
 
     @Id
