@@ -35,6 +35,8 @@ public class AuthFacade {
     private final PasswordResetRequestUseCase passwordResetRequestUseCase;
     private final PasswordResetCompleteUseCase passwordResetCompleteUseCase;
     private final LogoutAllDevicesUseCase logoutAllDevicesUseCase;
+    private final RequestEmailVerificationUseCase requestEmailVerificationUseCase;
+    private final VerifyEmailWithTokenUseCase verifyEmailWithTokenUseCase;
     private final PasswordHasher passwordHasher;
     private final JwtTokenGenerator jwtTokenGenerator;
     private final UserRepository userRepository;
@@ -46,6 +48,8 @@ public class AuthFacade {
                      PasswordResetRequestUseCase passwordResetRequestUseCase,
                      PasswordResetCompleteUseCase passwordResetCompleteUseCase,
                      LogoutAllDevicesUseCase logoutAllDevicesUseCase,
+                     RequestEmailVerificationUseCase requestEmailVerificationUseCase,
+                     VerifyEmailWithTokenUseCase verifyEmailWithTokenUseCase,
                      PasswordHasher passwordHasher,
                      JwtTokenGenerator jwtTokenGenerator,
                      UserRepository userRepository,
@@ -56,6 +60,8 @@ public class AuthFacade {
         this.passwordResetRequestUseCase = passwordResetRequestUseCase;
         this.passwordResetCompleteUseCase = passwordResetCompleteUseCase;
         this.logoutAllDevicesUseCase = logoutAllDevicesUseCase;
+        this.requestEmailVerificationUseCase = requestEmailVerificationUseCase;
+        this.verifyEmailWithTokenUseCase = verifyEmailWithTokenUseCase;
         this.passwordHasher = passwordHasher;
         this.jwtTokenGenerator = jwtTokenGenerator;
         this.userRepository = userRepository;
@@ -93,7 +99,7 @@ public class AuthFacade {
             accessToken,
             result.getRefreshToken(),
             result.getSessionId(),
-            3600, // 1 hour
+            3600000, // 1 hour in milliseconds
             userResponse
         );
     }
@@ -101,10 +107,11 @@ public class AuthFacade {
     /**
      * Logout
      */
-    public void logout(String userId, String sessionId) {
+    public void logout(String userId, String sessionId, String token) {
         LogoutCommand command = new LogoutCommand(
             UserId.of(UUID.fromString(userId)),
-            sessionId
+            sessionId,
+            token
         );
         logoutUseCase.execute(command);
     }
@@ -144,7 +151,7 @@ public class AuthFacade {
         return new TokenResponse(
             accessToken,
             result.getRefreshToken(),
-            3600 // 1 hour
+            3600000 // 1 hour in milliseconds
         );
     }
 
@@ -178,5 +185,17 @@ public class AuthFacade {
             currentSessionId
         );
         logoutAllDevicesUseCase.execute(command);
+    }
+
+    public void requestEmailVerification(RequestEmailVerificationRequest request) {
+        RequestEmailVerificationCommand command = new RequestEmailVerificationCommand(
+            Email.of(request.getEmail())
+        );
+        requestEmailVerificationUseCase.execute(command);
+    }
+
+    public void verifyEmailWithToken(VerifyEmailWithTokenRequest request) {
+        VerifyEmailWithTokenCommand command = new VerifyEmailWithTokenCommand(request.getToken());
+        verifyEmailWithTokenUseCase.execute(command);
     }
 }

@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.infrastructure.persistence;
+package com.mustapha.ecommerce.shared.persistence;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;

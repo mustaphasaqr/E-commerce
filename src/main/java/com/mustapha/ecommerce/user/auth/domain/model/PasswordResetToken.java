@@ -1,8 +1,12 @@
 package com.mustapha.ecommerce.user.auth.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mustapha.ecommerce.user.auth.domain.exception.ExpiredTokenException;
 import com.mustapha.ecommerce.user.auth.domain.exception.TokenAlreadyUsedException;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,7 +22,10 @@ import java.util.UUID;
  * - Cannot use expired or already-used token
  * - Token can only be used once
  */
-public class PasswordResetToken {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class PasswordResetToken implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private final String token;
     private final String userId;
     private final String email; // For sending reset email
@@ -29,9 +36,15 @@ public class PasswordResetToken {
     
     private static final int VALIDITY_HOURS = 24;
 
-    private PasswordResetToken(String token, String userId, String email,
-                              LocalDateTime createdAt, LocalDateTime expiresAt,
-                              boolean used, LocalDateTime usedAt) {
+    @JsonCreator
+    public PasswordResetToken(
+            @JsonProperty("token") String token,
+            @JsonProperty("userId") String userId,
+            @JsonProperty("email") String email,
+            @JsonProperty("createdAt") LocalDateTime createdAt,
+            @JsonProperty("expiresAt") LocalDateTime expiresAt,
+            @JsonProperty("used") boolean used,
+            @JsonProperty("usedAt") LocalDateTime usedAt) {
         this.token = Objects.requireNonNull(token, "Token cannot be null");
         this.userId = Objects.requireNonNull(userId, "User ID cannot be null");
         this.email = Objects.requireNonNull(email, "Email cannot be null");

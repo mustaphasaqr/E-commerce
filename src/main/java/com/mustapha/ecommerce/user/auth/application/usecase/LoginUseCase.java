@@ -2,6 +2,7 @@ package com.mustapha.ecommerce.user.auth.application.usecase;
 
 import com.mustapha.ecommerce.user.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.user.auth.application.command.LoginCommand;
+import com.mustapha.ecommerce.user.auth.domain.exception.InvalidCredentialsException;
 import com.mustapha.ecommerce.user.auth.domain.model.LoginSession;
 import com.mustapha.ecommerce.user.auth.domain.model.RefreshToken;
 import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy;
@@ -63,14 +64,30 @@ public class LoginUseCase {
         rateLimitPolicy.checkIpRateLimit(command.getIpAddress()).throwIfDenied();
         
         // Step 2: Find user (try email first, then username)
-        User user = userRepository.findByEmail(Email.of(identifier))
-            .or(() -> userRepository.findByUsername(Username.of(identifier)))
-            .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+        User user = null;
+        try {
+            user = userRepository.findByEmail(Email.of(identifier)).orElse(null);
+        } catch (IllegalArgumentException e) {
+            // Not a valid email, try username
+        }
+        
+        if (user == null) {
+            try {
+                user = userRepository.findByUsername(Username.of(identifier)).orElse(null);
+            } catch (IllegalArgumentException e) {
+                // Not a valid username either
+            }
+        }
+        
+        if (user == null) {
+            rateLimitPolicy.recordFailedAttempt(identifier, command.getIpAddress());
+            throw new InvalidCredentialsException(identifier);
+        }
         
         // Step 3: Verify password
         if (!user.verifyPassword(command.getCredentials().getPlainPassword(), passwordHasher)) {
             rateLimitPolicy.recordFailedAttempt(identifier, command.getIpAddress());
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new InvalidCredentialsException(identifier);
         }
         
         rateLimitPolicy.recordSuccessfulLogin(user.getId().getValue().toString(), command.getIpAddress());

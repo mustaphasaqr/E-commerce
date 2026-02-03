@@ -1,8 +1,12 @@
 package com.mustapha.ecommerce.user.auth.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mustapha.ecommerce.user.auth.domain.exception.ExpiredTokenException;
 import com.mustapha.ecommerce.user.auth.domain.exception.InvalidTokenException;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,7 +22,10 @@ import java.util.UUID;
  * - Cannot use expired session
  * - Session can only be invalidated once
  */
-public class LoginSession {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class LoginSession implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private final String sessionId;
     private final String userId;
     private final LocalDateTime createdAt;
@@ -31,9 +38,16 @@ public class LoginSession {
     // Session validity
     private static final int SESSION_DURATION_HOURS = 24;
 
-    private LoginSession(String sessionId, String userId, LocalDateTime createdAt, 
-                        LocalDateTime expiresAt, boolean active, LocalDateTime lastAccessedAt,
-                        String ipAddress, String userAgent) {
+    @JsonCreator
+    public LoginSession(
+            @JsonProperty("sessionId") String sessionId,
+            @JsonProperty("userId") String userId,
+            @JsonProperty("createdAt") LocalDateTime createdAt,
+            @JsonProperty("expiresAt") LocalDateTime expiresAt,
+            @JsonProperty("active") boolean active,
+            @JsonProperty("lastAccessedAt") LocalDateTime lastAccessedAt,
+            @JsonProperty("ipAddress") String ipAddress,
+            @JsonProperty("userAgent") String userAgent) {
         this.sessionId = Objects.requireNonNull(sessionId, "Session ID cannot be null");
         this.userId = Objects.requireNonNull(userId, "User ID cannot be null");
         this.createdAt = Objects.requireNonNull(createdAt, "Created at cannot be null");

@@ -21,6 +21,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,15 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderItemRequest;
 import com.mustapha.ecommerce.product.application.facade.ProductFacade;
+import com.mustapha.ecommerce.user.dto.LoginRequest;
+import com.mustapha.ecommerce.user.dto.LoginResponse;
+import com.mustapha.ecommerce.user.domain.model.User;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Email;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Password;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Role;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Username;
+import com.mustapha.ecommerce.user.domain.repository.UserRepository;
+import com.mustapha.ecommerce.user.infrastructure.security.BCryptPasswordHasher;
 
 /**
  * Chaos Engineering Tests - System Resilience
@@ -50,7 +60,10 @@ import com.mustapha.ecommerce.product.application.facade.ProductFacade;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.show-sql=false"
+    "spring.jpa.show-sql=false",
+    "spring.data.redis.host=localhost",
+    "spring.data.redis.port=6379",
+    "spring.cache.type=none"
 })
 @DisplayName("Chaos Tests - Order ↔ Product Resilience")
 class OrderProductChaosTest {
@@ -60,6 +73,12 @@ class OrderProductChaosTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordHasher passwordHasher;
 
     @MockBean
     private PaymentPort paymentPort;
@@ -76,8 +95,39 @@ class OrderProductChaosTest {
     @SpyBean
     private ProductFacade productFacade;
 
+    private String employeeJwt;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Create and activate EMPLOYEE user for product/order operations
+        Email employeeEmail = Email.of("testemployee@example.com");
+        if (userRepository.findByEmail(employeeEmail).isEmpty()) {
+            User employee = User.create(
+                Username.of("testemployee"),
+                employeeEmail,
+                Password.fromPlainText("Employee123!@#", passwordHasher),
+                Role.EMPLOYEE
+            );
+            employee.acceptTerms("v1.0");
+            employee.verifyEmail();
+            employee.activate("Test setup");
+            userRepository.save(employee);
+        }
+
+        // Login to get JWT token
+        LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        LoginResponse loginResponse = objectMapper.readValue(
+            loginResult.getResponse().getContentAsString(),
+            LoginResponse.class
+        );
+        employeeJwt = loginResponse.getAccessToken();
+
         when(paymentPort.processPayment(any(), any(), any(), any()))
             .thenReturn(new PaymentResult(true, "txn_success", "Payment successful"));
         
@@ -100,6 +150,7 @@ class OrderProductChaosTest {
 
         // Act & Assert - Should fail with appropriate error
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is5xxServerError());
@@ -135,6 +186,7 @@ class OrderProductChaosTest {
 
         // Act - First 2 attempts should fail, could implement retry logic
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is5xxServerError());
@@ -149,6 +201,7 @@ class OrderProductChaosTest {
     void shouldHandlePartialProductAvailability() throws Exception {
         // Arrange - Create one product, but reference another that doesn't exist
         mockMvc.perform(post("/api/products")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new com.mustapha.ecommerce.product.dto.ProductRequest(
@@ -171,6 +224,7 @@ class OrderProductChaosTest {
         ));
 
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(failedOrderRequest)))
             .andExpect(status().is4xxClientError()); // Product not found is 400
@@ -198,6 +252,7 @@ class OrderProductChaosTest {
 
         // Act & Assert - Should detect price mismatch and reject
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isBadRequest());
@@ -228,6 +283,7 @@ class OrderProductChaosTest {
 
         // Act & Assert - Should fail with 500 error (transaction should rollback)
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is5xxServerError());
@@ -248,12 +304,14 @@ class OrderProductChaosTest {
 
         // Act - First attempt fails (product doesn't exist yet)
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError()); // Product not found
 
         // Simulate service recovery - create the product
         mockMvc.perform(post("/api/products")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new com.mustapha.ecommerce.product.dto.ProductRequest(
@@ -276,6 +334,7 @@ class OrderProductChaosTest {
     void shouldHandleSlowProductResponses() throws Exception {
         // Arrange - Create product first
         mockMvc.perform(post("/api/products")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new com.mustapha.ecommerce.product.dto.ProductRequest(
@@ -299,6 +358,7 @@ class OrderProductChaosTest {
         long startTime = System.currentTimeMillis();
         
         mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)));
         // Note: Accepting any status - test is about demonstrating timeout monitoring

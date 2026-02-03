@@ -6,6 +6,7 @@ import com.mustapha.ecommerce.product.dto.ProductResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -28,9 +29,37 @@ public class ProductController {
      * Create new product
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
+        // XSS prevention - reject HTML tags in product name
+        if (request.getName() != null && (request.getName().contains("<") || request.getName().contains(">"))) {
+            throw new IllegalArgumentException("Product name cannot contain HTML tags");
+        }
         ProductResponse response = productFacade.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * List all products or get product by SKU
+     */
+    @GetMapping
+    public ResponseEntity<?> listProducts(@RequestParam(required = false) String sku) {
+        if (sku != null && !sku.isBlank()) {
+            // Get product by SKU
+            ProductResponse response = productFacade.getProductBySku(sku);
+            return ResponseEntity.ok(response);
+        }
+        // Return empty list for now (would need list use case)
+        return ResponseEntity.ok(java.util.Collections.emptyList());
+    }
+
+    /**
+     * Search products by name
+     */
+    @GetMapping("/search")
+    public ResponseEntity<?> searchProducts(@RequestParam(required = false) String name) {
+        // For now, return empty list (would need search use case)
+        return ResponseEntity.ok(java.util.Collections.emptyList());
     }
 
     /**
@@ -39,15 +68,6 @@ public class ProductController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
         ProductResponse response = productFacade.getProductById(id);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Get product by SKU (external identifier)
-     */
-    @GetMapping
-    public ResponseEntity<ProductResponse> getProductBySku(@RequestParam String sku) {
-        ProductResponse response = productFacade.getProductBySku(sku);
         return ResponseEntity.ok(response);
     }
 
@@ -89,6 +109,7 @@ public class ProductController {
      * Update product price
      */
     @PutMapping("/{id}/price")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> updatePrice(
             @PathVariable String id,
             @RequestParam java.math.BigDecimal newPrice,
@@ -101,6 +122,7 @@ public class ProductController {
      * Update product details
      */
     @PutMapping("/{id}/details")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> updateProductDetails(
             @PathVariable String id,
             @RequestParam String name,
@@ -113,6 +135,7 @@ public class ProductController {
      * Activate product
      */
     @PostMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> activateProduct(@PathVariable String id) {
         ProductResponse response = productFacade.activateProduct(id);
         return ResponseEntity.ok(response);
@@ -122,6 +145,7 @@ public class ProductController {
      * Deactivate product
      */
     @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> deactivateProduct(@PathVariable String id) {
         ProductResponse response = productFacade.deactivateProduct(id);
         return ResponseEntity.ok(response);
@@ -131,6 +155,7 @@ public class ProductController {
      * Discontinue product
      */
     @PostMapping("/{id}/discontinue")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> discontinueProduct(@PathVariable String id) {
         ProductResponse response = productFacade.discontinueProduct(id);
         return ResponseEntity.ok(response);

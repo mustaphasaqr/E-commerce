@@ -41,7 +41,7 @@ public class User {
     private Username username;
     private Email email;
     private Password password;
-    private final Role role;
+    private Role role;
     
     // State flags
     private UserStatus status;
@@ -243,6 +243,29 @@ public class User {
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
         domainEvents.add(new UserDeactivatedEvent(id, reason));
+    }
+
+    /**
+     * Changes user's role
+     * Rule: Role transitions must be valid (e.g., cannot downgrade from OWNER unless special permission)
+     * Raises: UserRoleChangedEvent for authorization services, audit logs
+     * 
+     * @param newRole The new role to assign
+     * @param changedBy User ID who authorized the change (for audit)
+     */
+    public void changeRole(Role newRole, String changedBy) {
+        ensureNotBlocked();
+        ensureNotDeleted();
+        
+        if (this.role == newRole) {
+            throw new IllegalArgumentException("User already has role: " + newRole);
+        }
+        
+        Role oldRole = this.role;
+        this.role = newRole;
+        this.updatedAt = LocalDateTime.now();
+        incrementVersion();
+        domainEvents.add(new UserRoleChangedEvent(id, oldRole, newRole, changedBy));
     }
 
     // ========== Business Rules: Email Management ==========

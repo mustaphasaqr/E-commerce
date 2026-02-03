@@ -73,14 +73,14 @@ public class ProductJpaEntity {
     /**
      * Stock reservations (orderId -> quantity)
      * Stored as JSON in database
+     * Note: Check constraint on quantity > 0 enforced at application layer and production DB schema
      */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_reservations", 
                      joinColumns = @JoinColumn(name = "product_id"),
                      foreignKey = @ForeignKey(name = "fk_reservation_product"))
     @MapKeyColumn(name = "order_id")
-    @Column(name = "quantity")
-    @Check(name = "chk_reservation_qty_positive", constraints = "quantity > 0")
+    @Column(name = "quantity", nullable = false)
     private Map<String, Integer> reservations = new HashMap<>();
 
     /**

@@ -12,6 +12,7 @@ import com.mustapha.ecommerce.product.domain.exception.ProductDiscontinuedExcept
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
 import com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException;
+import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ class ProductControllerTest {
 
     @MockBean
     private ProductFacade productFacade;
+
+    @MockBean
+    private TokenBlacklistService tokenBlacklistService;
 
     private ProductResponse testProductResponse;
     private ProductRequest testProductRequest;
@@ -238,13 +242,12 @@ class ProductControllerTest {
     }
 
     @Test
-    void getProductBySku_withMissingParameter_shouldReturn400() throws Exception {
-        // When/Then - Missing required 'sku' parameter
+    void getProductBySku_withMissingParameter_shouldReturn200WithEmptyList() throws Exception {
+        // When/Then - Missing 'sku' parameter returns empty list (graceful degradation)
         mockMvc.perform(get("/api/products"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.status").value(400))
-            .andExpect(jsonPath("$.error").value("Missing required parameter"))
-            .andExpect(jsonPath("$.message").value(containsString("sku")));
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
     }
 
     // ========== RESERVE STOCK TESTS ==========

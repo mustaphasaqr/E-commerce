@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
@@ -42,6 +44,15 @@ import com.mustapha.ecommerce.order.dto.OrderItemRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
+import com.mustapha.ecommerce.user.dto.LoginRequest;
+import com.mustapha.ecommerce.user.dto.LoginResponse;
+import com.mustapha.ecommerce.user.domain.model.User;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Email;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Password;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Role;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Username;
+import com.mustapha.ecommerce.user.domain.repository.UserRepository;
+import com.mustapha.ecommerce.user.infrastructure.security.BCryptPasswordHasher;
 
 /**
  * Data Migration Tests - Backward Compatibility
@@ -55,9 +66,11 @@ import com.mustapha.ecommerce.product.dto.ProductResponse;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.show-sql=false"
+    "spring.jpa.show-sql=false",
+    "spring.cache.type=none"
 })
 @Transactional
 @DisplayName("Data Migration Tests - Backward Compatibility")
@@ -75,6 +88,12 @@ class DataMigrationCompatibilityTest {
     @Autowired
     private com.mustapha.ecommerce.order.infrastructure.persistence.repository.SpringDataOrderRepository springDataOrderRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordHasher passwordHasher;
+
     @MockBean
     private PaymentPort paymentPort;
 
@@ -84,8 +103,39 @@ class DataMigrationCompatibilityTest {
     @MockBean
     private NotificationPort notificationPort;
 
+    private String employeeJwt;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Create and activate EMPLOYEE user for product/order operations
+        Email employeeEmail = Email.of("testemployee@example.com");
+        if (userRepository.findByEmail(employeeEmail).isEmpty()) {
+            User employee = User.create(
+                Username.of("testemployee"),
+                employeeEmail,
+                Password.fromPlainText("Employee123!@#", passwordHasher),
+                Role.EMPLOYEE
+            );
+            employee.acceptTerms("v1.0");
+            employee.verifyEmail();
+            employee.activate("Test setup");
+            userRepository.save(employee);
+        }
+
+        // Login to get JWT token
+        LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        LoginResponse loginResponse = objectMapper.readValue(
+            loginResult.getResponse().getContentAsString(),
+            LoginResponse.class
+        );
+        employeeJwt = loginResponse.getAccessToken();
+
         when(paymentPort.processPayment(any(), any(), any(), any()))
             .thenReturn(new PaymentResult(true, "txn_success", "Payment successful"));
         
@@ -196,6 +246,7 @@ class DataMigrationCompatibilityTest {
         );
 
         MvcResult productResult = mockMvc.perform(post("/api/products")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -237,6 +288,7 @@ class DataMigrationCompatibilityTest {
         ));
 
         MvcResult newOrderResult = mockMvc.perform(post("/api/orders")
+                .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newOrderRequest)))
             .andExpect(status().isCreated())

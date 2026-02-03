@@ -1,11 +1,14 @@
 package com.mustapha.ecommerce.user.auth.infrastructure.persistence;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mustapha.ecommerce.user.auth.domain.model.PasswordResetToken;
 import com.mustapha.ecommerce.user.auth.domain.repository.PasswordResetTokenRepository;
 import com.mustapha.ecommerce.user.domain.model.valueobject.UserId;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -33,11 +36,13 @@ import java.util.concurrent.TimeUnit;
 public class PasswordResetTokenRepositoryImpl implements PasswordResetTokenRepository {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
     private static final String KEY_PREFIX = "password_reset:";
     private static final long TTL_HOURS = 24;
 
-    public PasswordResetTokenRepositoryImpl(RedisTemplate<String, Object> redisTemplate) {
+    public PasswordResetTokenRepositoryImpl(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -51,7 +56,45 @@ public class PasswordResetTokenRepositoryImpl implements PasswordResetTokenRepos
     public Optional<PasswordResetToken> findByToken(String tokenValue) {
         String key = KEY_PREFIX + tokenValue;
         Object value = redisTemplate.opsForValue().get(key);
-        return Optional.ofNullable(value).map(v -> (PasswordResetToken) v);
+        return Optional.ofNullable(value).map(this::convertToPasswordResetToken);
+    }
+
+    private PasswordResetToken convertToPasswordResetToken(Object value) {
+        if (value instanceof PasswordResetToken) {
+            return (PasswordResetToken) value;
+        }
+        if (value instanceof LinkedHashMap) {
+            LinkedHashMap<?, ?> map = (LinkedHashMap<?, ?>) value;
+            return PasswordResetToken.reconstitute(
+                (String) map.get("token"),
+                (String) map.get("userId"),
+                (String) map.get("email"),
+                parseLocalDateTime(map.get("createdAt")),
+                parseLocalDateTime(map.get("expiresAt")),
+                (Boolean) map.get("used"),
+                map.get("usedAt") != null ? parseLocalDateTime(map.get("usedAt")) : null
+            );
+        }
+        throw new IllegalStateException("Unexpected type for PasswordResetToken: " + value.getClass());
+    }
+
+    private LocalDateTime parseLocalDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof LocalDateTime) return (LocalDateTime) value;
+        if (value instanceof String) return LocalDateTime.parse((String) value);
+        if (value instanceof LinkedHashMap) {
+            LinkedHashMap<?, ?> map = (LinkedHashMap<?, ?>) value;
+            return LocalDateTime.of(
+                ((Number) map.get("year")).intValue(),
+                ((Number) map.get("monthValue")).intValue(),
+                ((Number) map.get("dayOfMonth")).intValue(),
+                ((Number) map.get("hour")).intValue(),
+                ((Number) map.get("minute")).intValue(),
+                ((Number) map.get("second")).intValue(),
+                ((Number) map.get("nano")).intValue()
+            );
+        }
+        throw new IllegalStateException("Cannot parse LocalDateTime from: " + value.getClass());
     }
 
     @Override
@@ -62,13 +105,12 @@ public class PasswordResetTokenRepositoryImpl implements PasswordResetTokenRepos
 
     @Override
     public void deleteAllByUserId(UserId userId) {
-        // Scan for all password_reset:* keys and filter by userId
         Set<String> keys = redisTemplate.keys(KEY_PREFIX + "*");
         if (keys != null && !keys.isEmpty()) {
             for (String key : keys) {
                 Object value = redisTemplate.opsForValue().get(key);
-                if (value instanceof PasswordResetToken) {
-                    PasswordResetToken token = (PasswordResetToken) value;
+                if (value != null) {
+                    PasswordResetToken token = convertToPasswordResetToken(value);
                     if (token.getUserId().equals(userId.getValue())) {
                         redisTemplate.delete(key);
                     }

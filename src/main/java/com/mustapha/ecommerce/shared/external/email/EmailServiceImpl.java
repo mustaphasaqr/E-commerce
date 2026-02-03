@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.infrastructure.external.email;
+package com.mustapha.ecommerce.shared.external.email;
 
 import com.mustapha.ecommerce.user.application.port.EmailService;
 import org.slf4j.Logger;

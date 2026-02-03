@@ -1,9 +1,11 @@
 package com.mustapha.ecommerce.user.auth.domain.model;
-
-import com.mustapha.ecommerce.user.auth.domain.exception.ExpiredTokenException;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;import com.mustapha.ecommerce.user.auth.domain.exception.ExpiredTokenException;
 import com.mustapha.ecommerce.user.auth.domain.exception.RevokedTokenException;
 import com.mustapha.ecommerce.user.auth.domain.exception.TokenAlreadyUsedException;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,8 +20,9 @@ import java.util.UUID;
  * - Token must have creation and expiry times
  * - Cannot use expired or revoked token
  * - Token can only be used once (rotate on use)
- */
-public class RefreshToken {
+ */@JsonIgnoreProperties(ignoreUnknown = true)public class RefreshToken implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private final String tokenValue;
     private final String userId;
     private final LocalDateTime createdAt;
@@ -31,9 +34,15 @@ public class RefreshToken {
     // Refresh token validity (longer than session)
     private static final int TOKEN_VALIDITY_DAYS = 30;
 
-    private RefreshToken(String tokenValue, String userId, LocalDateTime createdAt,
-                        LocalDateTime expiresAt, boolean revoked, LocalDateTime revokedAt,
-                        LocalDateTime usedAt) {
+    @JsonCreator
+    public RefreshToken(
+            @JsonProperty("tokenValue") String tokenValue,
+            @JsonProperty("userId") String userId,
+            @JsonProperty("createdAt") LocalDateTime createdAt,
+            @JsonProperty("expiresAt") LocalDateTime expiresAt,
+            @JsonProperty("revoked") boolean revoked,
+            @JsonProperty("revokedAt") LocalDateTime revokedAt,
+            @JsonProperty("usedAt") LocalDateTime usedAt) {
         this.tokenValue = Objects.requireNonNull(tokenValue, "Token value cannot be null");
         this.userId = Objects.requireNonNull(userId, "User ID cannot be null");
         this.createdAt = Objects.requireNonNull(createdAt, "Created at cannot be null");

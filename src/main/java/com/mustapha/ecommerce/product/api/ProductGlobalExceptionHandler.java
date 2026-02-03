@@ -132,6 +132,17 @@ public class ProductGlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
         
+        // Missing parameter is a bad request with specific error message
+        if (message != null && message.contains("Missing required parameter")) {
+            ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Missing required parameter",
+                ex.getMessage(),
+                LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+        
         // All other IllegalArgumentException are validation errors (bad request)
         ErrorResponse error = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),

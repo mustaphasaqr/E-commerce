@@ -2,6 +2,7 @@ package com.mustapha.ecommerce.user.auth.api;
 
 import com.mustapha.ecommerce.user.auth.application.facade.AuthFacade;
 import com.mustapha.ecommerce.user.dto.*;
+import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthFacade authFacade;
+    private final JwtTokenGenerator jwtTokenGenerator;
 
-    public AuthController(AuthFacade authFacade) {
+    public AuthController(AuthFacade authFacade, JwtTokenGenerator jwtTokenGenerator) {
         this.authFacade = authFacade;
+        this.jwtTokenGenerator = jwtTokenGenerator;
     }
 
     /**
@@ -58,15 +61,18 @@ public class AuthController {
      * POST /api/auth/logout
      * 
      * Requires authentication
-     * TODO: Extract userId and sessionId from JWT SecurityContext
+     * Extracts JWT token from Authorization header to blacklist it
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(HttpServletRequest httpRequest) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = (String) authentication.getPrincipal();
+        String userId = authentication.getName(); // Get username from Principal
         String sessionId = (String) authentication.getDetails();
         
-        authFacade.logout(userId, sessionId);
+        // Extract JWT token from Authorization header for blacklisting
+        String token = extractJwtToken(httpRequest);
+        
+        authFacade.logout(userId, sessionId, token);
         return ResponseEntity.noContent().build();
     }
 
@@ -100,7 +106,7 @@ public class AuthController {
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAllDevices() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = (String) authentication.getPrincipal();
+        String userId = authentication.getName(); // Get username from Principal
         String currentSessionId = (String) authentication.getDetails();
         
         authFacade.logoutAllDevices(userId, currentSessionId);
@@ -138,6 +144,34 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Request Email Verification
+     * POST /api/auth/email-verification/request
+     * 
+     * Public endpoint - resends verification email
+     */
+    @PostMapping("/email-verification/request")
+    public ResponseEntity<Void> requestEmailVerification(
+            @Valid @RequestBody RequestEmailVerificationRequest request) {
+        
+        authFacade.requestEmailVerification(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Verify Email With Token
+     * POST /api/auth/email-verification/verify
+     * 
+     * Public endpoint - verifies email with token
+     */
+    @PostMapping("/email-verification/verify")
+    public ResponseEntity<Void> verifyEmailWithToken(
+            @Valid @RequestBody VerifyEmailWithTokenRequest request) {
+        
+        authFacade.verifyEmailWithToken(request);
+        return ResponseEntity.noContent().build();
+    }
+
     // ========== Helper Methods ==========
 
     /**
@@ -159,5 +193,17 @@ public class AuthController {
     private String extractUserAgent(HttpServletRequest request) {
         String userAgent = request.getHeader("User-Agent");
         return userAgent != null ? userAgent : "Unknown";
+    }
+    
+    /**
+     * Extract JWT token from Authorization header
+     * Removes "Bearer " prefix
+     */
+    private String extractJwtToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
     }
 }

@@ -3,7 +3,9 @@ package com.mustapha.ecommerce.user.admin.api;
 import com.mustapha.ecommerce.user.admin.application.facade.AdminFacade;
 import com.mustapha.ecommerce.user.admin.dto.*;
 import com.mustapha.ecommerce.user.domain.model.User;
+import com.mustapha.ecommerce.user.domain.model.valueobject.Role;
 import com.mustapha.ecommerce.user.dto.UserResponse;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +64,27 @@ public class AdminController {
     public ResponseEntity<PaginatedUsersResponse> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Page<User> users = adminFacade.getAllUsers(PageRequest.of(page, size));
+        // Handle edge cases gracefully
+        int safePage = Math.max(0, page); // Negative pages become 0
+        int safeSize = size <= 0 ? 20 : size; // Zero or negative size defaults to 20
+        
+        Page<User> users = adminFacade.getAllUsers(PageRequest.of(safePage, safeSize));
+        return ResponseEntity.ok(toPaginatedResponse(users));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<PaginatedUsersResponse> searchUsersGet(
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // Convert String parameters to enums
+        User.UserStatus userStatus = status != null ? User.UserStatus.valueOf(status.toUpperCase()) : null;
+        Role userRole = role != null ? Role.valueOf(role.toUpperCase()) : null;
+        
+        Page<User> users = adminFacade.searchUsers(email, username, userStatus, userRole, PageRequest.of(page, size));
         return ResponseEntity.ok(toPaginatedResponse(users));
     }
 
@@ -76,6 +98,14 @@ public class AdminController {
             PageRequest.of(request.page(), request.size())
         );
         return ResponseEntity.ok(toPaginatedResponse(users));
+    }
+
+    @PostMapping("/{id}/role")
+    public ResponseEntity<UserResponse> changeUserRole(
+            @PathVariable String id, 
+            @Valid @RequestBody ChangeUserRoleRequest request) {
+        User user = adminFacade.changeUserRole(id, request.newRole(), "SYSTEM");
+        return ResponseEntity.ok(UserResponse.fromDomain(user));
     }
 
     private PaginatedUsersResponse toPaginatedResponse(Page<User> page) {

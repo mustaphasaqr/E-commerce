@@ -24,14 +24,20 @@ import java.util.List;
  * 
  * Pattern: Spring Security Filter Chain
  * Position: Before UsernamePasswordAuthenticationFilter
+ * 
+ * Note: Session validation not performed here for performance.
+ * Logout-all is enforced by deleting sessions, and JWTs expire naturally.
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenGenerator jwtTokenGenerator;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtTokenGenerator jwtTokenGenerator) {
+    public JwtAuthenticationFilter(JwtTokenGenerator jwtTokenGenerator,
+                                   TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenGenerator = jwtTokenGenerator;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -49,6 +55,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7); // Remove "Bearer " prefix
         
         try {
+            // Check if token is blacklisted (logged out)
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             if (jwtTokenGenerator.validateToken(token)) {
                 String userId = jwtTokenGenerator.extractUserId(token);
                 String role = jwtTokenGenerator.extractRole(token);

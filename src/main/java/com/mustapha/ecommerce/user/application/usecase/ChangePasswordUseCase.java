@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.user.application.usecase;
 
+import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
 import com.mustapha.ecommerce.user.application.command.ChangePasswordCommand;
 import com.mustapha.ecommerce.user.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.user.domain.model.User;
@@ -15,11 +16,16 @@ public class ChangePasswordUseCase {
     private final UserRepository userRepository;
     private final PasswordHasher passwordHasher;
     private final DomainEventPublisher eventPublisher;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public ChangePasswordUseCase(UserRepository userRepository, PasswordHasher passwordHasher, @Qualifier("userDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
+    public ChangePasswordUseCase(UserRepository userRepository, 
+                                PasswordHasher passwordHasher, 
+                                @Qualifier("userDomainEventPublisherAdapter") DomainEventPublisher eventPublisher,
+                                TokenBlacklistService tokenBlacklistService) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
         this.eventPublisher = eventPublisher;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
     
     @Transactional
@@ -33,6 +39,9 @@ public class ChangePasswordUseCase {
             Password.fromPlainText(command.getNewPasswordPlainText(), passwordHasher),
             passwordHasher
         );
+        
+        // Blacklist all existing tokens for this user to force re-authentication
+        tokenBlacklistService.blacklistAllUserTokens(command.getUserId().getValue().toString());
         
         User savedUser = userRepository.save(user);
         savedUser.getDomainEvents().forEach(eventPublisher::publish);

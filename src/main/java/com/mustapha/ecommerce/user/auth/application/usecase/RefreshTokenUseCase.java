@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.user.auth.application.usecase;
 
+import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
 import com.mustapha.ecommerce.user.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.user.auth.application.command.RefreshTokenCommand;
 import com.mustapha.ecommerce.user.auth.domain.model.LoginSession;
@@ -7,6 +8,7 @@ import com.mustapha.ecommerce.user.auth.domain.model.RefreshToken;
 import com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository;
 import com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +28,19 @@ public class RefreshTokenUseCase {
     private final RefreshTokenRepository refreshTokenRepository;
     private final LoginSessionRepository loginSessionRepository;
     private final DomainEventPublisher eventPublisher;
+    private final TokenBlacklistService tokenBlacklistService;
+    
+    @Value("${jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
 
     public RefreshTokenUseCase(RefreshTokenRepository refreshTokenRepository,
                               LoginSessionRepository loginSessionRepository,
-                              @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
+                              @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher,
+                              TokenBlacklistService tokenBlacklistService) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginSessionRepository = loginSessionRepository;
         this.eventPublisher = eventPublisher;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
     
     @Transactional
@@ -42,6 +50,9 @@ public class RefreshTokenUseCase {
         
         oldToken.use(); // Validates and marks as used
         refreshTokenRepository.save(oldToken);
+        
+        // Blacklist the old refresh token to prevent reuse
+        tokenBlacklistService.blacklistToken(command.getRefreshToken(), refreshExpirationMs);
         
         RefreshToken newToken = RefreshToken.create(command.getUserId().getValue().toString());
         refreshTokenRepository.save(newToken);

@@ -17,7 +17,7 @@ import java.util.Date;
  * Responsibilities:
  * - Generate access tokens (short-lived, 1 hour)
  * - Validate token signature and expiration
- * - Extract claims (userId, role, sessionId)
+ * - Extract claims (userId, role)
  * 
  * Security:
  * - Uses HMAC-SHA256 (HS256) algorithm

@@ -58,7 +58,39 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
     public Optional<LoginSession> findBySessionId(String sessionId) {
         String key = SESSION_KEY_PREFIX + sessionId;
         Object value = redisTemplate.opsForValue().get(key);
-        return Optional.ofNullable(value).map(v -> (LoginSession) v);
+        if (value == null) {
+            return Optional.empty();
+        }
+        
+        // Handle both direct LoginSession objects and deserialized maps
+        if (value instanceof LoginSession) {
+            return Optional.of((LoginSession) value);
+        }
+        
+        // If Redis returns a LinkedHashMap due to serialization issues, convert it
+        if (value instanceof java.util.Map) {
+            try {
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> map = (java.util.Map<String, Object>) value;
+                
+                // Reconstruct LoginSession from map
+                return Optional.of(LoginSession.reconstitute(
+                    (String) map.get("sessionId"),
+                    (String) map.get("userId"),
+                    java.time.LocalDateTime.parse((String) map.get("createdAt")),
+                    java.time.LocalDateTime.parse((String) map.get("expiresAt")),
+                    (Boolean) map.get("active"),
+                    java.time.LocalDateTime.parse((String) map.get("lastAccessedAt")),
+                    (String) map.get("ipAddress"),
+                    (String) map.get("userAgent")
+                ));
+            } catch (Exception e) {
+                // If reconstruction fails, return empty
+                return Optional.empty();
+            }
+        }
+        
+        return Optional.empty();
     }
 
     @Override

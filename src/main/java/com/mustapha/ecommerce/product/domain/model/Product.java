@@ -7,6 +7,7 @@ import com.mustapha.ecommerce.product.domain.model.valueobject.Price;
 import com.mustapha.ecommerce.product.domain.model.valueobject.ProductId;
 import com.mustapha.ecommerce.product.domain.model.valueobject.SKU;
 import com.mustapha.ecommerce.product.domain.model.valueobject.Stock;
+import jakarta.persistence.Version;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,7 +46,8 @@ public class Product {
     private boolean availableForPurchase;
     private boolean discontinued;
     
-    // Version control
+    // Version control for optimistic locking
+    @Version
     private int version;
     
     // Temporal

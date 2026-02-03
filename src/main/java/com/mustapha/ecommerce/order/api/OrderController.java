@@ -9,6 +9,8 @@ import com.mustapha.ecommerce.order.application.facade.OrderFacade;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * HTTP Boundary - Order Controller
  * Responsibility: Request/Response mapping, Syntactic validation, HTTP error translation
@@ -20,15 +22,39 @@ import com.mustapha.ecommerce.order.dto.OrderResponse;
 public class OrderController {
 
     private final OrderFacade orderFacade;
+    private final ConcurrentHashMap<String, OrderResponse> idempotencyCache = new ConcurrentHashMap<>();
 
     public OrderController(OrderFacade orderFacade) {
         this.orderFacade = orderFacade;
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
+    public ResponseEntity<OrderResponse> createOrder(
+            @Valid @RequestBody OrderRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        
+        // Check idempotency cache if key provided
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            OrderResponse cachedResponse = idempotencyCache.get(idempotencyKey);
+            if (cachedResponse != null) {
+                return ResponseEntity.status(HttpStatus.OK).body(cachedResponse);
+            }
+        }
+        
         OrderResponse response = orderFacade.createOrder(request);
+        
+        // Store in idempotency cache if key provided
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            idempotencyCache.put(idempotencyKey, response);
+        }
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> listOrders() {
+        // For now, return empty list (would need list orders use case with security)
+        return ResponseEntity.ok(java.util.Collections.emptyList());
     }
 
     @GetMapping("/{orderId}")

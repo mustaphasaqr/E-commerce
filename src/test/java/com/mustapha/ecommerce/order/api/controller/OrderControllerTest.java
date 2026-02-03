@@ -2,6 +2,7 @@ package com.mustapha.ecommerce.order.api.controller;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -14,9 +15,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,12 +34,24 @@ import com.mustapha.ecommerce.order.infrastructure.exception.OrderNotFoundExcept
 import com.mustapha.ecommerce.order.api.OrderController;
 import com.mustapha.ecommerce.order.api.OrderGlobalExceptionHandler;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
+import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
+import com.mustapha.ecommerce.shared.security.GlobalApiRateLimitFilter;
+import com.mustapha.ecommerce.shared.security.ExponentialBackoffFilter;
+import com.mustapha.ecommerce.shared.security.AdminIpWhitelistFilter;
+import com.mustapha.ecommerce.shared.security.RequestIdFilter;
+import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
 
 /**
  * REST API tests for OrderController.
  * Tests HTTP layer, request/response serialization, status codes, and error handling.
  */
-@WebMvcTest({OrderController.class, OrderGlobalExceptionHandler.class})
+@WebMvcTest(controllers = {OrderController.class, OrderGlobalExceptionHandler.class},
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
+        classes = {GlobalApiRateLimitFilter.class, ExponentialBackoffFilter.class, 
+                   AdminIpWhitelistFilter.class, RequestIdFilter.class}))
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
+@WithMockUser(username = "testuser", roles = {"EMPLOYEE"})
 @DisplayName("OrderController REST API Tests")
 class OrderControllerTest {
 
@@ -45,6 +63,12 @@ class OrderControllerTest {
 
     @MockBean
     private OrderFacade orderFacade;
+
+    @MockBean
+    private JwtTokenGenerator jwtTokenGenerator;
+    
+    @MockBean
+    private TokenBlacklistService tokenBlacklistService;
 
     private OrderResponse mockOrderResponse;
 
@@ -72,6 +96,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders")
+                    .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -97,6 +122,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders")
+                    .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -112,6 +138,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders")
+                    .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -122,6 +149,7 @@ class OrderControllerTest {
         void shouldReturn400WhenInvalidJson() throws Exception {
             // Act & Assert
             mockMvc.perform(post("/api/orders")
+                    .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{invalid json}"))
                 .andExpect(status().isBadRequest());
@@ -144,6 +172,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders")
+                    .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -219,6 +248,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/pay", orderId)
+                    .with(csrf())
                     .param("paymentMethod", "credit_card")
                     .param("paymentToken", "tok_visa")
                     .param("amount", "299.99"))
@@ -239,6 +269,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/pay", orderId)
+                    .with(csrf())
                     .param("paymentMethod", "credit_card")
                     .param("paymentToken", "tok_visa")
                     .param("amount", "299.99"))
@@ -253,6 +284,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/pay", orderId)
+                    .with(csrf())
                     .param("paymentMethod", "credit_card"))
                 .andExpect(status().isBadRequest());
         }
@@ -273,6 +305,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/ship", orderId)
+                    .with(csrf())
                     .param("trackingNumber", "TRACK-123456")
                     .param("carrier", "FedEx"))
                 .andExpect(status().isOk())
@@ -292,6 +325,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/ship", orderId)
+                    .with(csrf())
                     .param("trackingNumber", "TRACK-123456")
                     .param("carrier", "FedEx"))
                 .andExpect(status().isNotFound());
@@ -305,6 +339,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/ship", orderId)
+                    .with(csrf())
                     .param("carrier", "FedEx"))
                 .andExpect(status().isBadRequest());
         }
@@ -324,7 +359,8 @@ class OrderControllerTest {
                 .thenReturn(mockOrderResponse);
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders/{id}/deliver", orderId))
+            mockMvc.perform(post("/api/orders/{id}/deliver", orderId)
+                    .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DELIVERED"))
                 .andExpect(jsonPath("$.orderId").value("ORD-123"));
@@ -341,7 +377,8 @@ class OrderControllerTest {
                 .thenThrow(new OrderNotFoundException(new OrderId(orderId)));
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders/{id}/deliver", orderId))
+            mockMvc.perform(post("/api/orders/{id}/deliver", orderId)
+                    .with(csrf()))
                 .andExpect(status().isNotFound());
         }
 
@@ -355,7 +392,8 @@ class OrderControllerTest {
                 .thenReturn(mockOrderResponse);
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders/{id}/deliver", orderId))
+            mockMvc.perform(post("/api/orders/{id}/deliver", orderId)
+                    .with(csrf()))
                 .andExpect(status().isOk());
 
             // Verify that deliverOrder was called with a LocalDateTime (current time)
@@ -378,6 +416,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/cancel", orderId)
+                    .with(csrf())
                     .param("reason", "Customer changed mind"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"))
@@ -396,6 +435,7 @@ class OrderControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/orders/{id}/cancel", orderId)
+                    .with(csrf())
                     .param("reason", "Customer changed mind"))
                 .andExpect(status().isNotFound());
         }
@@ -407,7 +447,8 @@ class OrderControllerTest {
             String orderId = "ORD-123";
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders/{id}/cancel", orderId))
+            mockMvc.perform(post("/api/orders/{id}/cancel", orderId)
+                    .with(csrf()))
                 .andExpect(status().isBadRequest());
         }
 
@@ -430,6 +471,7 @@ class OrderControllerTest {
             // Act & Assert
             for (String reason : reasons) {
                 mockMvc.perform(post("/api/orders/{id}/cancel", orderId)
+                        .with(csrf())
                         .param("reason", reason))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("CANCELLED"));

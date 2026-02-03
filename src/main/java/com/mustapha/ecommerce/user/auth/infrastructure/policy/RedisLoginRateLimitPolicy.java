@@ -30,7 +30,7 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String USER_KEY_PREFIX = "rate_limit:user:";
     private static final String IP_KEY_PREFIX = "rate_limit:ip:";
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS");
 
     public RedisLoginRateLimitPolicy(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;

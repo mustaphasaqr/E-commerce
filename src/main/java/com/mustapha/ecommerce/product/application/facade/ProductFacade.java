@@ -9,6 +9,8 @@ import com.mustapha.ecommerce.product.domain.model.valueobject.SKU;
 import com.mustapha.ecommerce.product.domain.model.valueobject.Stock;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Currency;
@@ -99,6 +101,7 @@ public class ProductFacade {
     /**
      * Get Product by ID
      */
+    @Cacheable(value = "products", key = "#productId")
     public ProductResponse getProductById(String productId) {
         GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
         Product product = getProductByIdUseCase.execute(query);
@@ -108,6 +111,7 @@ public class ProductFacade {
     /**
      * Get Product by SKU
      */
+    @Cacheable(value = "products", key = "#sku")
     public ProductResponse getProductBySku(String sku) {
         GetProductBySkuQuery query = new GetProductBySkuQuery(sku);
         Product product = getProductBySkuUseCase.execute(query);
@@ -117,6 +121,7 @@ public class ProductFacade {
     /**
      * Reserve Stock
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse reserveStock(String productId, String orderId, int quantity) {
         ReserveStockCommand command = new ReserveStockCommand(
             ProductId.of(productId),
@@ -154,6 +159,7 @@ public class ProductFacade {
     /**
      * Update Price
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse updatePrice(String productId, java.math.BigDecimal newPrice, String currencyCode) {
         UpdatePriceCommand command = new UpdatePriceCommand(
             ProductId.of(productId),
@@ -166,6 +172,7 @@ public class ProductFacade {
     /**
      * Update Product Details
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse updateProductDetails(String productId, String name, String description) {
         UpdateProductDetailsCommand command = new UpdateProductDetailsCommand(
             ProductId.of(productId),
@@ -179,6 +186,7 @@ public class ProductFacade {
     /**
      * Activate Product
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse activateProduct(String productId) {
         ActivateProductCommand command = new ActivateProductCommand(ProductId.of(productId));
         Product product = activateProductUseCase.execute(command);
@@ -188,6 +196,7 @@ public class ProductFacade {
     /**
      * Deactivate Product
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse deactivateProduct(String productId) {
         DeactivateProductCommand command = new DeactivateProductCommand(ProductId.of(productId));
         Product product = deactivateProductUseCase.execute(command);
@@ -197,6 +206,7 @@ public class ProductFacade {
     /**
      * Discontinue Product
      */
+    @CacheEvict(value = "products", key = "#productId")
     public ProductResponse discontinueProduct(String productId) {
         DiscontinueProductCommand command = new DiscontinueProductCommand(ProductId.of(productId));
         Product product = discontinueProductUseCase.execute(command);

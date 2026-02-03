@@ -9,9 +9,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mustapha.ecommerce.order.domain.model.Order;
 import com.mustapha.ecommerce.order.domain.model.OrderBuilder;
@@ -26,8 +27,8 @@ import com.mustapha.ecommerce.order.infrastructure.persistence.mapper.OrderMappe
  * Infrastructure Tests - JpaOrderRepository
  * Tests database persistence layer with H2 in-memory database
  */
-@DataJpaTest
-@Import({JpaOrderRepository.class, OrderMapper.class})
+@SpringBootTest
+@Transactional
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.jpa.show-sql=true"

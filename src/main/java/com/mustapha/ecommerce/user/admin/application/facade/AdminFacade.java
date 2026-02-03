@@ -2,8 +2,10 @@ package com.mustapha.ecommerce.user.admin.application.facade;
 
 import com.mustapha.ecommerce.user.admin.application.command.GetAllUsersCommand;
 import com.mustapha.ecommerce.user.admin.application.command.SearchUsersCommand;
+import com.mustapha.ecommerce.user.admin.application.command.ChangeUserRoleCommand;
 import com.mustapha.ecommerce.user.admin.application.usecase.GetAllUsersUseCase;
 import com.mustapha.ecommerce.user.admin.application.usecase.SearchUsersUseCase;
+import com.mustapha.ecommerce.user.admin.application.usecase.ChangeUserRoleUseCase;
 import com.mustapha.ecommerce.user.application.command.*;
 import com.mustapha.ecommerce.user.application.usecase.*;
 import com.mustapha.ecommerce.user.domain.model.User;
@@ -33,6 +35,7 @@ public class AdminFacade {
     private final DeleteUserUseCase deleteUserUseCase;
     private final GetAllUsersUseCase getAllUsersUseCase;
     private final SearchUsersUseCase searchUsersUseCase;
+    private final ChangeUserRoleUseCase changeUserRoleUseCase;
 
     public AdminFacade(BlockUserUseCase blockUserUseCase,
                       UnblockUserUseCase unblockUserUseCase,
@@ -40,7 +43,8 @@ public class AdminFacade {
                       DeactivateUserUseCase deactivateUserUseCase,
                       DeleteUserUseCase deleteUserUseCase,
                       GetAllUsersUseCase getAllUsersUseCase,
-                      SearchUsersUseCase searchUsersUseCase) {
+                      SearchUsersUseCase searchUsersUseCase,
+                      ChangeUserRoleUseCase changeUserRoleUseCase) {
         this.blockUserUseCase = blockUserUseCase;
         this.unblockUserUseCase = unblockUserUseCase;
         this.activateUserUseCase = activateUserUseCase;
@@ -48,6 +52,7 @@ public class AdminFacade {
         this.deleteUserUseCase = deleteUserUseCase;
         this.getAllUsersUseCase = getAllUsersUseCase;
         this.searchUsersUseCase = searchUsersUseCase;
+        this.changeUserRoleUseCase = changeUserRoleUseCase;
     }
 
     /**
@@ -89,5 +94,10 @@ public class AdminFacade {
     public Page<User> searchUsers(String email, String username, User.UserStatus status, Role role, Pageable pageable) {
         SearchUsersCommand command = new SearchUsersCommand(email, username, status, role, pageable);
         return searchUsersUseCase.execute(command);
+    }
+
+    public User changeUserRole(String userId, Role newRole, String changedBy) {
+        ChangeUserRoleCommand command = new ChangeUserRoleCommand(userId, newRole, changedBy);
+        return changeUserRoleUseCase.execute(command);
     }
 }

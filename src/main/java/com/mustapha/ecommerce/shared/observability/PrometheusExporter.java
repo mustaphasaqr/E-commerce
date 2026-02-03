@@ -1,4 +1,4 @@
-package com.mustapha.ecommerce.infrastructure.monitoring;
+package com.mustapha.ecommerce.shared.observability;
 
 import org.springframework.stereotype.Component;
 
