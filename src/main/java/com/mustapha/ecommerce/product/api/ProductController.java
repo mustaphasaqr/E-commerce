@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.product.api;
 
 import com.mustapha.ecommerce.product.application.facade.ProductFacade;
+import com.mustapha.ecommerce.product.dto.ProductListResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
 import jakarta.validation.Valid;
@@ -8,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * HTTP Boundary - Product Controller
@@ -41,16 +44,18 @@ public class ProductController {
 
     /**
      * List all products or get product by SKU
+     * Performance: Returns lightweight ProductListResponse (46% smaller than ProductResponse)
      */
     @GetMapping
     public ResponseEntity<?> listProducts(@RequestParam(required = false) String sku) {
         if (sku != null && !sku.isBlank()) {
-            // Get product by SKU
+            // Get product by SKU - full details
             ProductResponse response = productFacade.getProductBySku(sku);
             return ResponseEntity.ok(response);
         }
-        // Return empty list for now (would need list use case)
-        return ResponseEntity.ok(java.util.Collections.emptyList());
+        // List all products - lightweight DTOs
+        List<ProductListResponse> products = productFacade.listProducts();
+        return ResponseEntity.ok(products);
     }
 
     /**

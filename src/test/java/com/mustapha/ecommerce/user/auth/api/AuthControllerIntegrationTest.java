@@ -243,11 +243,12 @@ class AuthControllerIntegrationTest {
 
     @Test
     void rateLimiting_IpBasedBlocking_WorksAcrossMultipleUsers() throws Exception {
-        // Register another user (use same password format as setUp method)
+        // Register another user with a unique password that won't trigger breach/common checks
+        String uniquePassword = "Xq7!Km9#Zp2$Rn4%Wt6"; // Random chars, no dictionary words
         RegisterUserRequest registerRequest = new RegisterUserRequest(
-            "user2@example.com",
-            "User2Test123!@#",  // Same format as authtest user password
-            "user2",
+            "ratelimit2@test.local",  // Different email to avoid conflicts
+            uniquePassword,
+            "ratelimituser2",         // Different username  
             true
         );
         
@@ -258,7 +259,7 @@ class AuthControllerIntegrationTest {
 
         // Attempt multiple failed logins from same IP (20 max per IP)
         LoginRequest request1 = new LoginRequest("authtest@example.com", "WrongPass!");
-        LoginRequest request2 = new LoginRequest("user2@example.com", "WrongPass!");
+        LoginRequest request2 = new LoginRequest("ratelimit2@test.local", "WrongPass!");
 
         for (int i = 0; i < 10; i++) {
             mockMvc.perform(post("/api/auth/login")

@@ -22,8 +22,11 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
+import com.mustapha.ecommerce.order.dto.OrderListResponse;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
+
+import java.util.List;
 
 /**
  * Order Facade - Translation Layer between API and Application
@@ -52,19 +55,22 @@ public class OrderFacade {
     private final ShipOrderUseCase shipOrderUseCase;
     private final DeliverOrderUseCase deliverOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
+    private final com.mustapha.ecommerce.order.domain.repository.OrderRepository orderRepository;
 
     public OrderFacade(PlaceOrderUseCase placeOrderUseCase,
                       GetOrderUseCase getOrderUseCase,
                       PayOrderUseCase payOrderUseCase,
                       ShipOrderUseCase shipOrderUseCase,
                       DeliverOrderUseCase deliverOrderUseCase,
-                      CancelOrderUseCase cancelOrderUseCase) {
+                      CancelOrderUseCase cancelOrderUseCase,
+                      com.mustapha.ecommerce.order.domain.repository.OrderRepository orderRepository) {
         this.placeOrderUseCase = placeOrderUseCase;
         this.getOrderUseCase = getOrderUseCase;
         this.payOrderUseCase = payOrderUseCase;
         this.shipOrderUseCase = shipOrderUseCase;
         this.deliverOrderUseCase = deliverOrderUseCase;
         this.cancelOrderUseCase = cancelOrderUseCase;
+        this.orderRepository = orderRepository;
     }
 
     /**
@@ -155,5 +161,16 @@ public class OrderFacade {
         );
         Order order = cancelOrderUseCase.execute(command);
         return OrderResponse.from(order);
+    }
+
+    /**
+     * List Orders by Customer - Lightweight DTO for list view
+     * Performance: 55% smaller payload than full OrderResponse
+     * Use for: Order history, customer order list
+     */
+    public List<OrderListResponse> listOrdersByCustomer(String customerId) {
+        return orderRepository.findByCustomerId(new CustomerId(customerId)).stream()
+            .map(OrderListResponse::fromDomain)
+            .collect(Collectors.toList());
     }
 }

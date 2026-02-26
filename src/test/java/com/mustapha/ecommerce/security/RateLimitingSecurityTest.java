@@ -39,8 +39,9 @@ class RateLimitingSecurityTest {
 
     @BeforeEach
     void setUp() {
-        // Clear rate limit keys
+        // Clear rate limit and account lockout keys to ensure clean test state
         redisTemplate.delete(redisTemplate.keys("rate_limit:*"));
+        redisTemplate.delete(redisTemplate.keys("account_lockout:*"));
     }
 
     @Nested
@@ -251,9 +252,15 @@ class RateLimitingSecurityTest {
                         .content(objectMapper.writeValueAsString(request)));
             }
 
-            // Check Redis for rate limit keys
-            var keys = redisTemplate.keys("rate_limit:*");
-            assertThat(keys).isNotEmpty();
+            // Check Redis for rate limit keys - allowing for both user and IP keys
+            // The exact key pattern depends on whether user exists
+            var allKeys = redisTemplate.keys("rate_limit:*");
+            var userKeys = redisTemplate.keys("rate_limit:user:*");
+            var ipKeys = redisTemplate.keys("rate_limit:ip:*");
+            
+            // At least one type of rate limit key should exist
+            assertThat(allKeys).as("Redis should have rate limit keys after failed login attempts")
+                .isNotEmpty();
         }
 
         @Test

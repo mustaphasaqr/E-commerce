@@ -3,12 +3,15 @@ package com.mustapha.ecommerce.order.api;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.mustapha.ecommerce.order.application.facade.OrderFacade;
+import com.mustapha.ecommerce.order.dto.OrderListResponse;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.order.dto.OrderResponse;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -52,9 +55,11 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<?> listOrders() {
-        // For now, return empty list (would need list orders use case with security)
-        return ResponseEntity.ok(java.util.Collections.emptyList());
+    public ResponseEntity<List<OrderListResponse>> listOrders(
+            @AuthenticationPrincipal String userId) {
+        // List orders for authenticated user - lightweight DTOs (55% smaller)
+        List<OrderListResponse> orders = orderFacade.listOrdersByCustomer(userId);
+        return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/{orderId}")

@@ -70,6 +70,9 @@ class ProductFacadeTest {
     @Mock
     private DiscontinueProductUseCase discontinueProductUseCase;
     
+    @Mock
+    private com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository;
+    
     @InjectMocks
     private ProductFacade productFacade;
     

@@ -49,6 +49,7 @@ class OrderFacadeTest {
     private ShipOrderUseCase shipOrderUseCase;
     private DeliverOrderUseCase deliverOrderUseCase;
     private CancelOrderUseCase cancelOrderUseCase;
+    private com.mustapha.ecommerce.order.domain.repository.OrderRepository orderRepository;
     private OrderFacade orderFacade;
 
     @BeforeEach
@@ -59,13 +60,15 @@ class OrderFacadeTest {
         shipOrderUseCase = mock(ShipOrderUseCase.class);
         deliverOrderUseCase = mock(DeliverOrderUseCase.class);
         cancelOrderUseCase = mock(CancelOrderUseCase.class);
+        orderRepository = mock(com.mustapha.ecommerce.order.domain.repository.OrderRepository.class);
         orderFacade = new OrderFacade(
             placeOrderUseCase,
             getOrderUseCase,
             payOrderUseCase,
             shipOrderUseCase,
             deliverOrderUseCase,
-            cancelOrderUseCase
+            cancelOrderUseCase,
+            orderRepository
         );
     }
 

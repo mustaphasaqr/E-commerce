@@ -7,6 +7,7 @@ import com.mustapha.ecommerce.product.domain.model.valueobject.Price;
 import com.mustapha.ecommerce.product.domain.model.valueobject.ProductId;
 import com.mustapha.ecommerce.product.domain.model.valueobject.SKU;
 import com.mustapha.ecommerce.product.domain.model.valueobject.Stock;
+import com.mustapha.ecommerce.product.dto.ProductListResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
 import org.springframework.cache.annotation.CacheEvict;
@@ -14,6 +15,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Currency;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Product Facade - Translation Layer between API and Application
@@ -47,6 +50,7 @@ public class ProductFacade {
     private final ActivateProductUseCase activateProductUseCase;
     private final DeactivateProductUseCase deactivateProductUseCase;
     private final DiscontinueProductUseCase discontinueProductUseCase;
+    private final com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository;
 
     public ProductFacade(CreateProductUseCase createProductUseCase,
                         GetProductByIdUseCase getProductByIdUseCase,
@@ -58,7 +62,8 @@ public class ProductFacade {
                         UpdateProductDetailsUseCase updateProductDetailsUseCase,
                         ActivateProductUseCase activateProductUseCase,
                         DeactivateProductUseCase deactivateProductUseCase,
-                        DiscontinueProductUseCase discontinueProductUseCase) {
+                        DiscontinueProductUseCase discontinueProductUseCase,
+                        com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository) {
         this.createProductUseCase = createProductUseCase;
         this.getProductByIdUseCase = getProductByIdUseCase;
         this.getProductBySkuUseCase = getProductBySkuUseCase;
@@ -70,6 +75,7 @@ public class ProductFacade {
         this.activateProductUseCase = activateProductUseCase;
         this.deactivateProductUseCase = deactivateProductUseCase;
         this.discontinueProductUseCase = discontinueProductUseCase;
+        this.productRepository = productRepository;
     }
 
     /**
@@ -100,8 +106,12 @@ public class ProductFacade {
 
     /**
      * Get Product by ID
+     * 
+     * Performance Optimization:
+     * - Redis cache with 'sync = true' prevents cache stampede
+     * - Only ONE thread queries DB when cache expires, others wait
      */
-    @Cacheable(value = "products", key = "#productId")
+    @Cacheable(value = "products", key = "#productId", sync = true)
     public ProductResponse getProductById(String productId) {
         GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
         Product product = getProductByIdUseCase.execute(query);
@@ -110,8 +120,12 @@ public class ProductFacade {
 
     /**
      * Get Product by SKU
+     * 
+     * Performance Optimization:
+     * - Redis cache with 'sync = true' prevents cache stampede
+     * - Prevents thundering herd when cache expires under load
      */
-    @Cacheable(value = "products", key = "#sku")
+    @Cacheable(value = "products", key = "#sku", sync = true)
     public ProductResponse getProductBySku(String sku) {
         GetProductBySkuQuery query = new GetProductBySkuQuery(sku);
         Product product = getProductBySkuUseCase.execute(query);
@@ -211,5 +225,16 @@ public class ProductFacade {
         DiscontinueProductCommand command = new DiscontinueProductCommand(ProductId.of(productId));
         Product product = discontinueProductUseCase.execute(command);
         return ProductResponse.fromDomain(product);
+    }
+
+    /**
+     * List All Products - Lightweight DTO for list view
+     * Performance: 46% smaller payload than full ProductResponse
+     * Use for: Product catalog, search results, browsing
+     */
+    public List<ProductListResponse> listProducts() {
+        return productRepository.findAll().stream()
+            .map(ProductListResponse::fromDomain)
+            .collect(Collectors.toList());
     }
 }

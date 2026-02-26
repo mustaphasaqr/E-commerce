@@ -14,10 +14,16 @@ import java.util.Map;
  * 
  * Persistence model for Product aggregate
  * Optimistic locking with @Version
+ * 
+ * Performance Optimization:
+ * - Indexes on active, discontinued for filtering queries
+ * - Unique index on SKU for fast lookups
  */
 @Entity
 @Table(name = "products", indexes = {
-    @Index(name = "idx_product_sku", columnList = "sku", unique = true)
+    @Index(name = "idx_product_sku", columnList = "sku", unique = true),
+    @Index(name = "idx_product_active", columnList = "active"),
+    @Index(name = "idx_product_discontinued", columnList = "discontinued")
 }, uniqueConstraints = {
     @UniqueConstraint(name = "uk_product_sku", columnNames = "sku")
 })

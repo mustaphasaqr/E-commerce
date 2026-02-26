@@ -4,6 +4,7 @@ import com.mustapha.ecommerce.user.admin.application.facade.AdminFacade;
 import com.mustapha.ecommerce.user.admin.dto.*;
 import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Role;
+import com.mustapha.ecommerce.user.dto.UserListResponse;
 import com.mustapha.ecommerce.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -110,7 +111,7 @@ public class AdminController {
 
     private PaginatedUsersResponse toPaginatedResponse(Page<User> page) {
         return new PaginatedUsersResponse(
-            page.getContent().stream().map(UserResponse::fromDomain).toList(),
+            page.getContent().stream().map(UserListResponse::fromDomain).toList(),
             page.getNumber(),
             page.getSize(),
             page.getTotalPages(),

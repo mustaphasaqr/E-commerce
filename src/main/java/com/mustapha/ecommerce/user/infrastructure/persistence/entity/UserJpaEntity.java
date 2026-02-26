@@ -10,11 +10,16 @@ import java.time.LocalDateTime;
  * 
  * Persistence model for User aggregate
  * Optimistic locking with @Version
+ * 
+ * Performance Optimization:
+ * - Indexes on email, username for authentication lookups
+ * - Index on status for admin queries (list blocked users, etc.)
  */
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_user_email", columnList = "email", unique = true),
-    @Index(name = "idx_user_username", columnList = "username", unique = true)
+    @Index(name = "idx_user_username", columnList = "username", unique = true),
+    @Index(name = "idx_user_status", columnList = "status")
 })
 @Check(name = "chk_username_min_length", constraints = "LENGTH(username) >= 3")
 @Check(name = "chk_email_format", constraints = "email LIKE '%@%'")
