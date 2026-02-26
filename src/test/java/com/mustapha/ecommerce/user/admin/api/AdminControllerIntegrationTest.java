@@ -116,7 +116,7 @@ class AdminControllerIntegrationTest {
         mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isForbidden()); // Spring Security returns 403 for missing auth
+            .andExpect(status().isUnauthorized()); // 401 for missing authentication
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy;
 import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy.RateLimitResult;
 import com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository;
 import com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository;
+import com.mustapha.ecommerce.user.auth.domain.service.AccountLockoutService;
 import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.*;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
@@ -43,6 +44,8 @@ class LoginUseCaseTest {
     private LoginSessionRepository loginSessionRepository;
     @Mock
     private LoginRateLimitPolicy rateLimitPolicy;
+    @Mock
+    private AccountLockoutService accountLockoutService;
     @Mock
     private PasswordHasher passwordHasher;
     @Mock
@@ -84,6 +87,9 @@ class LoginUseCaseTest {
         lenient().when(rateLimitPolicy.checkUserRateLimit(anyString())).thenReturn(RateLimitResult.allowed());
         lenient().when(rateLimitPolicy.checkIpRateLimit(anyString())).thenReturn(RateLimitResult.allowed());
         lenient().when(passwordHasher.matches(eq("plainPassword123"), anyString())).thenReturn(true);
+        lenient().doNothing().when(accountLockoutService).checkAccountNotLocked(anyString());
+        lenient().when(accountLockoutService.recordFailedAttempt(anyString())).thenReturn(false);
+        lenient().doNothing().when(accountLockoutService).resetFailedAttempts(anyString());
     }
 
     @Nested

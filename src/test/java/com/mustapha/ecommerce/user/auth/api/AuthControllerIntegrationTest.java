@@ -187,7 +187,7 @@ class AuthControllerIntegrationTest {
     @Test
     void logout_WithoutAuthentication_Returns401() throws Exception {
         mockMvc.perform(post("/api/auth/logout"))
-            .andExpect(status().isForbidden()); // 403 because endpoint requires authentication
+            .andExpect(status().isUnauthorized()); // 401 for missing authentication
     }
 
     @Test
@@ -243,13 +243,14 @@ class AuthControllerIntegrationTest {
 
     @Test
     void rateLimiting_IpBasedBlocking_WorksAcrossMultipleUsers() throws Exception {
-        // Register another user
+        // Register another user (use same password format as setUp method)
         RegisterUserRequest registerRequest = new RegisterUserRequest(
             "user2@example.com",
-            "User2Pass123!",
+            "User2Test123!@#",  // Same format as authtest user password
             "user2",
             true
         );
+        
         mockMvc.perform(post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))

@@ -38,7 +38,7 @@ import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
 import com.mustapha.ecommerce.shared.security.GlobalApiRateLimitFilter;
 import com.mustapha.ecommerce.shared.security.ExponentialBackoffFilter;
 import com.mustapha.ecommerce.shared.security.AdminIpWhitelistFilter;
-import com.mustapha.ecommerce.shared.security.RequestIdFilter;
+import com.mustapha.ecommerce.shared.observability.RequestIdFilter;
 import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
 
 /**

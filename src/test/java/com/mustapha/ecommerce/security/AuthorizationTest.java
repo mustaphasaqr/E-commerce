@@ -305,14 +305,14 @@ class AuthorizationTest {
         @Test
         @DisplayName("User cannot cancel another user's order")
         void userCannotCancelOtherOrder() throws Exception {
-            // Test that trying to cancel a non-existent order returns an error
-            // The implementation validates and returns 400 for invalid operations
+            // Test that trying to cancel a non-existent order returns 404
+            // The order doesn't exist, so we get NOT_FOUND before ownership checks
             String nonExistentOrderId = UUID.randomUUID().toString();
             mockMvc.perform(post("/api/orders/{id}/cancel", nonExistentOrderId)
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .param("reason", "Test reason")
                     .with(csrf()))
-                .andExpect(status().isBadRequest()); // Returns 400 for invalid cancel operations
+                .andExpect(status().isNotFound()); // Returns 404 when order doesn't exist
         }
     }
 
@@ -418,7 +418,7 @@ class AuthorizationTest {
             mockMvc.perform(get("/api/users/me")
                     .header("Authorization", "Bearer " + expiredToken)
                     .with(csrf()))
-                .andExpect(status().isForbidden()); // Spring Security returns 403 for invalid tokens
+                .andExpect(status().isUnauthorized()); // 401 for expired/invalid tokens
         }
 
         @Test
@@ -428,7 +428,7 @@ class AuthorizationTest {
             mockMvc.perform(get("/api/users/me")
                     .header("Authorization", "Bearer not-a-valid-jwt-format-at-all")
                     .with(csrf()))
-                .andExpect(status().isForbidden()); // Spring Security returns 403 for invalid tokens
+                .andExpect(status().isUnauthorized()); // 401 for malformed tokens
         }
 
         @Test
@@ -446,7 +446,7 @@ class AuthorizationTest {
             mockMvc.perform(get("/api/users/me")
                     .header("Authorization", "Bearer " + invalidToken)
                     .with(csrf()))
-                .andExpect(status().isForbidden()); // Spring Security returns 403 for invalid tokens
+                .andExpect(status().isUnauthorized()); // 401 for invalid signature
         }
 
         @Test
@@ -475,7 +475,7 @@ class AuthorizationTest {
             mockMvc.perform(get("/api/users/me")
                     .header("Authorization", "Bearer " + futureToken)
                     .with(csrf()))
-                .andExpect(status().isForbidden()); // Spring Security returns 403 for invalid tokens
+                .andExpect(status().isUnauthorized()); // 401 for tokens not yet valid
         }
     }
 

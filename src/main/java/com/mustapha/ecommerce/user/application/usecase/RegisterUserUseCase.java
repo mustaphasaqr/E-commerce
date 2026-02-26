@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
  * 1. Validate email/username uniqueness (application concern)
  * 2. Create User aggregate (User.create factory)
  * 3. Save & publish events
+ * 
+ * Note: Password validation (common passwords, breaches) done in UserFacade
+ * before this use case is called.
  */
 @Component
 public class RegisterUserUseCase {

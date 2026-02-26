@@ -148,8 +148,8 @@ class RateLimitingSecurityTest {
     }
 
     @Nested
-    @Disabled("API rate limiting not implemented")
     @DisplayName("API Rate Limiting Tests")
+    @Disabled("API rate limiting for general endpoints not implemented - only login/auth endpoints have rate limiting")
     class ApiRateLimitingTests {
 
         @Test

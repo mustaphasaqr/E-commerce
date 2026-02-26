@@ -70,7 +70,7 @@ class UserControllerIntegrationTest {
     void registerUser_ValidRequest_Returns201() throws Exception {
         RegisterUserRequest request = new RegisterUserRequest(
             "newuser@example.com",
-            "NewPass123!",
+            "UniqueSecureP@ssw0rd2026!",
             "newuser",
             true
         );
@@ -157,14 +157,14 @@ class UserControllerIntegrationTest {
     @Test
     void getCurrentUser_WithoutJwt_Returns403() throws Exception {
         mockMvc.perform(get("/api/users/me"))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void getCurrentUser_WithInvalidJwt_Returns403() throws Exception {
         mockMvc.perform(get("/api/users/me")
                 .header("Authorization", "Bearer invalid-token"))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -206,7 +206,7 @@ class UserControllerIntegrationTest {
     void changePassword_ValidRequest_Returns200() throws Exception {
         ChangePasswordRequest request = new ChangePasswordRequest(
             "Test123!@#",  // Old password
-            "NewPassword123!"  // New password
+            "VeryUniqueNewP@ssw0rd2026!"  // New password
         );
 
         mockMvc.perform(put("/api/users/me/password")

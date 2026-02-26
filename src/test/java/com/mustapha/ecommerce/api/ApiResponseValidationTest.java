@@ -210,7 +210,7 @@ class ApiResponseValidationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productJson)
                     .with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
             
             long responseTime = System.currentTimeMillis() - startTime;
             assertThat(responseTime).isLessThan(500);

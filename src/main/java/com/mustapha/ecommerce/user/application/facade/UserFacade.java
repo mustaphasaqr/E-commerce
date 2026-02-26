@@ -4,7 +4,11 @@ import com.mustapha.ecommerce.user.application.command.*;
 import com.mustapha.ecommerce.user.application.usecase.*;
 import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.*;
+import com.mustapha.ecommerce.user.domain.service.CommonPasswordChecker;
+import com.mustapha.ecommerce.user.domain.service.PasswordBreachChecker;
 import com.mustapha.ecommerce.user.dto.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -23,6 +27,8 @@ import java.util.UUID;
 @Service
 public class UserFacade {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserFacade.class);
+
     private final RegisterUserUseCase registerUserUseCase;
     private final ActivateUserUseCase activateUserUseCase;
     private final DeactivateUserUseCase deactivateUserUseCase;
@@ -38,6 +44,8 @@ public class UserFacade {
     private final GetUserByEmailUseCase getUserByEmailUseCase;
     private final GetUserByUsernameUseCase getUserByUsernameUseCase;
     private final PasswordHasher passwordHasher;
+    private final CommonPasswordChecker commonPasswordChecker;
+    private final PasswordBreachChecker passwordBreachChecker;
 
     public UserFacade(RegisterUserUseCase registerUserUseCase,
                      ActivateUserUseCase activateUserUseCase,
@@ -53,7 +61,9 @@ public class UserFacade {
                      GetUserByIdUseCase getUserByIdUseCase,
                      GetUserByEmailUseCase getUserByEmailUseCase,
                      GetUserByUsernameUseCase getUserByUsernameUseCase,
-                     PasswordHasher passwordHasher) {
+                     PasswordHasher passwordHasher,
+                     CommonPasswordChecker commonPasswordChecker,
+                     PasswordBreachChecker passwordBreachChecker) {
         this.registerUserUseCase = registerUserUseCase;
         this.activateUserUseCase = activateUserUseCase;
         this.deactivateUserUseCase = deactivateUserUseCase;
@@ -69,12 +79,21 @@ public class UserFacade {
         this.getUserByEmailUseCase = getUserByEmailUseCase;
         this.getUserByUsernameUseCase = getUserByUsernameUseCase;
         this.passwordHasher = passwordHasher;
+        this.commonPasswordChecker = commonPasswordChecker;
+        this.passwordBreachChecker = passwordBreachChecker;
     }
 
     /**
      * Register User
+     * Enhanced with password security checks:
+     * 1. Common password check (prevents "password123", etc.)
+     * 2. Breach check (via HaveIBeenPwned API)
      */
     public UserResponse registerUser(RegisterUserRequest request) {
+        // Enhanced password validation BEFORE hashing
+        // Note: Password.from PlainText already validates basic strength (length, chars, etc.)
+        validatePasswordSecurity(request.getPassword());
+        
         RegisterUserCommand command = new RegisterUserCommand(
             Email.of(request.getEmail()),
             Password.fromPlainText(request.getPassword(), passwordHasher),
@@ -154,8 +173,12 @@ public class UserFacade {
 
     /**
      * Change Password
+     * Enhanced with password security checks for new password.
      */
     public UserResponse changePassword(String userId, ChangePasswordRequest request) {
+        // Validate new password security BEFORE attempting change
+        validatePasswordSecurity(request.getNewPassword());
+        
         ChangePasswordCommand command = new ChangePasswordCommand(
             UserId.of(UUID.fromString(userId)),
             request.getCurrentPassword(),
@@ -163,6 +186,38 @@ public class UserFacade {
         );
         User user = changePasswordUseCase.execute(command);
         return UserResponse.fromDomain(user);
+    }
+    
+    /**
+     * Validates password against common passwords and data breaches.
+     * 
+     * Security Layers:
+     * 1. Common password check (offline, instant)
+     * 2. Breach check (online via HIBP API, may fail gracefully)
+     * 
+     * @param plainPassword Plain text password
+     * @throws IllegalArgumentException if password is common or breached
+     */
+    private void validatePasswordSecurity(String plainPassword) {
+        // Layer 1: Common password check (always fails if common)
+        try {
+            commonPasswordChecker.validateNotCommon(plainPassword);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Password rejected: common password detected");
+            throw e; // Re-throw to reject password
+        }
+        
+        // Layer 2: Breach check (fails gracefully if API unavailable)
+        try {
+            passwordBreachChecker.validateNotBreached(plainPassword);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Password rejected: found in data breach");
+            throw e; // Re-throw to reject password
+        } catch (Exception e) {
+            // API error: Log but don't block user (graceful degradation)
+            logger.error("HIBP API error, allowing password: {}", e.getMessage());
+            // Don't throw - allow registration to proceed
+        }
     }
 
     /**

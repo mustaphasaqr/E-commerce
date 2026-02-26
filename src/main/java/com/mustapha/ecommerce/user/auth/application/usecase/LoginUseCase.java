@@ -8,6 +8,7 @@ import com.mustapha.ecommerce.user.auth.domain.model.RefreshToken;
 import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy;
 import com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository;
 import com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository;
+import com.mustapha.ecommerce.user.auth.domain.service.AccountLockoutService;
 import com.mustapha.ecommerce.user.domain.model.User;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Email;
 import com.mustapha.ecommerce.user.domain.model.valueobject.PasswordHasher;
@@ -23,13 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
  * Responsibility: Orchestrate authentication flow
  * Pattern: Use Case (Application Service)
  * 
- * Flow:
- * 1. Check rate limiting (security)
- * 2. Find user by email/username
- * 3. Verify password
- * 4. Create refresh token
- * 5. Create login session
- * 6. Publish events
+ * Enhanced Security Flow:
+ * 1. Check rate limiting (IP + user level)
+ * 2. Check account lockout (after 5 failed attempts)
+ * 3. Find user by email/username
+ * 4. Verify password
+ * 5. Reset lockout counter on success
+ * 6. Create refresh token & session
+ * 7. Publish events
  */
 @Component
 public class LoginUseCase {
@@ -38,6 +40,7 @@ public class LoginUseCase {
     private final RefreshTokenRepository refreshTokenRepository;
     private final LoginSessionRepository loginSessionRepository;
     private final LoginRateLimitPolicy rateLimitPolicy;
+    private final AccountLockoutService accountLockoutService;
     private final PasswordHasher passwordHasher;
     private final DomainEventPublisher eventPublisher;
 
@@ -45,12 +48,14 @@ public class LoginUseCase {
                        RefreshTokenRepository refreshTokenRepository,
                        LoginSessionRepository loginSessionRepository,
                        LoginRateLimitPolicy rateLimitPolicy,
+                       AccountLockoutService accountLockoutService,
                        PasswordHasher passwordHasher,
                        @Qualifier("authDomainEventPublisherAdapter") DomainEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginSessionRepository = loginSessionRepository;
         this.rateLimitPolicy = rateLimitPolicy;
+        this.accountLockoutService = accountLockoutService;
         this.passwordHasher = passwordHasher;
         this.eventPublisher = eventPublisher;
     }
@@ -59,11 +64,15 @@ public class LoginUseCase {
     public LoginResult execute(LoginCommand command) {
         String identifier = command.getCredentials().getIdentifier();
         
-        // Step 1: Check rate limiting
+        // Step 1: Check rate limiting (IP-based)
         rateLimitPolicy.checkUserRateLimit(identifier).throwIfDenied();
         rateLimitPolicy.checkIpRateLimit(command.getIpAddress()).throwIfDenied();
         
-        // Step 2: Find user (try email first, then username)
+        // Step 2: Check account lockout (account-based)
+        // Throws AccountLockedException if locked
+        accountLockoutService.checkAccountNotLocked(identifier);
+        
+        // Step 3: Find user (try email first, then username)
         User user = null;
         try {
             user = userRepository.findByEmail(Email.of(identifier)).orElse(null);
@@ -80,19 +89,31 @@ public class LoginUseCase {
         }
         
         if (user == null) {
+            // Record failed attempt (both rate limiting and account lockout)
             rateLimitPolicy.recordFailedAttempt(identifier, command.getIpAddress());
+            accountLockoutService.recordFailedAttempt(identifier);
             throw new InvalidCredentialsException(identifier);
         }
         
-        // Step 3: Verify password
+        // Step 4: Verify password
         if (!user.verifyPassword(command.getCredentials().getPlainPassword(), passwordHasher)) {
+            // Record failed attempt (both systems)
             rateLimitPolicy.recordFailedAttempt(identifier, command.getIpAddress());
+            boolean accountLocked = accountLockoutService.recordFailedAttempt(identifier);
+            
+            // If account just got locked, throw more specific exception
+            if (accountLocked) {
+                accountLockoutService.checkAccountNotLocked(identifier); // Will throw AccountLockedException
+            }
+            
             throw new InvalidCredentialsException(identifier);
         }
         
+        // Step 5: Successful login - reset counters
         rateLimitPolicy.recordSuccessfulLogin(user.getId().getValue().toString(), command.getIpAddress());
+        accountLockoutService.resetFailedAttempts(identifier); // ⬅️ Reset lockout counter
         
-        // Step 4: Create refresh token (30-day validity)
+        // Step 6: Create refresh token (30-day validity)
         RefreshToken refreshToken = RefreshToken.create(user.getId().getValue().toString());
         refreshTokenRepository.save(refreshToken);
         

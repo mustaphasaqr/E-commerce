@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.shared.security;
 
+import com.mustapha.ecommerce.shared.observability.RequestIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,17 +34,20 @@ public class SecurityConfig {
     private final AdminIpWhitelistFilter adminIpWhitelistFilter;
     private final ExponentialBackoffFilter exponentialBackoffFilter;
     private final RequestIdFilter requestIdFilter;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                          GlobalApiRateLimitFilter globalApiRateLimitFilter,
                          AdminIpWhitelistFilter adminIpWhitelistFilter,
                          ExponentialBackoffFilter exponentialBackoffFilter,
-                         RequestIdFilter requestIdFilter) {
+                         RequestIdFilter requestIdFilter,
+                         CustomAuthenticationEntryPoint authenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.globalApiRateLimitFilter = globalApiRateLimitFilter;
         this.adminIpWhitelistFilter = adminIpWhitelistFilter;
         this.exponentialBackoffFilter = exponentialBackoffFilter;
         this.requestIdFilter = requestIdFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
     @Bean
@@ -137,6 +141,11 @@ public class SecurityConfig {
             // Stateless session management
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            
+            // Exception handling - Return 401 for unauthenticated requests
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(authenticationEntryPoint)
             )
             
             // Add filters in order: RequestId -> Backoff -> Admin IP -> Rate Limit -> JWT -> Auth

@@ -54,6 +54,8 @@ class UserFacadeTest {
     private GetUserByUsernameUseCase getUserByUsernameUseCase;
     @Mock
     private PasswordHasher passwordHasher;
+    @Mock
+    private com.mustapha.ecommerce.user.domain.service.CommonPasswordChecker commonPasswordChecker;
 
     @InjectMocks
     private UserFacade userFacade;
