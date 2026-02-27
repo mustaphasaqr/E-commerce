@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.user.auth.infrastructure.policy;
 
 import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,16 +29,22 @@ import java.util.concurrent.TimeUnit;
 public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final boolean rateLimitingEnabled;
     private static final String USER_KEY_PREFIX = "rate_limit:user:";
     private static final String IP_KEY_PREFIX = "rate_limit:ip:";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS");
 
-    public RedisLoginRateLimitPolicy(RedisTemplate<String, Object> redisTemplate) {
+    public RedisLoginRateLimitPolicy(RedisTemplate<String, Object> redisTemplate, Environment environment) {
         this.redisTemplate = redisTemplate;
+        this.rateLimitingEnabled = !environment.getProperty("rate-limiting.enabled", "true").equals("false");
     }
 
     @Override
     public RateLimitResult checkUserRateLimit(String userId) {
+        if (!rateLimitingEnabled) {
+            return RateLimitResult.allowed();
+        }
+        
         String keyPattern = USER_KEY_PREFIX + userId + ":*";
         Set<String> keys = redisTemplate.keys(keyPattern);
         
@@ -71,6 +78,10 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
 
     @Override
     public RateLimitResult checkIpRateLimit(String ipAddress) {
+        if (!rateLimitingEnabled) {
+            return RateLimitResult.allowed();
+        }
+        
         String keyPattern = IP_KEY_PREFIX + ipAddress + ":*";
         Set<String> keys = redisTemplate.keys(keyPattern);
         
@@ -104,6 +115,10 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
 
     @Override
     public void recordFailedAttempt(String userId, String ipAddress) {
+        if (!rateLimitingEnabled) {
+            return;
+        }
+        
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(FORMATTER);
         
@@ -118,6 +133,10 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
 
     @Override
     public void recordSuccessfulLogin(String userId, String ipAddress) {
+        if (!rateLimitingEnabled) {
+            return;
+        }
+        
         // Clear user attempts (IP tracking remains for distributed attack detection)
         String keyPattern = USER_KEY_PREFIX + userId + ":*";
         Set<String> keys = redisTemplate.keys(keyPattern);

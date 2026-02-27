@@ -1,6 +1,14 @@
 package com.mustapha.ecommerce.performance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mustapha.ecommerce.order.domain.model.Order;
+import com.mustapha.ecommerce.order.domain.model.OrderBuilder;
+import com.mustapha.ecommerce.order.domain.model.OrderItem;
+import com.mustapha.ecommerce.order.domain.model.valueobject.CustomerId;
+import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
+import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
+import com.mustapha.ecommerce.order.domain.model.valueobject.ProductId;
+import com.mustapha.ecommerce.order.domain.repository.OrderRepository;
 import com.mustapha.ecommerce.order.dto.OrderItemRequest;
 import com.mustapha.ecommerce.order.dto.OrderRequest;
 import com.mustapha.ecommerce.product.domain.model.Product;
@@ -23,6 +31,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +66,12 @@ class ConcurrencyTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private Product testProduct;
 
@@ -299,6 +314,159 @@ class ConcurrencyTest {
 
             // Should complete without deadlock (using timeout or deadlock detection)
             assertThat(completed).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Order Race Condition Tests")
+    class OrderRaceConditionTests {
+
+        @Test
+        @DisplayName("Should prevent concurrent order status updates using optimistic locking")
+        void shouldPreventConcurrentOrderStatusUpdates() {
+            // Arrange - Create and persist an order
+            Order order = new OrderBuilder()
+                .withCustomerId(new CustomerId("customer-123"))
+                .addItem(new OrderItem(
+                    new ProductId(testProduct.getId().getValue().toString()),
+                    "Test Product",
+                    1,
+                    new Money(testProduct.getPrice().getAmount())
+                ))
+                .build();
+            order = orderRepository.save(order);
+            
+            //Progress order to PROCESSING state (required before shipping)
+            order.confirm();
+            order.markAsPaid();
+            order.startProcessing();
+            order = orderRepository.save(order); // Save state changes
+            
+            String orderId = order.getId().getValue();
+
+            // Act - Simulate two concurrent transactions trying to update the same order
+            Order order1 = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+            Order order2 = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+
+            // First transaction: Warehouse marks as shipped
+            order1.ship("TRACK123", "UPS");
+            orderRepository.save(order1); // Should succeed
+
+            // Second transaction: Customer tries to cancel
+            order2.cancel("Changed mind");
+            
+            // Assert - Second save should fail due to optimistic lock exception
+            try {
+                orderRepository.save(order2);
+                // If we reach here, optimistic locking didn't work
+                org.junit.jupiter.api.Assertions.fail("Expected OptimisticLockException but save succeeded");
+            } catch (Exception e) {
+                // Expected: OptimisticLockException or similar
+                assertThat(e.getClass().getName())
+                    .matches(".*Optimistic.*|.*StaleState.*|.*version.*");
+            }
+        }
+
+        @Test
+        @DisplayName("Should handle concurrent order updates with proper retry logic")
+        void shouldHandleConcurrentOrderUpdatesWithRetry() throws Exception {
+            // Arrange - Create order
+            Order order = new OrderBuilder()
+                .withCustomerId(new CustomerId("customer-456"))
+                .addItem(new OrderItem(
+                    new ProductId(testProduct.getId().getValue().toString()),
+                    "Test Product",
+                    2,
+                    new Money(testProduct.getPrice().getAmount())
+                ))
+                .build();
+            order = orderRepository.save(order);
+            
+            // Progress order to PROCESSING state (required before shipping)
+            order.confirm();
+            order.markAsPaid();
+            order.startProcessing();
+            order = orderRepository.save(order); // Save state changes
+            
+            final String orderId = order.getId().getValue();
+
+            // Act - 5 concurrent threads trying to update same order
+            int numberOfThreads = 5;
+            ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+            CountDownLatch latch = new CountDownLatch(numberOfThreads);
+            AtomicInteger successCount = new AtomicInteger(0);
+            AtomicInteger failureCount = new AtomicInteger(0);
+
+            for (int i = 0; i < numberOfThreads; i++) {
+                final int threadIndex = i;
+                executor.submit(() -> {
+                    try {
+                        // Each thread tries to ship the order with different tracking
+                        Order orderToUpdate = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+                        orderToUpdate.ship("TRACK" + threadIndex, "Carrier" + threadIndex);
+                        orderRepository.save(orderToUpdate);
+                        successCount.incrementAndGet();
+                    } catch (Exception e) {
+                        // Expected: Optimistic lock exceptions
+                        failureCount.incrementAndGet();
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            latch.await(10, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            // Assert - Exactly one thread should succeed, others should fail
+            assertThat(successCount.get()).isEqualTo(1);
+            assertThat(failureCount.get()).isEqualTo(numberOfThreads - 1);
+            
+            // Verify final state is consistent
+            Order finalOrder = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+            assertThat(finalOrder.getStatus()).isEqualTo(com.mustapha.ecommerce.order.domain.model.OrderStatus.SHIPPED);
+            assertThat(finalOrder.getTrackingNumber()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should prevent race between payment and cancellation")
+        void shouldPreventRaceBetweenPaymentAndCancellation() {
+            // Arrange
+            Order order = new OrderBuilder()
+                .withCustomerId(new CustomerId("customer-789"))
+                .addItem(new OrderItem(
+                    new ProductId(testProduct.getId().getValue().toString()),
+                    "Test Product",
+                    1,
+                    new Money(testProduct.getPrice().getAmount())
+                ))
+                .build();
+            order = orderRepository.save(order);
+            
+            // Confirm order (required before payment)
+            order.confirm();
+            order = orderRepository.save(order); // Save state changes
+            
+            String orderId = order.getId().getValue();
+
+            // Act - Simulate payment confirmation and cancellation happening simultaneously
+            Order order1 = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+            Order order2 = orderRepository.findById(new OrderId(orderId)).orElseThrow();
+
+            // Payment system confirms payment
+            order1.markAsPaid();
+            orderRepository.save(order1);
+
+            // Customer tries to cancel
+            order2.cancel("No longer needed");
+            
+            // Assert - Cancellation should fail (order already paid)
+            assertThatThrownBy(() -> orderRepository.save(order2))
+                .satisfiesAnyOf(
+                    ex -> assertThat(ex.getClass().getName()).contains("Optimistic"),
+                    ex -> assertThat(ex.getClass().getName()).contains("StaleState"),
+                    ex -> assertThat(ex.getMessage()).containsIgnoringCase("version")
+                );
         }
     }
 

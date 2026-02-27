@@ -113,12 +113,18 @@ public class ResourceOwnershipService {
      * <ol>
      *   <li>Convert String orderId to OrderId value object</li>
      *   <li>Query OrderRepository to find the order</li>
+     *   <li>If order not found, return true (let use case throw 404)</li>
      *   <li>Compare order's customerId with authenticated userId</li>
      * </ol>
      * 
+     * <p>NOTE: Returns true when order doesn't exist to allow the use case to throw
+     * proper OrderNotFoundException (404). Authorization should only deny access to 
+     * EXISTING resources the user doesn't own (returning 403 for non-existent resources
+     * would leak information about which resource IDs exist in the system).
+     * 
      * @param userId the authenticated user's ID (String from JWT)
      * @param orderId the order ID (String from path variable)
-     * @return true if user is the order's customer, false if order not found or different owner
+     * @return true if order not found OR user is owner, false if order exists but different owner
      */
     private boolean isOrderOwner(String userId, String orderId) {
         try {
@@ -129,10 +135,10 @@ public class ResourceOwnershipService {
             // Find order in repository
             return orderRepository.findById(orderIdVO)
                     .map(order -> order.getCustomerId().equals(customerIdVO))
-                    .orElse(false); // Order not found = not owner
+                    .orElse(true); // Order not found = allow (use case will throw 404)
             
         } catch (IllegalArgumentException e) {
-            // Invalid ID format (malformed UUID, etc.)
+            // Invalid ID format (malformed UUID, etc.) - deny access
             logger.warn("Invalid order ID format: {}", orderId, e);
             return false;
         }

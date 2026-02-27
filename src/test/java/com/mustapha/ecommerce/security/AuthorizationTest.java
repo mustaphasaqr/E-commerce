@@ -155,7 +155,6 @@ class AuthorizationTest {
         }
 
         @Test
-        @Disabled("Returns 500 - needs investigation")
         @DisplayName("CUSTOMER cannot create products")
         @WithMockUser(username = "testcustomer", roles = "CUSTOMER")
         void customerCannotCreateProducts() throws Exception {

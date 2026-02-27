@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -277,6 +278,7 @@ public class UserFacade {
      * Performance: 67% smaller payload than full UserResponse
      * Use for: Admin user management, user directory
      */
+    @Transactional(readOnly = true)
     public Page<UserListResponse> listUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
             .map(UserListResponse::fromDomain);

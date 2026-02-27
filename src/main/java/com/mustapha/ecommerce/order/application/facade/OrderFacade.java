@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mustapha.ecommerce.order.application.command.CancelOrderCommand;
 import com.mustapha.ecommerce.order.application.command.DeliverOrderCommand;
@@ -168,6 +169,7 @@ public class OrderFacade {
      * Performance: 55% smaller payload than full OrderResponse
      * Use for: Order history, customer order list
      */
+    @Transactional(readOnly = true)
     public List<OrderListResponse> listOrdersByCustomer(String customerId) {
         return orderRepository.findByCustomerId(new CustomerId(customerId)).stream()
             .map(OrderListResponse::fromDomain)

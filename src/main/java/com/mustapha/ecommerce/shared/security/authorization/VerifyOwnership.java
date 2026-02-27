@@ -86,6 +86,14 @@ public @interface VerifyOwnership {
     String resourceIdParam();
     
     /**
+     * Roles that bypass ownership checks (e.g., ADMIN, OWNER).
+     * Users with these roles can access any resource without ownership verification.
+     * 
+     * @return array of role names that bypass checks (default: OWNER, EMPLOYEE)
+     */
+    String[] bypassRoles() default {"OWNER", "EMPLOYEE"};
+    
+    /**
      * Optional custom error message for authorization failures.
      * 
      * <p>If provided, this message will be used instead of the default

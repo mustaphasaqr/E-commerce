@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.user.auth.api;
 
+import com.mustapha.ecommerce.shared.exception.TooManyRequestsException;
 import com.mustapha.ecommerce.user.auth.domain.exception.AuthDomainException;
 import com.mustapha.ecommerce.user.auth.domain.exception.InvalidCredentialsException;
 import com.mustapha.ecommerce.user.auth.domain.exception.RateLimitExceededException;
@@ -35,9 +36,28 @@ public class AuthGlobalExceptionHandler {
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RateLimitExceededException ex) {
         logger.warn("Rate limit exceeded: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
-            new ErrorResponse(429, "Too Many Requests", ex.getMessage(), LocalDateTime.now())
-        );
+        
+        // Calculate Retry-After header
+        long retryAfterSeconds = 60; // Default to 60 seconds
+        if (ex.getLockedUntil() != null) {
+            retryAfterSeconds = java.time.Duration.between(
+                java.time.LocalDateTime.now(), 
+                ex.getLockedUntil()
+            ).getSeconds();
+            retryAfterSeconds = Math.max(1, retryAfterSeconds); // At least 1 second
+        }
+        
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", String.valueOf(retryAfterSeconds))
+            .header("X-RateLimit-Reset", String.valueOf(System.currentTimeMillis() / 1000 + retryAfterSeconds))
+            .body(new ErrorResponse(429, "Too Many Requests", ex.getMessage(), LocalDateTime.now()));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(TooManyRequestsException ex) {
+        logger.warn("Rate limit exceeded (aspect): {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .body(new ErrorResponse(429, "Too Many Requests", ex.getMessage(), LocalDateTime.now()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -13,6 +13,7 @@ import com.mustapha.ecommerce.product.dto.ProductResponse;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Currency;
 import java.util.List;
@@ -111,6 +112,7 @@ public class ProductFacade {
      * - Redis cache with 'sync = true' prevents cache stampede
      * - Only ONE thread queries DB when cache expires, others wait
      */
+    @Transactional(readOnly = true)
     @Cacheable(value = "products", key = "#productId", sync = true)
     public ProductResponse getProductById(String productId) {
         GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
@@ -125,6 +127,7 @@ public class ProductFacade {
      * - Redis cache with 'sync = true' prevents cache stampede
      * - Prevents thundering herd when cache expires under load
      */
+    @Transactional(readOnly = true)
     @Cacheable(value = "products", key = "#sku", sync = true)
     public ProductResponse getProductBySku(String sku) {
         GetProductBySkuQuery query = new GetProductBySkuQuery(sku);
@@ -232,6 +235,7 @@ public class ProductFacade {
      * Performance: 46% smaller payload than full ProductResponse
      * Use for: Product catalog, search results, browsing
      */
+    @Transactional(readOnly = true)
     public List<ProductListResponse> listProducts() {
         return productRepository.findAll().stream()
             .map(ProductListResponse::fromDomain)

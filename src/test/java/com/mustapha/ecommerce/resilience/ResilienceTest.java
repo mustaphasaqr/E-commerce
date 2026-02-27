@@ -66,11 +66,16 @@ class ResilienceTest {
 
         @Test
         @DisplayName("Database query timeouts should be handled")
-        @WithMockUser(roles = "CUSTOMER")
         void databaseTimeoutsShouldBeHandled() throws Exception {
             // Complex query that might timeout
+            org.springframework.security.core.Authentication auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                "550e8400-e29b-41d4-a716-446655440000",
+                null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
+            );
             mockMvc.perform(get("/api/orders")
-                    .with(csrf()))
+                    .with(csrf())
+                    .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(status().is2xxSuccessful());
 
             // Should complete without hanging indefinitely

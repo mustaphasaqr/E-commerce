@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -32,6 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -421,13 +423,18 @@ class PerformanceTest {
 
         @Test
         @DisplayName("Order details should use JOIN FETCH to avoid N+1")
-        @WithMockUser(roles = "CUSTOMER")
         void orderDetailsShouldAvoidNPlusOne() throws Exception {
             // Order repository already has @EntityGraph for items
             // This test verifies the endpoint is accessible
             // Actual N+1 prevention is tested in repository tests
+            Authentication auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                "550e8400-e29b-41d4-a716-446655440000",
+                null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
+            );
             mockMvc.perform(get("/api/orders")
-                    .with(csrf()))
+                    .with(csrf())
+                    .with(authentication(auth)))
                 .andExpect(status().isOk());
         }
     }

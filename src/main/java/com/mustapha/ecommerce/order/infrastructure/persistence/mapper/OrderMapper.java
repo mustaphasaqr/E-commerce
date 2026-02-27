@@ -33,6 +33,7 @@ public class OrderMapper {
         entity.setCarrier(order.getCarrier());
         entity.setDeliveredAt(order.getDeliveredAt());
         entity.setCancellationReason(order.getCancellationReason());
+        entity.setVersion(order.getVersion()); // Preserve version for optimistic locking
         
         entity.setItems(order.getItems().stream()
                 .map(this::toItemEntity)
@@ -59,7 +60,8 @@ public class OrderMapper {
                 entity.getTrackingNumber(),
                 entity.getCarrier(),
                 entity.getDeliveredAt(),
-                entity.getCancellationReason()
+                entity.getCancellationReason(),
+                entity.getVersion() // Pass version for optimistic locking
         );
     }
 

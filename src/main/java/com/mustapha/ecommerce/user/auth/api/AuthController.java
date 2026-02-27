@@ -1,5 +1,7 @@
 package com.mustapha.ecommerce.user.auth.api;
 
+import com.mustapha.ecommerce.shared.security.ratelimit.RateLimit;
+import com.mustapha.ecommerce.shared.security.ratelimit.RateLimitScope;
 import com.mustapha.ecommerce.user.auth.application.facade.AuthFacade;
 import com.mustapha.ecommerce.user.dto.*;
 import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
@@ -121,6 +123,8 @@ public class AuthController {
      * Sends password reset email (silent failure if email doesn't exist)
      */
     @PostMapping("/password-reset/request")
+    @RateLimit(maxRequests = 3, windowSeconds = 300, scope = RateLimitScope.IP, 
+               message = "Too many password reset requests. Please try again in 5 minutes.")
     public ResponseEntity<Void> requestPasswordReset(
             @Valid @RequestBody PasswordResetRequestRequest request) {
         
@@ -137,6 +141,8 @@ public class AuthController {
      * Validates token and sets new password
      */
     @PostMapping("/password-reset/complete")
+    @RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.IP,
+               message = "Too many password reset attempts. Please try again in 5 minutes.")
     public ResponseEntity<Void> completePasswordReset(
             @Valid @RequestBody PasswordResetCompleteRequest request) {
         

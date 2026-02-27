@@ -12,6 +12,7 @@ import com.mustapha.ecommerce.order.domain.model.OrderStatus;
 /**
  * Order JPA Entity
  * Responsibility: Database mapping for Order aggregate
+ * Optimistic locking with @Version to prevent race conditions
  */
 @Entity
 @Table(name = "orders", indexes = {
@@ -59,6 +60,13 @@ public class OrderJpaEntity {
     // Delivery information - populated when order is delivered
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    /**
+     * Optimistic locking version
+     * Prevents race conditions in concurrent order updates (status changes, cancellations, shipments)
+     */
+    @Version
+    private Long version;
 
     // Constructors
     public OrderJpaEntity() {
@@ -151,5 +159,13 @@ public class OrderJpaEntity {
 
     public void setDeliveredAt(LocalDateTime deliveredAt) {
         this.deliveredAt = deliveredAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

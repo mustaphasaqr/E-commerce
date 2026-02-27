@@ -74,6 +74,7 @@ public class OwnershipAspect {
      * <p>This advice:
      * <ol>
      *   <li>Extracts authentication from SecurityContext (ensures user is logged in)</li>
+     *   <li>Checks if user has bypass role (OWNER, EMPLOYEE) - if yes, allows access</li>
      *   <li>Extracts userId from authentication principal</li>
      *   <li>Extracts resourceId from method parameters</li>
      *   <li>Delegates to ResourceOwnershipService for actual ownership check</li>
@@ -95,21 +96,49 @@ public class OwnershipAspect {
     public void checkOwnership(JoinPoint joinPoint, VerifyOwnership verifyOwnership) {
         logger.debug("Ownership aspect triggered for method: {}", joinPoint.getSignature().getName());
         
-        // Step 1: Extract authenticated user ID from SecurityContext
+        // Step 1: Get authentication to check roles
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new com.mustapha.ecommerce.shared.exception.UnauthorizedException(
+                com.mustapha.ecommerce.shared.exception.ErrorCode.AUTH_INVALID_TOKEN,
+                "Authentication required to access this resource"
+            );
+        }
+        
+        // Step 2: Check if user has bypass role (OWNER, EMPLOYEE can access any resource)
+        if (hasBypassRole(authentication, verifyOwnership.bypassRoles())) {
+            logger.debug("User has bypass role, skipping ownership check for: {}", 
+                         joinPoint.getSignature().getName());
+            return;
+        }
+        
+        // Step 3: Extract authenticated user ID from SecurityContext
         String userId = extractAuthenticatedUserId();
         
-        // Step 2: Extract resource ID from method parameters
+        // Step 4: Extract resource ID from method parameters
         String resourceId = extractResourceId(joinPoint, verifyOwnership.resourceIdParam());
         
-        // Step 3: Get resource type from annotation
+        // Step 5: Get resource type from annotation
         ResourceType resourceType = verifyOwnership.resourceType();
         
-        // Step 4: Delegate to ResourceOwnershipService for ownership verification
+        // Step 6: Delegate to ResourceOwnershipService for ownership verification
         // This will throw ForbiddenException if user is not the owner
         ownershipService.checkOwnership(userId, resourceId, resourceType);
         
         logger.debug("Ownership verified - allowing method execution: {}", 
                      joinPoint.getSignature().getName());
+    }
+    
+    /**
+     * Check if authenticated user has any of the bypass roles.
+     */
+    private boolean hasBypassRole(Authentication authentication, String[] bypassRoles) {
+        return authentication.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .anyMatch(authority -> {
+                String role = authority.startsWith("ROLE_") ? authority.substring(5) : authority;
+                return java.util.Arrays.asList(bypassRoles).contains(role);
+            });
     }
     
     /**

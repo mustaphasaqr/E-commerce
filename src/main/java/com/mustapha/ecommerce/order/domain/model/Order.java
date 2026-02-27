@@ -41,6 +41,9 @@ public class Order {
     // Delivery information - populated when order is delivered
     private LocalDateTime deliveredAt;
     
+    // Optimistic locking version (infrastructure concern tracked in domain for persistence)
+    private Long version;
+    
     // Domain Events - uncommitted events to be published
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
@@ -78,7 +81,8 @@ public class Order {
             String trackingNumber,
             String carrier,
             LocalDateTime deliveredAt,
-            String cancellationReason) {
+            String cancellationReason,
+            Long version) {
         Order order = new Order();
         order.id = id;
         order.customerId = customerId;
@@ -90,6 +94,7 @@ public class Order {
         order.carrier = carrier;
         order.deliveredAt = deliveredAt;
         order.cancellationReason = cancellationReason;
+        order.version = version;
         order.recalculateTotal(); // Ensure total matches loaded items
         return order;
     }
@@ -329,6 +334,10 @@ public class Order {
     
     public LocalDateTime getDeliveredAt() {
         return deliveredAt;
+    }
+    
+    public Long getVersion() {
+        return version;
     }
     
     /**

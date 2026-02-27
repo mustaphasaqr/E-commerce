@@ -27,6 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.test.context.TestPropertySource(properties = {
+    "spring.jpa.defer-datasource-initialization=false"
+})
 @DisplayName("Complete Security Stack Integration Tests")
 class SecurityStackIntegrationTest {
 

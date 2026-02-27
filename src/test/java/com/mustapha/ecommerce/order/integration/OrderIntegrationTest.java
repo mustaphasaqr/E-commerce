@@ -77,6 +77,7 @@ class OrderIntegrationTest {
     private BCryptPasswordHasher passwordHasher;
 
     private String customerJwt;
+    private String authenticatedCustomerId; // Store the authenticated user's ID for ownership verification
 
     // Mock external systems - not part of integration test scope
     @MockBean
@@ -106,7 +107,10 @@ class OrderIntegrationTest {
         customer.acceptTerms("v1.0");
         customer.verifyEmail();
         customer.activate("Test setup");
-        userRepository.save(customer);
+        User savedCustomer = userRepository.save(customer);
+        
+        // Store the authenticated customer ID for use in order requests
+        authenticatedCustomerId = savedCustomer.getId().getValue().toString();
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("ordercustomer@example.com", "Customer123!@#");
@@ -174,7 +178,7 @@ class OrderIntegrationTest {
         void shouldCreateOrderViaApiAndPersistToDatabase() throws Exception {
             // Arrange
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-INT-001");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-001", "Integration Test Laptop", 1, 999.99),
                 new OrderItemRequest("PROD-002", "Integration Test Mouse", 2, 29.99)
@@ -187,7 +191,7 @@ class OrderIntegrationTest {
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").exists())
-                .andExpect(jsonPath("$.customerId").value("CUST-INT-001"))
+                .andExpect(jsonPath("$.customerId").value(authenticatedCustomerId))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.totalAmount").value(1059.97)) // 999.99 + (2 * 29.99)
                 // Validate items array structure and data
@@ -213,7 +217,7 @@ class OrderIntegrationTest {
             // Assert - Verify order was persisted to database with complete data
             OrderJpaEntity savedEntity = orderJpaRepository.findById(orderId).orElseThrow();
             assertThat(savedEntity).isNotNull();
-            assertThat(savedEntity.getCustomerId()).isEqualTo("CUST-INT-001");
+            assertThat(savedEntity.getCustomerId()).isEqualTo(authenticatedCustomerId);
             assertThat(savedEntity.getItems()).hasSize(2);
             assertThat(savedEntity.getTotalAmount()).isEqualByComparingTo(new BigDecimal("1059.97"));
             // Validate item details in database
@@ -230,7 +234,7 @@ class OrderIntegrationTest {
         void shouldRetrieveOrderViaApiFromDatabase() throws Exception {
             // Arrange - Create order first
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-INT-002");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-003", "Keyboard", 1, 79.99)
             ));
@@ -252,7 +256,7 @@ class OrderIntegrationTest {
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(orderId))
-                .andExpect(jsonPath("$.customerId").value("CUST-INT-002"))
+                .andExpect(jsonPath("$.customerId").value(authenticatedCustomerId))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.totalAmount").value(79.99))
                 // Validate complete item data is returned
@@ -269,7 +273,7 @@ class OrderIntegrationTest {
         void shouldHandleCompleteOrderLifecycle() throws Exception {
             // Step 1: Create Order
             OrderRequest createRequest = new OrderRequest();
-            createRequest.setCustomerId("CUST-LIFECYCLE");
+            createRequest.setCustomerId(authenticatedCustomerId);
             createRequest.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-LIFE-001", "Lifecycle Product", 1, 100.0)
             ));
@@ -370,7 +374,7 @@ class OrderIntegrationTest {
         void shouldValidateEmptyItemsList() throws Exception {
             // Arrange
             OrderRequest emptyItemsRequest = new OrderRequest();
-            emptyItemsRequest.setCustomerId("CUST-001");
+            emptyItemsRequest.setCustomerId(authenticatedCustomerId);
             emptyItemsRequest.setItems(Arrays.asList()); // Empty items
 
             // Act & Assert
@@ -391,7 +395,7 @@ class OrderIntegrationTest {
         void shouldEnforceOrderStateTransitions() throws Exception {
             // Arrange - Create order
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-STATE-001");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-001", "Product", 1, 999.99)
             ));
@@ -423,7 +427,7 @@ class OrderIntegrationTest {
         void shouldCalculateCorrectTotalAmount() throws Exception {
             // Arrange
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-CALC-001");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-A", "Product A", 3, 19.99),
                 new OrderItemRequest("PROD-B", "Product B", 2, 25.50),
@@ -479,7 +483,7 @@ class OrderIntegrationTest {
         @DisplayName("Should persist multiple orders for same customer")
         void shouldPersistMultipleOrdersForSameCustomer() throws Exception {
             // Arrange
-            String customerId = "CUST-MULTI-ORDER";
+            String customerId = authenticatedCustomerId;
 
             // Create first order
             OrderRequest request1 = new OrderRequest();
@@ -535,7 +539,7 @@ class OrderIntegrationTest {
         void shouldMaintainReferentialIntegrity() throws Exception {
             // Arrange
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-REF-INT");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-X", "Product X", 1, 10.0),
                 new OrderItemRequest("PROD-Y", "Product Y", 2, 20.0),
@@ -576,7 +580,7 @@ class OrderIntegrationTest {
         void shouldPreserveBigDecimalPrecision() throws Exception {
             // Arrange - Use prices that test precision
             OrderRequest request = new OrderRequest();
-            request.setCustomerId("CUST-PRECISION");
+            request.setCustomerId(authenticatedCustomerId);
             request.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-P1", "Precision Product 1", 1, 33.33),
                 new OrderItemRequest("PROD-P2", "Precision Product 2", 3, 19.99)
@@ -620,13 +624,13 @@ class OrderIntegrationTest {
         void shouldHandleMultipleOrderCreationsIndependently() throws Exception {
             // Arrange
             OrderRequest request1 = new OrderRequest();
-            request1.setCustomerId("CUST-CONCURRENT-1");
+            request1.setCustomerId(authenticatedCustomerId);
             request1.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-C1", "Concurrent Product 1", 1, 50.0)
             ));
 
             OrderRequest request2 = new OrderRequest();
-            request2.setCustomerId("CUST-CONCURRENT-2");
+            request2.setCustomerId(authenticatedCustomerId);
             request2.setItems(Arrays.asList(
                 new OrderItemRequest("PROD-C2", "Concurrent Product 2", 1, 75.0)
             ));
@@ -655,8 +659,8 @@ class OrderIntegrationTest {
             OrderJpaEntity entity1 = orderJpaRepository.findById(orderId1).orElseThrow();
             OrderJpaEntity entity2 = orderJpaRepository.findById(orderId2).orElseThrow();
 
-            assertThat(entity1.getCustomerId()).isEqualTo("CUST-CONCURRENT-1");
-            assertThat(entity2.getCustomerId()).isEqualTo("CUST-CONCURRENT-2");
+            assertThat(entity1.getCustomerId()).isEqualTo(authenticatedCustomerId);
+            assertThat(entity2.getCustomerId()).isEqualTo(authenticatedCustomerId);
             // Validate complete order isolation - each has correct items
             assertThat(entity1.getItems()).hasSize(1);
             assertThat(entity1.getItems().get(0).getProductId()).isEqualTo("PROD-C1");

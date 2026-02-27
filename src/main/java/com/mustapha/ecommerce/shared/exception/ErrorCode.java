@@ -249,6 +249,15 @@ public enum ErrorCode {
     VALIDATION_MALICIOUS_INPUT("VAL_SECURITY_001", "Input contains invalid or malicious content"),
     
     
+    // ========== RATE LIMITING ERRORS (RATE_xxx) ==========
+    
+    /**
+     * General rate limit exceeded for API endpoints.
+     * Status: 429 TOO_MANY_REQUESTS
+     */
+    RATE_LIMIT_EXCEEDED("RATE_LIMIT_001", "Too many requests. Please slow down and try again later"),
+    
+    
     // ========== INTERNAL ERRORS (INT_xxx) ==========
     
     /**

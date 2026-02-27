@@ -32,11 +32,12 @@ public class GlobalApiRateLimitFilter extends OncePerRequestFilter {
     private static final long WINDOW_SECONDS = 60;
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final Environment environment;
+    private final boolean rateLimitingEnabled;
 
     public GlobalApiRateLimitFilter(RedisTemplate<String, Object> redisTemplate, Environment environment) {
         this.redisTemplate = redisTemplate;
-        this.environment = environment;
+        // Enable rate limiting unless explicitly disabled via property
+        this.rateLimitingEnabled = !environment.getProperty("rate-limiting.enabled", "true").equals("false");
     }
 
     @Override
@@ -44,8 +45,8 @@ public class GlobalApiRateLimitFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         
-        // Skip rate limiting in test environment
-        if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
+        // Skip rate limiting if disabled via configuration
+        if (!rateLimitingEnabled) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -63,6 +64,16 @@ public class GlobalApiRateLimitFilter extends OncePerRequestFilter {
         if (!checkRateLimit(IP_RATE_LIMIT_PREFIX + ipAddress, IP_LIMIT)) {
             response.setStatus(429);
             response.setContentType("application/json");
+            
+            // Add rate limit headers
+            Long ttl = redisTemplate.getExpire(IP_RATE_LIMIT_PREFIX + ipAddress, TimeUnit.SECONDS);
+            long retryAfter = (ttl != null && ttl > 0) ? ttl : WINDOW_SECONDS;
+            
+            response.setHeader("X-RateLimit-Limit", String.valueOf(IP_LIMIT));
+            response.setHeader("X-RateLimit-Remaining", "0");
+            response.setHeader("X-RateLimit-Reset", String.valueOf(System.currentTimeMillis() / 1000 + retryAfter));
+            response.setHeader("Retry-After", String.valueOf(retryAfter));
+            
             response.getWriter().write("{\"error\":\"Too many requests from your IP. Please try again later.\"}");
             return;
         }
@@ -72,8 +83,24 @@ public class GlobalApiRateLimitFilter extends OncePerRequestFilter {
         if (userId != null && !checkRateLimit(USER_RATE_LIMIT_PREFIX + userId, USER_LIMIT)) {
             response.setStatus(429);
             response.setContentType("application/json");
+            
+            // Add rate limit headers
+            Long ttl = redisTemplate.getExpire(USER_RATE_LIMIT_PREFIX + userId, TimeUnit.SECONDS);
+            long retryAfter = (ttl != null && ttl > 0) ? ttl : WINDOW_SECONDS;
+            
+            response.setHeader("X-RateLimit-Limit", String.valueOf(USER_LIMIT));
+            response.setHeader("X-RateLimit-Remaining", "0");
+            response.setHeader("X-RateLimit-Reset", String.valueOf(System.currentTimeMillis() / 1000 + retryAfter));
+            response.setHeader("Retry-After", String.valueOf(retryAfter));
+            
             response.getWriter().write("{\"error\":\"Too many requests. Please slow down.\"}");
             return;
+        }
+
+        // Add rate limit headers for successful requests
+        addRateLimitHeaders(response, IP_RATE_LIMIT_PREFIX + ipAddress, IP_LIMIT);
+        if (userId != null) {
+            addRateLimitHeaders(response, USER_RATE_LIMIT_PREFIX + userId, USER_LIMIT);
         }
 
         filterChain.doFilter(request, response);
@@ -99,6 +126,22 @@ public class GlobalApiRateLimitFilter extends OncePerRequestFilter {
         }
         
         return count <= limit;
+    }
+    
+    /**
+     * Add rate limit headers to response
+     */
+    private void addRateLimitHeaders(HttpServletResponse response, String key, int limit) {
+        Long count = redisTemplate.opsForValue().get(key) != null ? 
+            ((Number) redisTemplate.opsForValue().get(key)).longValue() : 0L;
+        
+        long remaining = Math.max(0, limit - count);
+        Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        long reset = System.currentTimeMillis() / 1000 + (ttl != null && ttl > 0 ? ttl : WINDOW_SECONDS);
+        
+        response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(remaining));
+        response.setHeader("X-RateLimit-Reset", String.valueOf(reset));
     }
 
     /**

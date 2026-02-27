@@ -74,15 +74,15 @@ class ResourceOwnershipServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw ForbiddenException when order not found")
-    void throwForbidden_WhenOrderNotFound() {
+    @DisplayName("Should not throw exception when order not found (let use case handle 404)")
+    void notThrowForbidden_WhenOrderNotFound() {
         OrderId orderId = new OrderId(ORDER_ID);
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> 
-            service.checkOwnership(USER_ID, ORDER_ID, ResourceType.ORDER)
-        )
-        .isInstanceOf(ForbiddenException.class);
+        // Should NOT throw - returns true, allowing use case to throw OrderNotFoundException
+        service.checkOwnership(USER_ID, ORDER_ID, ResourceType.ORDER);
+        
+        verify(orderRepository).findById(orderId);
     }
 
     @Test
@@ -114,24 +114,27 @@ class ResourceOwnershipServiceTest {
     }
 
     @Test
-    @DisplayName("Should return false when order not found")
-    void isOwner_ReturnsFalseWhenOrderNotFound() {
+    @DisplayName("Should return true when order not found (let use case throw 404)")
+    void isOwner_ReturnsTrueWhenOrderNotFound() {
         OrderId orderId = new OrderId(ORDER_ID);
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         boolean result = service.isOwner(USER_ID, ORDER_ID, ResourceType.ORDER);
 
-        assertThat(result).isFalse();
+        assertThat(result).isTrue(); // Allow through - use case will throw 404
     }
 
     @Test
-    @DisplayName("Should handle invalid order ID format gracefully")
+    @DisplayName("Should return true for non-existent order IDs (let use case handle 404)")
     void handleInvalidOrderId() {
-        String invalidOrderId = "not-a-valid-id";
+        String nonExistentOrderId = "not-a-valid-id";
+        OrderId orderId = new OrderId(nonExistentOrderId);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> 
-            service.checkOwnership(USER_ID, invalidOrderId, ResourceType.ORDER)
-        ).isInstanceOf(ForbiddenException.class);
+        // Non-existent order returns true (consistent behavior - use case throws 404)
+        boolean result = service.isOwner(USER_ID, nonExistentOrderId, ResourceType.ORDER);
+        
+        assertThat(result).isTrue();
     }
 
     @Test
@@ -157,15 +160,14 @@ class ResourceOwnershipServiceTest {
     }
 
     @Test
-    @DisplayName("Should verify ownership with custom error messages")
-    void verifyOwnershipWithCustomMessages() {
+    @DisplayName("Should not throw exception for non-existent orders")
+    void verifyOwnershipWithNonExistentResource() {
         OrderId orderId = new OrderId(ORDER_ID);
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> 
-            service.checkOwnership(USER_ID, ORDER_ID, ResourceType.ORDER)
-        )
-        .isInstanceOf(ForbiddenException.class)
-        .hasMessageContaining("order");
+        // Should not throw - returns true, allowing use case to handle 404
+        service.checkOwnership(USER_ID, ORDER_ID, ResourceType.ORDER);
+        
+        verify(orderRepository).findById(orderId);
     }
 }

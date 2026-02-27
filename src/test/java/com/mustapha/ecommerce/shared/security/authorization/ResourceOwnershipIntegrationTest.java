@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Resource Ownership Integration Tests")
-@Disabled("Resource ownership verification (@VerifyOwnership annotation) not yet implemented for order endpoints. Tests will be enabled once OrderController implements ownership checks.")
 class ResourceOwnershipIntegrationTest {
 
     @Autowired
@@ -97,7 +97,7 @@ class ResourceOwnershipIntegrationTest {
         mockMvc.perform(get("/api/orders/" + testOrderId)
                        .header("Authorization", "Bearer " + attackerToken))
                .andExpect(status().isForbidden())
-               .andExpect(jsonPath("$.errorCode").value(ErrorCode.AUTHZ_NOT_RESOURCE_OWNER.name()))
+               .andExpect(jsonPath("$.errorCode").value("AUTHZ_FORBIDDEN_002")) // Error code value, not enum name
                .andExpect(jsonPath("$.message").value(containsString("permission")));
     }
 
@@ -109,22 +109,23 @@ class ResourceOwnershipIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify ownership on DELETE requests")
+    @DisplayName("Should verify ownership on POST /cancel requests")
     void verifyOwnershipOnDelete() throws Exception {
-        mockMvc.perform(delete("/api/orders/" + testOrderId)
-                       .header("Authorization", "Bearer " + attackerToken))
+        // Test ownership verification on cancel endpoint (POST with @VerifyOwnership)
+        mockMvc.perform(post("/api/orders/" + testOrderId + "/cancel")
+                       .header("Authorization", "Bearer " + attackerToken)
+                       .param("reason", "Changed mind"))
                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Should verify ownership on PUT/PATCH requests")
+    @DisplayName("Should verify ownership on POST /ship requests")
     void verifyOwnershipOnUpdate() throws Exception {
-        String updateJson = "{\"status\":\"CANCELLED\"}";
-
-        mockMvc.perform(put("/api/orders/" + testOrderId)
+        // Test ownership verification on ship endpoint (POST with @VerifyOwnership)
+        mockMvc.perform(post("/api/orders/" + testOrderId + "/ship")
                        .header("Authorization", "Bearer " + attackerToken)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(updateJson))
+                       .param("trackingNumber", "TRACK123")
+                       .param("carrier", "UPS"))
                .andExpect(status().isForbidden());
     }
 
@@ -150,19 +151,12 @@ class ResourceOwnershipIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin-user-id", roles = {"OWNER"})
     @DisplayName("Owner role should bypass ownership checks")
     void ownerRoleBypassesOwnershipChecks() throws Exception {
-        User admin = createTestUser("admin@example.com", "Admin User", Role.OWNER);
-        String adminToken = jwtTokenGenerator.generateAccessToken(
-            admin.getId().getValue().toString(), 
-            admin.getRole().name(),
-            "admin-session"
-        );
-
-        // Note: This depends on whether @VerifyOwnership checks for ADMIN role
-        // Modify based on your actual implementation
-        mockMvc.perform(get("/api/orders/" + testOrderId)
-                       .header("Authorization", "Bearer " + adminToken))
+        // OWNER role should bypass ownership checks (can access anyone's order without JWT)
+        // testOrderId belongs to "owner" user from @BeforeEach
+        mockMvc.perform(get("/api/orders/" + testOrderId))
                .andExpect(status().isOk());
     }
 

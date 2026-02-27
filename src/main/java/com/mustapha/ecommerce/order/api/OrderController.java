@@ -1,5 +1,7 @@
 package com.mustapha.ecommerce.order.api;
 
+import com.mustapha.ecommerce.shared.security.authorization.ResourceType;
+import com.mustapha.ecommerce.shared.security.authorization.VerifyOwnership;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,12 +65,14 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
+    @VerifyOwnership(resourceType = ResourceType.ORDER, resourceIdParam = "orderId")
     public ResponseEntity<OrderResponse> getOrder(@PathVariable String orderId) {
         OrderResponse response = orderFacade.getOrder(orderId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{orderId}/pay")
+    @VerifyOwnership(resourceType = ResourceType.ORDER, resourceIdParam = "orderId")
     public ResponseEntity<OrderResponse> payOrder(
             @PathVariable String orderId,
             @RequestParam String paymentMethod,
@@ -79,6 +83,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/ship")
+    @VerifyOwnership(resourceType = ResourceType.ORDER, resourceIdParam = "orderId")
     public ResponseEntity<OrderResponse> shipOrder(
             @PathVariable String orderId,
             @RequestParam String trackingNumber,
@@ -88,12 +93,14 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/deliver")
+    @VerifyOwnership(resourceType = ResourceType.ORDER, resourceIdParam = "orderId")
     public ResponseEntity<OrderResponse> deliverOrder(@PathVariable String orderId) {
         OrderResponse response = orderFacade.deliverOrder(orderId, java.time.LocalDateTime.now());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{orderId}/cancel")
+    @VerifyOwnership(resourceType = ResourceType.ORDER, resourceIdParam = "orderId")
     public ResponseEntity<OrderResponse> cancelOrder(
             @PathVariable String orderId,
             @RequestParam String reason) {
