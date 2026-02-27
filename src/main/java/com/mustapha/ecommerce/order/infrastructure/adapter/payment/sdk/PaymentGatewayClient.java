@@ -50,11 +50,12 @@ public class PaymentGatewayClient {
     /**
      * Charge with idempotency key
      * Same idempotency key will return the same transaction ID (safe to retry)
+     * Thread-safe: uses atomic putIfAbsent for concurrent requests
      */
     public String chargeWithIdempotency(double amount, String paymentToken, String idempotencyKey) {
         // Check if this request was already processed
-        if (idempotencyStore.containsKey(idempotencyKey)) {
-            String existingTxnId = idempotencyStore.get(idempotencyKey);
+        String existingTxnId = idempotencyStore.get(idempotencyKey);
+        if (existingTxnId != null) {
             logger.info("Idempotent charge detected: returning existing transactionId={}", existingTxnId);
             return existingTxnId;
         }
@@ -83,9 +84,15 @@ public class PaymentGatewayClient {
         logger.info("Charging {} EGP via Payment Gateway with token: {}, idempotencyKey: {}", 
                    amount, paymentToken, idempotencyKey);
         
-        // Stub: Generate and store transaction ID
+        // Generate transaction ID
         String transactionId = "txn_" + UUID.randomUUID().toString();
-        idempotencyStore.put(idempotencyKey, transactionId);
+        
+        // Atomically store: if another thread beat us, use their result
+        String previousTxnId = idempotencyStore.putIfAbsent(idempotencyKey, transactionId);
+        if (previousTxnId != null) {
+            logger.info("Concurrent idempotent charge: another thread created transactionId={}", previousTxnId);
+            return previousTxnId;
+        }
         
         return transactionId;
     }
@@ -102,11 +109,12 @@ public class PaymentGatewayClient {
     /**
      * Refund with idempotency key
      * Same idempotency key will return the same refund ID (safe to retry)
+     * Thread-safe: uses atomic putIfAbsent for concurrent requests
      */
     public String refundWithIdempotency(String orderId, double amount, String idempotencyKey) {
         // Check if this refund was already processed
-        if (idempotencyStore.containsKey(idempotencyKey)) {
-            String existingRefundId = idempotencyStore.get(idempotencyKey);
+        String existingRefundId = idempotencyStore.get(idempotencyKey);
+        if (existingRefundId != null) {
             logger.info("Idempotent refund detected: returning existing refundId={}", existingRefundId);
             return existingRefundId;
         }
@@ -132,9 +140,15 @@ public class PaymentGatewayClient {
         logger.info("Refunding {} EGP for order: {}, idempotencyKey: {}", 
                    amount, orderId, idempotencyKey);
         
-        // Stub: Generate and store refund ID
+        // Generate refund ID
         String refundId = "refund_" + UUID.randomUUID().toString();
-        idempotencyStore.put(idempotencyKey, refundId);
+        
+        // Atomically store: if another thread beat us, use their result
+        String previousRefundId = idempotencyStore.putIfAbsent(idempotencyKey, refundId);
+        if (previousRefundId != null) {
+            logger.info("Concurrent idempotent refund: another thread created refundId={}", previousRefundId);
+            return previousRefundId;
+        }
         
         return refundId;
     }

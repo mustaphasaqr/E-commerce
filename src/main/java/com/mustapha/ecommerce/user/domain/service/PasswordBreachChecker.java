@@ -58,13 +58,28 @@ public class PasswordBreachChecker {
     private final RestTemplate restTemplate;
     
     public PasswordBreachChecker() {
-        this.restTemplate = new RestTemplate();
+        // Create RestTemplate with timeout configuration
+        this.restTemplate = createRestTemplateWithTimeout();
         
         // Set user agent (HIBP API requests this for analytics)
         this.restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().set("User-Agent", "E-Commerce-App-Password-Checker");
             return execution.execute(request, body);
         });
+    }
+    
+    /**
+     * Create RestTemplate with timeout configuration to prevent hanging
+     */
+    private RestTemplate createRestTemplateWithTimeout() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
+            new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        
+        // Set timeouts to prevent thread starvation
+        factory.setConnectTimeout(5000);  // 5 seconds to establish connection
+        factory.setReadTimeout(10000);    // 10 seconds to read response
+        
+        return new RestTemplate(factory);
     }
     
     /**
