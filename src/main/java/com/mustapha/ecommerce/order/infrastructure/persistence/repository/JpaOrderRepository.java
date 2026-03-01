@@ -49,6 +49,12 @@ public class JpaOrderRepository implements OrderRepository {
                 .map(orderMapper::toDomain)
                 .collect(Collectors.toList());
     }
+    
+    @Override
+    public Optional<Order> findByCheckoutId(String checkoutId) {
+        return springDataRepository.findByCheckoutId(checkoutId)
+                .map(orderMapper::toDomain);
+    }
 
     @Override
     public boolean existsById(OrderId id) {

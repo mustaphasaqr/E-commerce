@@ -1,162 +1,122 @@
 package com.mustapha.ecommerce.order.infrastructure.adapter.payment.sdk;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Payment Gateway Client (Generic for Egyptian Payment Gateways)
- * Responsibility: Communicate with payment gateway API
+ * Payment Gateway Client Interface
  * 
- * Supported Egyptian Payment Gateways:
- * - Paymob / Accept (Egyptian fintech, excellent API)
- * - Fawry (Most popular Egyptian gateway)
- * - PayTabs (MENA region)
- * - PayFort by Amazon (MENA region)
- * - Vodafone Cash, Masary, Aman (Wallets)
+ * Generic interface for payment gateway implementations (Accept, Fawry, PayTabs, etc.)
+ * Provides both modern checkout flow and legacy charge operations
  * 
- * NOTE: This is a stub implementation for development.
- * Production: Replace with real SDK:
- * - Paymob: com.paymob:paymob-java
- * - Fawry: https://developer.fawry.com/
- * - PayTabs: https://site.paytabs.com/en/developers/
+ * This interface supports two payment flows:
+ * 1. Checkout Flow: createCheckout() → redirect customer → verifyPayment()
+ * 2. Legacy Flow: charge() / chargeWithIdempotency() for direct charges
  * 
- * Features:
- * - Idempotency support (prevents duplicate charges/refunds)
- * - In-memory idempotency store (production: use Redis/Database)
- * - Works with any gateway that supports idempotency keys
+ * Real implementations: AcceptPaymobClient, FawryClient, etc.
  */
-@Component("paymentGatewayClient")
-public class PaymentGatewayClient {
-
-    private static final Logger logger = LoggerFactory.getLogger(PaymentGatewayClient.class);
+public interface PaymentGatewayClient {
     
-    // In-memory idempotency store (production: use Redis or database)
-    private final Map<String, String> idempotencyStore = new ConcurrentHashMap<>();
-
     /**
-     * Legacy method without idempotency (deprecated)
+     * Create checkout session for payment
+     * Returns payment key/URL for customer to complete payment
+     * 
+     * @param orderId Unique order identifier
+     * @param amount Amount in cents/piastres
+     * @param currency Currency code (EGP, SAR, AED)
+     * @param customerEmail Customer email for receipt
+     * @param customerPhone Customer phone (optional)
+     * @return CheckoutResponse with payment key and redirect URL
      */
-    @Deprecated
-    public String charge(double amount, String paymentToken) {
-        // Delegate to idempotent version with generated key
-        return chargeWithIdempotency(amount, paymentToken, "legacy_" + UUID.randomUUID());
-    }
-
+    CheckoutResponse createCheckout(
+            String orderId,
+            double amount,
+            String currency,
+            String customerEmail,
+            String customerPhone
+    );
+    
     /**
-     * Charge with idempotency key
-     * Same idempotency key will return the same transaction ID (safe to retry)
-     * Thread-safe: uses atomic putIfAbsent for concurrent requests
+     * Verify payment status after customer completes payment
+     * 
+     * @param transactionId Transaction ID from payment gateway
+     * @return Payment verification result
      */
-    public String chargeWithIdempotency(double amount, String paymentToken, String idempotencyKey) {
-        // Check if this request was already processed
-        String existingTxnId = idempotencyStore.get(idempotencyKey);
-        if (existingTxnId != null) {
-            logger.info("Idempotent charge detected: returning existing transactionId={}", existingTxnId);
-            return existingTxnId;
-        }
-        
-        // TODO: Implement real payment gateway API call
-        // 
-        // Production Examples:
-        // 
-        // Paymob:
-        //   PaymobClient client = new PaymobClient(apiKey);
-        //   PaymentRequest request = PaymentRequest.builder()
-        //       .amount(amount)
-        //       .currency("EGP")
-        //       .paymentToken(paymentToken)
-        //       .idempotencyKey(idempotencyKey)
-        //       .build();
-        //   PaymentResponse response = client.charge(request);
-        //   return response.getTransactionId();
-        // 
-        // Fawry:
-        //   FawryClient client = new FawryClient(merchantCode, securityKey);
-        //   ChargeRequest request = new ChargeRequest(amount, paymentToken, idempotencyKey);
-        //   ChargeResponse response = client.chargeCustomer(request);
-        //   return response.getReferenceNumber();
-        
-        logger.info("Charging {} EGP via Payment Gateway with token: {}, idempotencyKey: {}", 
-                   amount, paymentToken, idempotencyKey);
-        
-        // Generate transaction ID
-        String transactionId = "txn_" + UUID.randomUUID().toString();
-        
-        // Atomically store: if another thread beat us, use their result
-        String previousTxnId = idempotencyStore.putIfAbsent(idempotencyKey, transactionId);
-        if (previousTxnId != null) {
-            logger.info("Concurrent idempotent charge: another thread created transactionId={}", previousTxnId);
-            return previousTxnId;
-        }
-        
-        return transactionId;
-    }
-
+    PaymentVerificationResponse verifyPayment(String transactionId);
+    
     /**
-     * Legacy method without idempotency (deprecated)
+     * Nested class: Checkout Response
      */
-    @Deprecated
-    public String refund(String orderId, double amount) {
-        // Delegate to idempotent version
-        return refundWithIdempotency(orderId, amount, "legacy_refund_" + UUID.randomUUID());
-    }
-
+    record CheckoutResponse(
+            String paymentKey,
+            String error,
+            int expiresInSeconds  // Time in seconds until payment key expires
+    ) {}
+    
     /**
-     * Refund with idempotency key
-     * Same idempotency key will return the same refund ID (safe to retry)
-     * Thread-safe: uses atomic putIfAbsent for concurrent requests
+     * Nested class: Payment Verification Response
      */
-    public String refundWithIdempotency(String orderId, double amount, String idempotencyKey) {
-        // Check if this refund was already processed
-        String existingRefundId = idempotencyStore.get(idempotencyKey);
-        if (existingRefundId != null) {
-            logger.info("Idempotent refund detected: returning existing refundId={}", existingRefundId);
-            return existingRefundId;
-        }
-        
-        // TODO: Implement real payment gateway refund API
-        // 
-        // Production Examples:
-        // 
-        // Paymob:
-        //   RefundRequest request = RefundRequest.builder()
-        //       .transactionId(orderId)
-        //       .amount(amount)
-        //       .idempotencyKey(idempotencyKey)
-        //       .build();
-        //   RefundResponse response = client.refund(request);
-        //   return response.getRefundId();
-        // 
-        // Fawry:
-        //   RefundRequest request = new RefundRequest(orderId, amount, idempotencyKey);
-        //   RefundResponse response = client.refundPayment(request);
-        //   return response.getReferenceNumber();
-        
-        logger.info("Refunding {} EGP for order: {}, idempotencyKey: {}", 
-                   amount, orderId, idempotencyKey);
-        
-        // Generate refund ID
-        String refundId = "refund_" + UUID.randomUUID().toString();
-        
-        // Atomically store: if another thread beat us, use their result
-        String previousRefundId = idempotencyStore.putIfAbsent(idempotencyKey, refundId);
-        if (previousRefundId != null) {
-            logger.info("Concurrent idempotent refund: another thread created refundId={}", previousRefundId);
-            return previousRefundId;
-        }
-        
-        return refundId;
+    record PaymentVerificationResponse(
+            boolean success,
+            String status,          // PAID, PENDING, FAILED, CANCELLED
+            String transactionId,
+            String orderId          // Can be null if verification fails
+    ) {}
+    
+    /**
+     * Charge payment with idempotency key
+     * Safe to retry - same idempotency key returns same result
+     * 
+     * @param amount Amount to charge
+     * @param paymentToken Payment method token (card token, wallet ID, etc.)
+     * @param idempotencyKey Unique key for this payment attempt
+     * @return Transaction ID if successful
+     * @throws RuntimeException if payment fails
+     */
+    String chargeWithIdempotency(double amount, String paymentToken, String idempotencyKey);
+    
+    /**
+     * Refund payment with idempotency key
+     * Safe to retry - same idempotency key returns same result
+     * 
+     * @param transactionId Original transaction ID to refund
+     * @param amount Amount to refund (can be partial)
+     * @param idempotencyKey Unique key for this refund attempt
+     * @return Refund ID if successful
+     * @throws RuntimeException if refund fails
+     */
+    String refundWithIdempotency(String transactionId, double amount, String idempotencyKey);
+    
+    /**
+     * Charge payment (legacy method without explicit idempotency)
+     * Generates idempotency key automatically
+     * 
+     * @param amount Amount to charge
+     * @param paymentToken Payment method token
+     * @return Transaction ID if successful
+     * @throws RuntimeException if payment fails
+     */
+    default String charge(double amount, String paymentToken) {
+        // Generate automatic idempotency key based on amount and token
+        String idempotencyKey = "auto_" + paymentToken + "_" + System.currentTimeMillis();
+        return chargeWithIdempotency(amount, paymentToken, idempotencyKey);
     }
     
     /**
-     * Clear idempotency store (for testing)
+     * Refund payment (legacy method without explicit idempotency)
+     * Generates idempotency key automatically
+     * 
+     * @param transactionId Original transaction ID to refund
+     * @param amount Amount to refund
+     * @return Refund ID if successful
+     * @throws RuntimeException if refund fails
      */
-    public void clearIdempotencyStore() {
-        idempotencyStore.clear();
+    default String refund(String transactionId, double amount) {
+        // Generate automatic idempotency key
+        String idempotencyKey = "auto_refund_" + transactionId + "_" + System.currentTimeMillis();
+        return refundWithIdempotency(transactionId, amount, idempotencyKey);
     }
+    
+    /**
+     * Clear idempotency store (for testing purposes)
+     * In production, use time-based expiration instead
+     */
+    void clearIdempotencyStore();
 }

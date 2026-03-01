@@ -46,16 +46,18 @@ public class PayOrderUseCase {
         Order order = orderRepository.findById(command.getOrderId())
             .orElseThrow(() -> new IllegalArgumentException("Order not found: " + command.getOrderId().getValue()));
         
-        // Step 2: Process payment via external system
-        PaymentPort.PaymentResult paymentResult = paymentPort.processPayment(
+        // Step 2: Create payment checkout
+        // TODO: This should return redirect URL and complete payment after customer pays
+        // For now, we create checkout and assume immediate payment for backward compatibility
+        PaymentPort.CheckoutResult checkoutResult = paymentPort.createCheckout(
             command.getOrderId(),
             command.getAmount(),
             command.getPaymentMethod(),
-            command.getPaymentToken()
+            order.getCustomerId().getValue() + "@example.com" // TODO: Get actual email
         );
         
-        if (!paymentResult.isSuccess()) {
-            throw new IllegalStateException("Payment failed: " + paymentResult.errorMessage());
+        if (!checkoutResult.success()) {
+            throw new IllegalStateException("Payment checkout failed: " + checkoutResult.message());
         }
         
         // Step 3: Call domain method (domain validates state transition)

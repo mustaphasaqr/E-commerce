@@ -32,6 +32,7 @@ public class ProductMapper {
         entity.setSku(product.getSku().getValue());
         entity.setName(product.getName());
         entity.setDescription(product.getDescription());
+        entity.setImageUrls(product.getImageUrls());
         entity.setPrice(product.getPrice().getAmount());
         entity.setCurrency(product.getPrice().getCurrency().getCurrencyCode());
         entity.setTotalStock(product.getStock().getQuantity());
@@ -71,6 +72,7 @@ public class ProductMapper {
         entity.setSku(product.getSku().getValue());
         entity.setName(product.getName());
         entity.setDescription(product.getDescription());
+        entity.setImageUrls(product.getImageUrls());
         entity.setPrice(product.getPrice().getAmount());
         entity.setCurrency(product.getPrice().getCurrency().getCurrencyCode());
         entity.setTotalStock(product.getStock().getQuantity());
@@ -130,6 +132,7 @@ public class ProductMapper {
             sku,
             entity.getName(),
             entity.getDescription(),
+            entity.getImageUrls(),
             price,
             stock,
             entity.isActive(),

@@ -49,13 +49,15 @@ public class CancelOrderUseCase {
         
         // Step 2: Process refund if order was paid (covers PAID, PROCESSING, SHIPPED, DELIVERED)
         if (order.isPaid()) {
-            PaymentPort.PaymentResult refundResult = paymentPort.refundPayment(
+            PaymentPort.RefundResult refundResult = paymentPort.refundPayment(
                 order.getId(),
-                order.getTotalAmount()
+                "transaction-id-placeholder", // TODO: Store transaction ID in order
+                order.getTotalAmount(),
+                command.getReason() != null ? command.getReason() : "Order cancelled"
             );
             
-            if (!refundResult.isSuccess()) {
-                throw new IllegalStateException("Refund failed: " + refundResult.errorMessage());
+            if (!refundResult.success()) {
+                throw new IllegalStateException("Refund failed: " + refundResult.message());
             }
         }
         

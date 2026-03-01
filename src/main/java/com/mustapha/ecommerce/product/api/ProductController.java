@@ -9,8 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * HTTP Boundary - Product Controller
@@ -164,5 +167,68 @@ public class ProductController {
     public ResponseEntity<ProductResponse> discontinueProduct(@PathVariable String id) {
         ProductResponse response = productFacade.discontinueProduct(id);
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Upload product image
+     * Accepts: image/jpeg, image/png, image/gif, image/webp
+     * Max size: 5 MB (configured in storage service)
+     */
+    @PostMapping("/{id}/images")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
+    public ResponseEntity<Map<String, Object>> uploadImage(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        
+        // Validate file
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "File is empty"));
+        }
+        
+        // Validate content type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Only image files are allowed"));
+        }
+        
+        try {
+            String imageUrl = productFacade.uploadProductImage(id, file);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("productId", id);
+            response.put("imageUrl", imageUrl);
+            response.put("message", "Image uploaded successfully");
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to upload image: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Delete product image
+     */
+    @DeleteMapping("/{id}/images")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
+    public ResponseEntity<Map<String, String>> deleteImage(
+            @PathVariable String id,
+            @RequestParam("imageUrl") String imageUrl) {
+        
+        try {
+            productFacade.deleteProductImage(id, imageUrl);
+            
+            return ResponseEntity.ok(Map.of(
+                    "productId", id,
+                    "message", "Image deleted successfully"
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete image: " + e.getMessage()));
+        }
     }
 }

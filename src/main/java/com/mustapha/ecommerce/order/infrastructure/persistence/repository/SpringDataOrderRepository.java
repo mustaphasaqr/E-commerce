@@ -19,6 +19,9 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
     List<OrderJpaEntity> findByCustomerId(String customerId);
     
     @EntityGraph(attributePaths = {"items"})
+    Optional<OrderJpaEntity> findByCheckoutId(String checkoutId);
+    
+    @EntityGraph(attributePaths = {"items"})
     @Override
     Optional<OrderJpaEntity> findById(String id);
 }

@@ -182,8 +182,8 @@ class OrderProductIntegrationTest {
         when(paymentPort.processPayment(any(), any(), any(), any()))
             .thenReturn(new PaymentResult(true, "txn_success", "Payment successful"));
         
-        when(paymentPort.refundPayment(any(), any()))
-            .thenReturn(new PaymentResult(true, "refund_success", "Refund successful"));
+        when(paymentPort.refundPayment(any(), any(), any(), any()))
+            .thenReturn(new PaymentPort.RefundResult(true, "refund_success", "Refund successful"));
         
         when(inventoryPort.checkAvailability(any(), anyInt()))
             .thenReturn(true);

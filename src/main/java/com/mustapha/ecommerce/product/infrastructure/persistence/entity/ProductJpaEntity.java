@@ -5,7 +5,9 @@ import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,6 +44,17 @@ public class ProductJpaEntity {
 
     @Column(length = 1000)
     private String description;
+    
+    /**
+     * Product images (stored in AWS S3 or local storage)
+     * List of image URLs
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", 
+                     joinColumns = @JoinColumn(name = "product_id"),
+                     foreignKey = @ForeignKey(name = "fk_product_image"))
+    @Column(name = "image_url", length = 500)
+    private List<String> imageUrls = new ArrayList<>();
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal price;
@@ -130,6 +143,14 @@ public class ProductJpaEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+    
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 
     public BigDecimal getPrice() {

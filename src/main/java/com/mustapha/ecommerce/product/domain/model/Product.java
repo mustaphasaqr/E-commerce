@@ -37,6 +37,7 @@ public class Product {
     private final SKU sku;
     private String name;
     private String description;
+    private List<String> imageUrls; // Product images stored in AWS S3 or local storage
     private Price price;
     private Stock stock;
     
@@ -58,13 +59,14 @@ public class Product {
 
     // Private constructor for invariants protection
     private Product(ProductId id, SKU sku, String name, String description, 
-                   Price price, Stock stock, boolean active, boolean visible,
+                   List<String> imageUrls, Price price, Stock stock, boolean active, boolean visible,
                    boolean availableForPurchase, boolean discontinued, int version,
                    LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.sku = sku;
         this.name = name;
         this.description = description;
+        this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
         this.price = price;
         this.stock = stock;
         this.active = active;
@@ -87,6 +89,7 @@ public class Product {
             sku,
             name,
             description,
+            new ArrayList<>(), // empty image list initially
             price,
             stock,
             true,          // active by default
@@ -106,10 +109,10 @@ public class Product {
      * Factory method: Reconstitute from database
      */
     public static Product reconstitute(ProductId id, SKU sku, String name, String description,
-                                      Price price, Stock stock, boolean active, boolean visible,
+                                      List<String> imageUrls, Price price, Stock stock, boolean active, boolean visible,
                                       boolean availableForPurchase, boolean discontinued, int version,
                                       LocalDateTime createdAt, LocalDateTime updatedAt) {
-        return new Product(id, sku, name, description, price, stock, active, visible,
+        return new Product(id, sku, name, description, imageUrls, price, stock, active, visible,
                           availableForPurchase, discontinued, version, createdAt, updatedAt);
     }
 
@@ -522,6 +525,67 @@ public class Product {
     private void incrementVersion() {
         this.version++;
     }
+    
+    /**
+     * Add product image
+     * Business Rule: Cannot add duplicate image URLs
+     * Business Rule: Maximum 10 images per product
+     */
+    public void addImage(String imageUrl) {
+        ensureNotDiscontinued();
+        
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new IllegalArgumentException("Image URL cannot be empty");
+        }
+        
+        if (imageUrls.contains(imageUrl)) {
+            // Idempotent - already exists
+            return;
+        }
+        
+        if (imageUrls.size() >= 10) {
+            throw new IllegalStateException("Cannot add more than 10 images per product");
+        }
+        
+        imageUrls.add(imageUrl);
+        this.updatedAt = LocalDateTime.now();
+        incrementVersion();
+        
+        domainEvents.add(new ProductUpdatedEvent(this.id, "Added image: " + imageUrl));
+    }
+    
+    /**
+     * Remove product image
+     */
+    public void removeImage(String imageUrl) {
+        ensureNotDiscontinued();
+        
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return; // Idempotent
+        }
+        
+        boolean removed = imageUrls.remove(imageUrl);
+        
+        if (removed) {
+            this.updatedAt = LocalDateTime.now();
+            incrementVersion();
+            domainEvents.add(new ProductUpdatedEvent(this.id, "Removed image: " + imageUrl));
+        }
+    }
+    
+    /**
+     * Remove all images
+     */
+    public void clearImages() {
+        ensureNotDiscontinued();
+        
+        if (!imageUrls.isEmpty()) {
+            imageUrls.clear();
+            this.updatedAt = LocalDateTime.now();
+            incrementVersion();
+            domainEvents.add(new ProductUpdatedEvent(this.id, "Cleared all images"));
+        }
+    }
 
     // Getters (no setters - encapsulation)
     
@@ -539,6 +603,10 @@ public class Product {
 
     public String getDescription() {
         return description;
+    }
+    
+    public List<String> getImageUrls() {
+        return new ArrayList<>(imageUrls); // Defensive copy
     }
 
     public Price getPrice() {

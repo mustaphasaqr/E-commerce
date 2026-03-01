@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.mustapha.ecommerce.order.application.port.PaymentPort;
+import com.mustapha.ecommerce.order.application.port.PaymentPort.CheckoutResult;
+import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentVerificationResult;
+import com.mustapha.ecommerce.order.application.port.PaymentPort.RefundResult;
 import com.mustapha.ecommerce.order.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 
@@ -27,30 +30,46 @@ public class LoggingPaymentDecorator implements PaymentPort {
     }
 
     @Override
-    public PaymentResult processPayment(OrderId orderId, Money amount, String paymentMethod, String paymentToken) {
-        logger.info("Processing payment for order: {}, amount: {}, method: {}", 
-                    orderId.getValue(), amount.getAmount(), paymentMethod);
+    public CheckoutResult createCheckout(OrderId orderId, Money amount, String paymentMethod, String customerEmail) {
+        logger.info("Creating payment checkout for order: {}, amount: {}, method: {}, email: {}", 
+                    orderId.getValue(), amount.getAmount(), paymentMethod, customerEmail);
         try {
-            PaymentResult result = delegate.processPayment(orderId, amount, paymentMethod, paymentToken);
-            if (result.isSuccess()) {
-                logger.info("Payment processed successfully: transactionId={}", result.transactionId());
+            CheckoutResult result = delegate.createCheckout(orderId, amount, paymentMethod, customerEmail);
+            if (result.success()) {
+                logger.info("Checkout created successfully: checkoutId={}, redirectUrl={}", 
+                            result.checkoutId(), result.redirectUrl());
             } else {
-                logger.warn("Payment failed: {}", result.message());
+                logger.warn("Checkout creation failed: {}", result.message());
             }
             return result;
         } catch (Exception e) {
-            logger.error("Payment processing exception: orderId={}, amount={}", orderId.getValue(), amount.getAmount(), e);
+            logger.error("Checkout creation exception: orderId={}, amount={}", orderId.getValue(), amount.getAmount(), e);
             throw e;
         }
     }
 
     @Override
-    public PaymentResult refundPayment(OrderId orderId, Money amount) {
-        logger.info("Processing refund for order: {}, amount: {}", orderId.getValue(), amount.getAmount());
+    public PaymentVerificationResult verifyPayment(String checkoutId) {
+        logger.info("Verifying payment for checkoutId: {}", checkoutId);
         try {
-            PaymentResult result = delegate.refundPayment(orderId, amount);
-            if (result.isSuccess()) {
-                logger.info("Refund processed successfully: transactionId={}", result.transactionId());
+            PaymentVerificationResult result = delegate.verifyPayment(checkoutId);
+            logger.info("Payment verification completed: status={}, transactionId={}", 
+                        result.status(), result.transactionId());
+            return result;
+        } catch (Exception e) {
+            logger.error("Payment verification exception: checkoutId={}", checkoutId, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public RefundResult refundPayment(OrderId orderId, String transactionId, Money amount, String reason) {
+        logger.info("Processing refund for order: {}, transactionId: {}, amount: {}, reason: {}", 
+                    orderId.getValue(), transactionId, amount.getAmount(), reason);
+        try {
+            RefundResult result = delegate.refundPayment(orderId, transactionId, amount, reason);
+            if (result.success()) {
+                logger.info("Refund processed successfully: refundId={}", result.refundId());
             } else {
                 logger.warn("Refund failed: {}", result.message());
             }

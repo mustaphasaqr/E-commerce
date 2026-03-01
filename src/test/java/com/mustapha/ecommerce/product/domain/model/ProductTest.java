@@ -749,7 +749,7 @@ class ProductTest {
     void shouldReconstituteProduct() {
         ProductId id = ProductId.generate();
         Product product = Product.reconstitute(
-            id, validSku, "Test", "Description", validPrice, validStock,
+            id, validSku, "Test", "Description", new java.util.ArrayList<>(), validPrice, validStock,
             true, true, true, false, 5,
             java.time.LocalDateTime.now().minusDays(1),
             java.time.LocalDateTime.now()

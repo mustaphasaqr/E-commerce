@@ -60,6 +60,13 @@ public class OrderJpaEntity {
     // Delivery information - populated when order is delivered
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+    
+    // Payment information - populated during payment flow
+    @Column(name = "checkout_id")
+    private String checkoutId;
+    
+    @Column(name = "transaction_id")
+    private String transactionId;
 
     /**
      * Optimistic locking version
@@ -159,6 +166,22 @@ public class OrderJpaEntity {
 
     public void setDeliveredAt(LocalDateTime deliveredAt) {
         this.deliveredAt = deliveredAt;
+    }
+    
+    public String getCheckoutId() {
+        return checkoutId;
+    }
+    
+    public void setCheckoutId(String checkoutId) {
+        this.checkoutId = checkoutId;
+    }
+    
+    public String getTransactionId() {
+        return transactionId;
+    }
+    
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 
     public Long getVersion() {

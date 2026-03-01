@@ -10,10 +10,12 @@ import com.mustapha.ecommerce.product.domain.model.valueobject.Stock;
 import com.mustapha.ecommerce.product.dto.ProductListResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
+import com.mustapha.ecommerce.shared.service.storage.FileStorageService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Currency;
 import java.util.List;
@@ -52,6 +54,7 @@ public class ProductFacade {
     private final DeactivateProductUseCase deactivateProductUseCase;
     private final DiscontinueProductUseCase discontinueProductUseCase;
     private final com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository;
+    private final FileStorageService fileStorageService;
 
     public ProductFacade(CreateProductUseCase createProductUseCase,
                         GetProductByIdUseCase getProductByIdUseCase,
@@ -64,7 +67,8 @@ public class ProductFacade {
                         ActivateProductUseCase activateProductUseCase,
                         DeactivateProductUseCase deactivateProductUseCase,
                         DiscontinueProductUseCase discontinueProductUseCase,
-                        com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository) {
+                        com.mustapha.ecommerce.product.domain.repository.ProductRepository productRepository,
+                        FileStorageService fileStorageService) {
         this.createProductUseCase = createProductUseCase;
         this.getProductByIdUseCase = getProductByIdUseCase;
         this.getProductBySkuUseCase = getProductBySkuUseCase;
@@ -77,6 +81,7 @@ public class ProductFacade {
         this.deactivateProductUseCase = deactivateProductUseCase;
         this.discontinueProductUseCase = discontinueProductUseCase;
         this.productRepository = productRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     /**
@@ -240,5 +245,53 @@ public class ProductFacade {
         return productRepository.findAll().stream()
             .map(ProductListResponse::fromDomain)
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Upload Product Image
+     * Uploads file to storage (S3 or local) and adds URL to product
+     */
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true)
+    public String uploadProductImage(String productId, MultipartFile file) {
+        try {
+            // Upload file to storage service
+            String imageUrl = fileStorageService.uploadFile(file, "products");
+            
+            // Get product and add image URL
+            GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
+            Product product = getProductByIdUseCase.execute(query);
+            product.addImage(imageUrl);
+            
+            // Save product (will raise ProductUpdatedEvent)
+            productRepository.save(product);
+            
+            return imageUrl;
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to upload product image: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Delete Product Image
+     * Removes image from storage and product
+     */
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true)
+    public void deleteProductImage(String productId, String imageUrl) {
+        try {
+            // Get product and remove image URL
+            GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
+            Product product = getProductByIdUseCase.execute(query);
+            product.removeImage(imageUrl);
+            
+            // Save product (will raise ProductUpdatedEvent)
+            productRepository.save(product);
+            
+            // Delete file from storage
+            fileStorageService.deleteFile(imageUrl);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to delete product image: " + e.getMessage(), e);
+        }
     }
 }

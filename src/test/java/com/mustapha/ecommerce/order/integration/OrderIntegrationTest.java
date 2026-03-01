@@ -127,13 +127,31 @@ class OrderIntegrationTest {
         );
         customerJwt = loginResponse.getAccessToken();
         
-        // Stub payment to always succeed
-        when(paymentPort.processPayment(any(), any(), any(), any()))
-            .thenReturn(new PaymentResult(true, "txn_test_success", "Payment successful"));
+        // Stub payment to always succeed - using actual PaymentPort interface methods
+        when(paymentPort.createCheckout(any(), any(), any(), any()))
+            .thenReturn(new PaymentPort.CheckoutResult(
+                true, 
+                "checkout_test_123", 
+                "https://accept.paymob.com/iframe/test",
+                3600,
+                "Checkout created successfully"
+            ));
         
-        // Stub refund to always succeed
-        when(paymentPort.refundPayment(any(), any()))
-            .thenReturn(new PaymentResult(true, "refund_test_success", "Refund successful"));
+        when(paymentPort.verifyPayment(any()))
+            .thenReturn(new PaymentPort.PaymentVerificationResult(
+                true,
+                "txn_test_success",
+                PaymentPort.PaymentStatus.SUCCESS,
+                "Payment successful"
+            ));
+        
+        // Stub refund to always succeed - using correct signature (4 parameters)
+        when(paymentPort.refundPayment(any(), any(), any(), any()))
+            .thenReturn(new PaymentPort.RefundResult(
+                true, 
+                "refund_test_success", 
+                "Refund successful"
+            ));
         
         
         // Stub product service - always return true for existence and match prices from test data

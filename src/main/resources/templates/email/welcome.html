@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to E-commerce Platform</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 20px;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #555555;
+            margin-bottom: 15px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #667eea;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 30px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #5568d3;
+        }
+        .features {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .features h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #777777;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎉 Welcome to E-commerce Platform!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Hello <strong th:text="${username}">User</strong>,
+            </div>
+            
+            <p class="message">
+                Thank you for joining our platform! We're thrilled to have you as part of our community.
+            </p>
+            
+            <p class="message">
+                Your account has been successfully created, and you're now ready to explore thousands of products, 
+                exclusive deals, and personalized recommendations.
+            </p>
+            
+            <div style="text-align: center;">
+                <a href="http://localhost:3000/products" class="cta-button">Start Shopping</a>
+            </div>
+            
+            <div class="features">
+                <h3>What you can do now:</h3>
+                <ul>
+                    <li>Browse our extensive product catalog</li>
+                    <li>Add items to your wishlist</li>
+                    <li>Track your orders in real-time</li>
+                    <li>Get exclusive member-only deals</li>
+                    <li>Enjoy secure and fast checkout</li>
+                </ul>
+            </div>
+            
+            <p class="message">
+                If you have any questions or need assistance, our support team is here to help 24/7.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>
+                © 2026 E-commerce Platform. All rights reserved.<br>
+                <a href="http://localhost:3000/unsubscribe">Unsubscribe</a> | 
+                <a href="http://localhost:3000/privacy">Privacy Policy</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

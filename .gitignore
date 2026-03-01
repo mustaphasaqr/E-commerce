@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
+
+### Temporary Files ###
+*.log
+*.pid
+app-output.log
+app-startup-log.txt
+startup-*.txt
+error-log.txt
+test-output.txt
+test-results.txt
+product-test-output.txt

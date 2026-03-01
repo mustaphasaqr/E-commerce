@@ -43,6 +43,14 @@ public interface OrderRepository {
     List<Order> findByCustomerId(CustomerId customerId);
     
     /**
+     * Find order by checkout ID (payment session)
+     * Used during payment verification after customer returns from gateway
+     * @param checkoutId the Accept (Paymob) payment key / checkout session ID
+     * @return order if found
+     */
+    Optional<Order> findByCheckoutId(String checkoutId);
+    
+    /**
      * Check if order exists
      * @param id the order ID
      * @return true if order exists, false otherwise

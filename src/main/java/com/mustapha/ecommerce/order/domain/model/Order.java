@@ -41,6 +41,10 @@ public class Order {
     // Delivery information - populated when order is delivered
     private LocalDateTime deliveredAt;
     
+    // Payment information - populated during payment flow
+    private String checkoutId; // Accept (Paymob) payment key / checkout session ID
+    private String transactionId; // Accept transaction ID after successful payment
+    
     // Optimistic locking version (infrastructure concern tracked in domain for persistence)
     private Long version;
     
@@ -69,6 +73,8 @@ public class Order {
      * @param carrier Shipping carrier (null if not shipped)
      * @param deliveredAt Delivery timestamp (null if not delivered)
      * @param cancellationReason Cancellation reason (null if not cancelled)
+     * @param checkoutId Payment checkout ID (null if payment not initiated)
+     * @param transactionId Payment transaction ID (null if payment not completed)
      * @return Reconstituted Order with all original state
      */
     public static Order reconstitute(
@@ -82,6 +88,8 @@ public class Order {
             String carrier,
             LocalDateTime deliveredAt,
             String cancellationReason,
+            String checkoutId,
+            String transactionId,
             Long version) {
         Order order = new Order();
         order.id = id;
@@ -94,6 +102,8 @@ public class Order {
         order.carrier = carrier;
         order.deliveredAt = deliveredAt;
         order.cancellationReason = cancellationReason;
+        order.checkoutId = checkoutId;
+        order.transactionId = transactionId;
         order.version = version;
         order.recalculateTotal(); // Ensure total matches loaded items
         return order;
@@ -334,6 +344,24 @@ public class Order {
     
     public LocalDateTime getDeliveredAt() {
         return deliveredAt;
+    }
+    
+    public String getCheckoutId() {
+        return checkoutId;
+    }
+    
+    public void setCheckoutId(String checkoutId) {
+        this.checkoutId = checkoutId;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public String getTransactionId() {
+        return transactionId;
+    }
+    
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+        this.updatedAt = LocalDateTime.now();
     }
     
     public Long getVersion() {

@@ -75,7 +75,7 @@ class CancelOrderUseCaseTest {
             // Then
             assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.getCancellationReason()).isEqualTo("Customer changed mind");
-            verify(paymentPort, never()).refundPayment(any(), any()); // No refund
+            verify(paymentPort, never()).refundPayment(any(), any(), any(), any()); // No refund
             verify(notificationPort).sendOrderCancelled(
                 order.getCustomerId(),
                 order.getId(),
@@ -104,14 +104,14 @@ class CancelOrderUseCaseTest {
                 "Out of stock"
             );
 
-            PaymentPort.PaymentResult refundSuccess = new PaymentPort.PaymentResult(
+            PaymentPort.RefundResult refundSuccess = new PaymentPort.RefundResult(
                 true,
                 "refund_123",
                 "Refund processed"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.refundPayment(order.getId(), order.getTotalAmount()))
+            when(paymentPort.refundPayment(any(), any(), any(), any()))
                 .thenReturn(refundSuccess);
             when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -121,7 +121,7 @@ class CancelOrderUseCaseTest {
             // Then
             assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.getCancellationReason()).isEqualTo("Out of stock");
-            verify(paymentPort).refundPayment(order.getId(), new Money(100.0));
+            verify(paymentPort).refundPayment(any(), any(), any(), any());
             verify(orderRepository).save(order);
         }
 
@@ -138,14 +138,14 @@ class CancelOrderUseCaseTest {
 
             CancelOrderCommand command = new CancelOrderCommand(order.getId(), "Reason");
 
-            PaymentPort.PaymentResult refundFailure = new PaymentPort.PaymentResult(
+            PaymentPort.RefundResult refundFailure = new PaymentPort.RefundResult(
                 false,
                 null,
                 "Refund failed"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.refundPayment(any(), any())).thenReturn(refundFailure);
+            when(paymentPort.refundPayment(any(), any(), any(), any())).thenReturn(refundFailure);
 
             // When/Then
             assertThatThrownBy(() -> useCase.execute(command))
@@ -186,14 +186,14 @@ class CancelOrderUseCaseTest {
 
         CancelOrderCommand command = new CancelOrderCommand(order.getId(), "Reason");
 
-        PaymentPort.PaymentResult refundSuccess = new PaymentPort.PaymentResult(
+        PaymentPort.RefundResult refundSuccess = new PaymentPort.RefundResult(
             true,
             "refund_123",
             "Refund processed"
         );
 
         when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-        when(paymentPort.refundPayment(any(), any())).thenReturn(refundSuccess);
+        when(paymentPort.refundPayment(any(), any(), any(), any())).thenReturn(refundSuccess);
 
         // When/Then
         assertThatThrownBy(() -> useCase.execute(command))

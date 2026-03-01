@@ -19,6 +19,18 @@ Write-Host ""
 # Set Java home
 $env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.10"
 Write-Host "[2/4] Using Java: $env:JAVA_HOME" -ForegroundColor Yellow
+
+# Set SendGrid environment variables
+$env:SENDGRID_API_KEY = "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"
+$env:SENDGRID_FROM_EMAIL = "mustaphaosamasaqr@gmail.com"
+$env:SENDGRID_FROM_NAME = "E-commerce Platform"
+Write-Host "[INFO] SendGrid configured: $env:SENDGRID_FROM_EMAIL" -ForegroundColor Cyan
+
+# Set Accept (Paymob) environment variables
+$env:ACCEPT_API_KEY = (Get-Content .env | Select-String "ACCEPT_API_KEY" | ForEach-Object {$_ -replace "ACCEPT_API_KEY=",""})
+$env:ACCEPT_INTEGRATION_ID = (Get-Content .env | Select-String "ACCEPT_INTEGRATION_ID" | ForEach-Object {$_ -replace "ACCEPT_INTEGRATION_ID=",""})
+$env:ACCEPT_BASE_URL = (Get-Content .env | Select-String "ACCEPT_BASE_URL" | ForEach-Object {$_ -replace "ACCEPT_BASE_URL=",""})
+Write-Host "[INFO] Accept (Paymob) configured: Integration ID $env:ACCEPT_INTEGRATION_ID" -ForegroundColor Cyan
 Write-Host ""
 
 # Kill any existing Java processes running Spring Boot
@@ -48,11 +60,17 @@ if (Test-Path $logFile) { Remove-Item $logFile -Force }
 # Start Maven in a completely separate process (not tied to this terminal)
 $processInfo = New-Object System.Diagnostics.ProcessStartInfo
 $processInfo.FileName = "cmd.exe"
-$processInfo.Arguments = "/c `"set `"JAVA_HOME=$env:JAVA_HOME`" && mvn spring-boot:run > `"$logFile`" 2>&1`""
+$processInfo.Arguments = "/c `"set `"JAVA_HOME=$env:JAVA_HOME`" && mvn spring-boot:run -e -X > `"$logFile`" 2>&1`""
 $processInfo.UseShellExecute = $false
 $processInfo.CreateNoWindow = $true
 $processInfo.WorkingDirectory = Get-Location
 $processInfo.EnvironmentVariables["JAVA_HOME"] = $env:JAVA_HOME
+$processInfo.EnvironmentVariables["SENDGRID_API_KEY"] = $env:SENDGRID_API_KEY
+$processInfo.EnvironmentVariables["SENDGRID_FROM_EMAIL"] = $env:SENDGRID_FROM_EMAIL
+$processInfo.EnvironmentVariables["SENDGRID_FROM_NAME"] = $env:SENDGRID_FROM_NAME
+$processInfo.EnvironmentVariables["ACCEPT_API_KEY"] = $env:ACCEPT_API_KEY
+$processInfo.EnvironmentVariables["ACCEPT_INTEGRATION_ID"] = $env:ACCEPT_INTEGRATION_ID
+$processInfo.EnvironmentVariables["ACCEPT_BASE_URL"] = $env:ACCEPT_BASE_URL
 
 $process = New-Object System.Diagnostics.Process
 $process.StartInfo = $processInfo

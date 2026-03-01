@@ -1,16 +1,32 @@
 package com.mustapha.ecommerce.shared.external.email;
 
 import com.mustapha.ecommerce.user.application.port.EmailService;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Email Service Implementation
  * Responsibility: Send transactional emails (welcome, password reset, verification)
- * Pattern: Adapter (Domain Port → SMTP/Email Provider)
+ * Pattern: Adapter (Domain Port → SendGrid/Email Provider)
  * 
  * Scope: SHARED across User and Auth subdomains
  * Used by: User (welcome emails), Auth (password reset, verification)
@@ -20,43 +36,95 @@ import org.springframework.stereotype.Service;
  * - @CircuitBreaker: Stops calling email provider when failure rate exceeds 50%
  * - Fallback: Logs email details to database for manual retry
  * 
- * TODO (Week 3): Implement actual email sending
- * Options:
- * - Spring Mail (SMTP)
- * - SendGrid API
- * - AWS SES
- * - Azure Communication Services
+ * External Service: SendGrid (FREE tier: 100 emails/day)
+ * - If API key not configured: Falls back to MOCK mode (logs only)
+ * - Graceful degradation: Application works without external email
  */
 @Service
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
+    
+    private final SendGrid sendGrid;
+    private final String fromEmail;
+    private final String fromName;
+    private final boolean isEmailEnabled;
+    private final TemplateEngine templateEngine;
+
+    @Autowired
+    public EmailServiceImpl(
+            @Autowired(required = false) SendGrid sendGrid,
+            @Value("${email.sendgrid.from-email:noreply@example.com}") String fromEmail,
+            @Value("${email.sendgrid.from-name:E-commerce Platform}") String fromName,
+            @Value("${email.enabled:true}") boolean isEmailEnabled,
+            TemplateEngine templateEngine) {
+        this.sendGrid = sendGrid;
+        this.fromEmail = fromEmail;
+        this.fromName = fromName;
+        this.isEmailEnabled = isEmailEnabled;
+        this.templateEngine = templateEngine;
+        
+        if (sendGrid != null && isEmailEnabled) {
+            logger.info("✅ EmailService initialized with SendGrid (REAL mode)");
+        } else {
+            logger.warn("⚠️ EmailService initialized in MOCK mode (SendGrid not configured)");
+            logger.warn("   To enable real emails: Set SENDGRID_API_KEY environment variable");
+        }
+    }
 
     /**
      * Send welcome email with resilience patterns
      * - Retry on transient failures (SMTP timeout, network errors)
      * - Circuit breaker prevents cascade failures
      * - Fallback logs to database for manual retry
+     * - Async: Runs in background thread (doesn't block API)
      */
     @Override
+    @Async("emailTaskExecutor")
     @Retry(name = "emailService", fallbackMethod = "sendWelcomeEmailFallback")
     @CircuitBreaker(name = "emailService")
     public void sendWelcomeEmail(String email, String username) {
+        if (sendGrid == null || !isEmailEnabled) {
+            logger.info("📧 [MOCK] Welcome email to: {} (username: {})", email, username);
+            return;
+        }
+        
         try {
-            // TODO: Implement actual email sending
-            logger.info("📧 [MOCK] Sending welcome email to: {} (username: {})", email, username);
+            Email from = new Email(fromEmail, fromName);
+            Email to = new Email(email);
+            String subject = "Welcome to " + fromName + "!";
             
-            // Production implementation:
-            // - Load email template (Thymeleaf/Freemarker)
-            // - Substitute variables (username, verification link)
-            // - Send via SMTP or email provider API
-            // - Throw exception on failure to trigger retry/circuit breaker
+            // Render Thymeleaf template
+            String htmlContent = buildWelcomeEmailHtml(username);
+            Content content = new Content("text/html", htmlContent);
             
-            // Simulate success
-        } catch (Exception e) {
+            Mail mail = new Mail(from, subject, to, content);
+            
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            
+            Response response = sendGrid.api(request);
+            
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                logger.info("✅ Welcome email sent to: {}", email);
+            } else {
+                logger.error("❌ Failed to send welcome email to: {}. Status: {}, Body: {}", 
+                           email, response.getStatusCode(), response.getBody());
+                throw new RuntimeException("SendGrid returned status: " + response.getStatusCode());
+            }
+            
+        } catch (IOException e) {
             logger.error("Failed to send welcome email to: {}", email, e);
             throw new RuntimeException("Email sending failed", e);
         }
+    }
+    
+    private String buildWelcomeEmailHtml(String username) {
+        Context context = new Context();
+        context.setVariable("username", username);
+        return templateEngine.process("email/welcome", context);
     }
     
     /**
@@ -77,26 +145,60 @@ public class EmailServiceImpl implements EmailService {
 
     /**
      * Send password reset email with resilience patterns
+     * - Async: Runs in background thread (doesn't block API)
      */
     @Override
+    @Async("emailTaskExecutor")
     @Retry(name = "emailService", fallbackMethod = "sendPasswordResetEmailFallback")
     @CircuitBreaker(name = "emailService")
     public void sendPasswordResetEmail(String email, String resetToken) {
-        try {
-            // TODO: Implement actual email sending
-            logger.info("📧 [MOCK] Sending password reset email to: {} (token: {}...)", 
+        if (sendGrid == null || !isEmailEnabled) {
+            logger.info("📧 [MOCK] Password reset email to: {} (token: {}...)", 
                        email, resetToken.substring(0, Math.min(8, resetToken.length())));
+            return;
+        }
+        
+        try {
+            Email from = new Email(fromEmail, fromName);
+            Email to = new Email(email);
+            String subject = "Password Reset Request";
             
-            // Production implementation:
-            // - Generate reset link: https://domain.com/reset-password?token={resetToken}
-            // - Token expires in 24 hours
-            // - Include security warning
+            // Render Thymeleaf template
+            String htmlContent = buildPasswordResetEmailHtml(resetToken);
+            Content content = new Content("text/html", htmlContent);
             
-            // Simulate success
-        } catch (Exception e) {
+            Mail mail = new Mail(from, subject, to, content);
+            
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            
+            Response response = sendGrid.api(request);
+            
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                logger.info("✅ Password reset email sent to: {}", email);
+            } else {
+                logger.error("❌ Failed to send password reset email to: {}. Status: {}", 
+                           email, response.getStatusCode());
+                throw new RuntimeException("SendGrid returned status: " + response.getStatusCode());
+            }
+            
+        } catch (IOException e) {
             logger.error("Failed to send password reset email to: {}", email, e);
             throw new RuntimeException("Email sending failed", e);
         }
+    }
+    
+    private String buildPasswordResetEmailHtml(String resetToken) {
+        String resetLink = "http://localhost:3000/reset-password?token=" + resetToken;
+        LocalDateTime expirationTime = LocalDateTime.now().plusHours(24);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' hh:mm a");
+        
+        Context context = new Context();
+        context.setVariable("resetLink", resetLink);
+        context.setVariable("expirationTime", expirationTime.format(formatter));
+        return templateEngine.process("email/password-reset", context);
     }
     
     private void sendPasswordResetEmailFallback(String email, String resetToken, Throwable throwable) {
@@ -108,25 +210,60 @@ public class EmailServiceImpl implements EmailService {
 
     /**
      * Send email verification with resilience patterns
+     * - Async: Runs in background thread (doesn't block API)
      */
     @Override
+    @Async("emailTaskExecutor")
     @Retry(name = "emailService", fallbackMethod = "sendEmailVerificationEmailFallback")
     @CircuitBreaker(name = "emailService")
     public void sendEmailVerificationEmail(String email, String verificationToken) {
-        try {
-            // TODO: Implement actual email sending
-            logger.info("📧 [MOCK] Sending email verification to: {} (token: {}...)", 
+        if (sendGrid == null || !isEmailEnabled) {
+            logger.info("📧 [MOCK] Email verification to: {} (token: {}...)", 
                        email, verificationToken.substring(0, Math.min(8, verificationToken.length())));
+            return;
+        }
+        
+        try {
+            Email from = new Email(fromEmail, fromName);
+            Email to = new Email(email);
+            String subject = "Verify Your Email Address";
             
-            // Production implementation:
-            // - Generate verification link: https://domain.com/verify-email?token={verificationToken}
-            // - Token expires in 48 hours
+            // Render Thymeleaf template
+            String htmlContent = buildEmailVerificationHtml(verificationToken);
+            Content content = new Content("text/html", htmlContent);
             
-            // Simulate success
-        } catch (Exception e) {
+            Mail mail = new Mail(from, subject, to, content);
+            
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            
+            Response response = sendGrid.api(request);
+            
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                logger.info("✅ Email verification sent to: {}", email);
+            } else {
+                logger.error("❌ Failed to send verification email to: {}. Status: {}", 
+                           email, response.getStatusCode());
+                throw new RuntimeException("SendGrid returned status: " + response.getStatusCode());
+            }
+            
+        } catch (IOException e) {
             logger.error("Failed to send verification email to: {}", email, e);
             throw new RuntimeException("Email sending failed", e);
         }
+    }
+    
+    private String buildEmailVerificationHtml(String verificationToken) {
+        String verificationLink = "http://localhost:3000/verify-email?token=" + verificationToken;
+        LocalDateTime expirationTime = LocalDateTime.now().plusHours(48);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' hh:mm a");
+        
+        Context context = new Context();
+        context.setVariable("verificationLink", verificationLink);
+        context.setVariable("expirationTime", expirationTime.format(formatter));
+        return templateEngine.process("email/email-verification", context);
     }
     
     private void sendEmailVerificationEmailFallback(String email, String verificationToken, Throwable throwable) {
