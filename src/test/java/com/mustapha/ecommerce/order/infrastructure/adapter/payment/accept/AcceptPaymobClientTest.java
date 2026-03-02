@@ -86,7 +86,7 @@ class AcceptPaymobClientTest {
 
         // Then: Should return mock payment key
         assertThat(response.paymentKey()).isNotNull();
-        assertThat(response.paymentKey()).startsWith("mock_payment_key_");
+        assertThat(response.paymentKey()).startsWith("txn_mock_");
         assertThat(response.error()).isNull();
         assertThat(response.expiresInSeconds()).isEqualTo(1800); // 30 minutes
     }
@@ -218,9 +218,9 @@ class AcceptPaymobClientTest {
         // When: Call legacy method
         String paymentKey = acceptClient.chargeWithIdempotency(amount, token, idempotencyKey);
 
-        // Then: Should return payment key (MOCK mode returns mock_payment_key format)
+        // Then: Should return payment key (MOCK mode returns txn_mock_ format)
         assertThat(paymentKey).isNotNull();
-        assertThat(paymentKey).startsWith("mock_payment_key_");
+        assertThat(paymentKey).startsWith("txn_mock_");
 
         // And: Second call with same key returns same payment key (idempotency)
         String secondKey = acceptClient.chargeWithIdempotency(amount, token, idempotencyKey);

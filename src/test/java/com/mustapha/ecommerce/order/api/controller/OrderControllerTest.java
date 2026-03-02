@@ -65,6 +65,9 @@ class OrderControllerTest {
     private OrderFacade orderFacade;
 
     @MockBean
+    private com.mustapha.ecommerce.order.application.port.TaxCalculationPort taxCalculationPort;
+
+    @MockBean
     private JwtTokenGenerator jwtTokenGenerator;
     
     @MockBean

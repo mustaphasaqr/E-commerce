@@ -35,6 +35,38 @@ public class Order {
     private String trackingNumber;
     private String carrier;
     
+    // ============================================
+    // PRODUCTION TODO: Delivery Address Fields
+    // ============================================
+    // Add these fields to store customer's delivery address
+    // This is CRITICAL for real shipping integration
+    // Reference: See SHIPPING_TODO.md Section 1
+    // ============================================
+    /*
+    // Delivery address - captured during order placement
+    private String deliveryFullName;      // Recipient name (e.g., "John Smith")
+    private String deliveryCompany;       // Company name (optional, e.g., "ABC Corp")
+    private String deliveryAddressLine1;  // Street, P.O. box (e.g., "123 Main St")
+    private String deliveryAddressLine2;  // Apt, suite, floor (optional, e.g., "Apt 4B")
+    private String deliveryCity;          // City/District (e.g., "Cairo", "New Cairo")
+    private String deliveryState;         // State/Province/Region (e.g., "Cairo Governorate")
+    private String deliveryPostalCode;    // ZIP/Postal code (e.g., "11511")
+    private String deliveryCountry;       // ISO 3166-1 alpha-2 code (e.g., "EG", "AE", "SA")
+    private String deliveryPhone;         // Contact phone (e.g., "+201234567890")
+    private String deliveryEmail;         // Contact email (optional, e.g., "john@example.com")
+    */
+    // ============================================
+    // After adding these fields:
+    // 1. Add to OrderJpaEntity with @Column annotations
+    // 2. Add getters (no setters - set during order creation)
+    // 3. Update Order.reconstitute() method
+    // 4. Update OrderBuilder or constructor to accept delivery address
+    // 5. Update OrderMapper to map these fields
+    // 6. Create database migration (Flyway/Liquibase)
+    // 7. Update OrderRequest DTO to accept delivery address from API
+    // 8. Update ShipOrderUseCase to use these fields instead of placeholders
+    // ============================================
+    
     // Cancellation information - populated when order is cancelled
     private String cancellationReason;
     
@@ -273,6 +305,50 @@ public class Order {
                 .map(OrderItem::getTotal)
                 .reduce(new Money(0), Money::add);
     }
+    
+    // ============================================
+    // PRODUCTION TODO: Package Weight Calculation
+    // ============================================
+    // Add this method for real shipping integration
+    // Reference: See SHIPPING_TODO.md Section 2
+    // ============================================
+    /*
+    /**
+     * Calculate total package weight from all order items
+     * Used by shipping integration to calculate shipping costs
+     * 
+     * Prerequisite: OrderItem must have weightKg field
+     * 
+     * Business Rules:
+     * - Each item has weight per unit (in kilograms)
+     * - Total weight = sum(item.weightKg * item.quantity)
+     * - Fallback to 2.0 kg if no weight data available
+     * 
+     * @return Total weight in kilograms
+     */
+    /*
+    public double calculateTotalWeight() {
+        if (items == null || items.isEmpty()) {
+            return 2.0; // Default for empty orders
+        }
+        
+        double totalWeight = items.stream()
+            .filter(item -> item.getWeightKg() != null)
+            .mapToDouble(item -> item.getWeightKg() * item.getQuantity())
+            .sum();
+        
+        // Fallback to default if no items have weight data
+        return totalWeight > 0 ? totalWeight : 2.0;
+    }
+    */
+    // ============================================
+    // To implement:
+    // 1. Add weightKg field to OrderItem.java
+    // 2. Add weightKg field to OrderItemJpaEntity.java
+    // 3. Create database migration (ALTER TABLE order_items ADD COLUMN weight_kg)
+    // 4. Uncomment this method
+    // 5. Update ShipOrderUseCase line 95 to use order.calculateTotalWeight()
+    // ============================================
 
     // ========== Getters (No dangerous setters!) ==========
     

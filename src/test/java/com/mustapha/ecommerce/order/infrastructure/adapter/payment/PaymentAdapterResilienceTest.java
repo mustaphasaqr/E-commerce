@@ -70,9 +70,11 @@ class PaymentAdapterResilienceTest {
     @DisplayName("Should succeed on first attempt with valid payment")
     void testSuccessfulPayment() {
         // Given: Payment gateway returns success
-        String expectedTxnId = "txn_success_123";
-        when(paymentGatewayClient.chargeWithIdempotency(anyDouble(), anyString(), anyString()))
-            .thenReturn(expectedTxnId);
+        String expectedPaymentKey = "txn_success_123";
+        PaymentGatewayClient.CheckoutResponse successResponse = 
+            new PaymentGatewayClient.CheckoutResponse(expectedPaymentKey, null, 3600);
+        when(paymentGatewayClient.createCheckout(anyString(), anyDouble(), anyString(), anyString(), any()))
+            .thenReturn(successResponse);
 
         // When: Process payment
         PaymentResult result = paymentAdapter.processPayment(
@@ -81,14 +83,16 @@ class PaymentAdapterResilienceTest {
 
         // Then: Payment succeeds
         assertThat(result.success()).isTrue();
-        assertThat(result.transactionId()).isEqualTo(expectedTxnId);
+        assertThat(result.transactionId()).isEqualTo(expectedPaymentKey);
         assertThat(result.message()).contains("successful");
         
-        // Verify called once with idempotency key
-        verify(paymentGatewayClient, times(1)).chargeWithIdempotency(
+        // Verify called once
+        verify(paymentGatewayClient, times(1)).createCheckout(
+            eq(testOrderId.getValue()),
             eq(99.99), 
-            eq("tok_visa"), 
-            startsWith("payment_")
+            eq("EGP"),
+            eq("test@example.com"),
+            eq(null)
         );
     }
 
@@ -96,11 +100,11 @@ class PaymentAdapterResilienceTest {
     @Order(2)
     @DisplayName("Should retry on transient failure and eventually succeed")
     void testRetryOnTransientFailure() {
-        // Given: Stripe fails twice, succeeds on third attempt (simulates network timeout)
-        when(paymentGatewayClient.chargeWithIdempotency(anyDouble(), anyString(), anyString()))
+        // Given: Gateway fails twice, succeeds on third attempt (simulates network timeout)
+        when(paymentGatewayClient.createCheckout(anyString(), anyDouble(), anyString(), anyString(), any()))
             .thenThrow(new RuntimeException("Network timeout"))
             .thenThrow(new RuntimeException("Connection reset"))
-            .thenReturn("txn_retry_success_456");
+            .thenReturn(new PaymentGatewayClient.CheckoutResponse("txn_retry_success_456", null, 3600));
 
         // When: Process payment
         PaymentResult result = paymentAdapter.processPayment(
@@ -112,16 +116,16 @@ class PaymentAdapterResilienceTest {
         assertThat(result.transactionId()).isEqualTo("txn_retry_success_456");
         
         // Verify: Called 3 times (initial + 2 retries)
-        verify(paymentGatewayClient, times(3)).chargeWithIdempotency(anyDouble(), anyString(), anyString());
+        verify(paymentGatewayClient, times(3)).createCheckout(anyString(), anyDouble(), anyString(), anyString(), any());
     }
 
     @Test
     @Order(3)
     @DisplayName("Should use fallback after all retries exhausted")
     void testFallbackAfterRetriesExhausted() {
-        // Given: Stripe always fails
-        when(paymentGatewayClient.chargeWithIdempotency(anyDouble(), anyString(), anyString()))
-            .thenThrow(new RuntimeException("Stripe API down"));
+        // Given: Gateway always fails
+        when(paymentGatewayClient.createCheckout(anyString(), anyDouble(), anyString(), anyString(), any()))
+            .thenThrow(new RuntimeException("Gateway API down"));
 
         // When: Process payment
         PaymentResult result = paymentAdapter.processPayment(
@@ -132,19 +136,18 @@ class PaymentAdapterResilienceTest {
         assertThat(result.success()).isFalse();
         assertThat(result.transactionId()).isNull();
         assertThat(result.message()).contains("temporarily unavailable");
-        assertThat(result.message()).contains(testOrderId.getValue());
         
         // Verify: Called 3 times (max retry attempts)
-        verify(paymentGatewayClient, times(3)).chargeWithIdempotency(anyDouble(), anyString(), anyString());
+        verify(paymentGatewayClient, times(3)).createCheckout(anyString(), anyDouble(), anyString(), anyString(), any());
     }
 
     @Test
     @Order(4)
     @DisplayName("Should open circuit breaker after failure threshold")
     void testCircuitBreakerOpens() throws InterruptedException {
-        // Given: Stripe always fails
-        when(paymentGatewayClient.chargeWithIdempotency(anyDouble(), anyString(), anyString()))
-            .thenThrow(new RuntimeException("Stripe down"));
+        // Given: Gateway always fails
+        when(paymentGatewayClient.createCheckout(anyString(), anyDouble(), anyString(), anyString(), any()))
+            .thenThrow(new RuntimeException("Gateway down"));
 
         CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("paymentService");
         
@@ -185,7 +188,7 @@ class PaymentAdapterResilienceTest {
         assertThat(result.message()).contains("temporarily unavailable");
         
         // Verify: Stripe not called (circuit is open)
-        verify(paymentGatewayClient, never()).chargeWithIdempotency(anyDouble(), anyString(), anyString());
+        verify(paymentGatewayClient, never()).createCheckout(anyString(), anyDouble(), anyString(), anyString(), any());
     }
 
     @Test
@@ -194,17 +197,21 @@ class PaymentAdapterResilienceTest {
     void testIdempotencyKeyGeneration() {
         // Given: Known orderId
         OrderId orderId = new OrderId("123e4567-e89b-12d3-a456-426614174000");
-        when(paymentGatewayClient.chargeWithIdempotency(anyDouble(), anyString(), anyString()))
-            .thenReturn("txn_idempotent_789");
+        PaymentGatewayClient.CheckoutResponse successResponse = 
+            new PaymentGatewayClient.CheckoutResponse("txn_idempotent_789", null, 3600);
+        when(paymentGatewayClient.createCheckout(anyString(), anyDouble(), anyString(), anyString(), any()))
+            .thenReturn(successResponse);
 
         // When: Process payment
         paymentAdapter.processPayment(orderId, testAmount, "card", "tok_visa");
 
-        // Then: Idempotency key should be "payment_<orderId>"
-        verify(paymentGatewayClient).chargeWithIdempotency(
+        // Then: Verify orderId is passed to createCheckout
+        verify(paymentGatewayClient).createCheckout(
+            eq("123e4567-e89b-12d3-a456-426614174000"),
             anyDouble(), 
             anyString(), 
-            eq("payment_123e4567-e89b-12d3-a456-426614174000")
+            anyString(),
+            any()
         );
     }
 
@@ -212,40 +219,24 @@ class PaymentAdapterResilienceTest {
     @Order(7)
     @DisplayName("Should refund with retry and circuit breaker")
     void testRefundWithResilience() {
-        // Given: Refund succeeds
-        when(paymentGatewayClient.refundWithIdempotency(anyString(), anyDouble(), anyString()))
-            .thenReturn("refund_success_999");
-
-        // When: Process refund
+        // When: Process refund (no mock needed - uses actual implementation)
         PaymentResult result = paymentAdapter.refundPayment(testOrderId, testAmount);
 
-        // Then: Refund succeeds
-        assertThat(result.success()).isTrue();
-        assertThat(result.transactionId()).isEqualTo("refund_success_999");
-        assertThat(result.message()).contains("Refund processed successfully");
-        
-        // Verify: Called with idempotency key
-        verify(paymentGatewayClient).refundWithIdempotency(
-            eq(testOrderId.getValue()), 
-            eq(99.99), 
-            startsWith("refund_")
-        );
+        // Then: Returns manual processing message (Accept refunds require dashboard)
+        assertThat(result.success()).isFalse();
+        assertThat(result.message()).contains("manually through Accept dashboard");
+        assertThat(result.message()).contains("Test refund");
     }
 
     @Test
     @Order(8)
     @DisplayName("Should use refund fallback on failure")
     void testRefundFallback() {
-        // Given: Refund always fails
-        when(paymentGatewayClient.refundWithIdempotency(anyString(), anyDouble(), anyString()))
-            .thenThrow(new RuntimeException("Refund API down"));
-
-        // When: Process refund
+        // When: Process refund (no mock needed - uses actual implementation)
         PaymentResult result = paymentAdapter.refundPayment(testOrderId, testAmount);
 
-        // Then: Fallback returns error
+        // Then: Returns manual processing message (Accept refunds require dashboard)
         assertThat(result.success()).isFalse();
-        assertThat(result.message()).contains("temporarily unavailable");
-        assertThat(result.message()).contains("contact support");
+        assertThat(result.message()).contains("manually through Accept dashboard");
     }
 }

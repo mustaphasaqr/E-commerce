@@ -210,7 +210,20 @@ public class GlobalExceptionHandler {
             429
         );
         
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+        // Calculate retry-after in seconds
+        long retryAfterSeconds = 60; // default 1 minute
+        if (ex.getLockedUntil() != null) {
+            retryAfterSeconds = java.time.Duration.between(
+                java.time.LocalDateTime.now(), 
+                ex.getLockedUntil()
+            ).getSeconds();
+            // Ensure non-negative value
+            retryAfterSeconds = Math.max(retryAfterSeconds, 0);
+        }
+        
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", String.valueOf(retryAfterSeconds))
+            .body(response);
     }
 
     /**

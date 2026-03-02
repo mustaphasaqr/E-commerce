@@ -82,18 +82,20 @@ class PayOrderUseCaseTest {
                 new Money(100.0)
             );
 
-            PaymentPort.PaymentResult successResult = new PaymentPort.PaymentResult(
+            PaymentPort.CheckoutResult successResult = new PaymentPort.CheckoutResult(
                 true,
                 "txn_123",
+                "https://example.com/checkout",
+                3600,
                 "Payment successful"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.processPayment(
+            when(paymentPort.createCheckout(
                 order.getId(),
                 command.getAmount(),
                 command.getPaymentMethod(),
-                command.getPaymentToken()
+                "customer-123@example.com"
             )).thenReturn(successResult);
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -102,11 +104,11 @@ class PayOrderUseCaseTest {
 
             // Then
             assertThat(result.getStatus()).isEqualTo(OrderStatus.PAID);
-            verify(paymentPort).processPayment(
+            verify(paymentPort).createCheckout(
                 order.getId(),
                 command.getAmount(),
                 "credit_card",
-                "tok_visa"
+                "customer-123@example.com"
             );
             verify(orderRepository).save(order);
             verify(notificationPort).sendPaymentReceived(order.getCustomerId(), order.getId());
@@ -124,14 +126,16 @@ class PayOrderUseCaseTest {
                 new Money(100.0)
             );
 
-            PaymentPort.PaymentResult successResult = new PaymentPort.PaymentResult(
+            PaymentPort.CheckoutResult successResult = new PaymentPort.CheckoutResult(
                 true,
                 "txn_123",
+                "https://example.com/checkout",
+                3600,
                 "Payment successful"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.processPayment(any(), any(), any(), any())).thenReturn(successResult);
+            when(paymentPort.createCheckout(any(), any(), any(), any())).thenReturn(successResult);
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // When
@@ -159,19 +163,21 @@ class PayOrderUseCaseTest {
                 new Money(100.0)
             );
 
-            PaymentPort.PaymentResult failureResult = new PaymentPort.PaymentResult(
+            PaymentPort.CheckoutResult failureResult = new PaymentPort.CheckoutResult(
                 false,
                 null,
+                null,
+                0,
                 "Insufficient funds"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.processPayment(any(), any(), any(), any())).thenReturn(failureResult);
+            when(paymentPort.createCheckout(any(), any(), any(), any())).thenReturn(failureResult);
 
             // When/Then
             assertThatThrownBy(() -> useCase.execute(command))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Payment failed");
+                .hasMessageContaining("Payment checkout failed");
 
             // Order should not be saved or marked as paid
             verify(orderRepository, never()).save(any());
@@ -197,7 +203,7 @@ class PayOrderUseCaseTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Order not found");
 
-            verify(paymentPort, never()).processPayment(any(), any(), any(), any());
+            verify(paymentPort, never()).createCheckout(any(), any(), any(), any());
         }
     }
 
@@ -219,14 +225,16 @@ class PayOrderUseCaseTest {
                 new Money(100.0)
             );
 
-            PaymentPort.PaymentResult successResult = new PaymentPort.PaymentResult(
+            PaymentPort.CheckoutResult successResult = new PaymentPort.CheckoutResult(
                 true,
                 "txn_123",
+                "https://example.com/checkout",
+                3600,
                 "Payment successful"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.processPayment(any(), any(), any(), any())).thenReturn(successResult);
+            when(paymentPort.createCheckout(any(), any(), any(), any())).thenReturn(successResult);
 
             // When/Then
             assertThatThrownBy(() -> useCase.execute(command))
@@ -257,14 +265,16 @@ class PayOrderUseCaseTest {
                 new Money(50.0)
             );
 
-            PaymentPort.PaymentResult successResult = new PaymentPort.PaymentResult(
+            PaymentPort.CheckoutResult successResult = new PaymentPort.CheckoutResult(
                 true,
                 "txn_123",
+                "https://example.com/checkout",
+                3600,
                 "Payment successful"
             );
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(paymentPort.processPayment(any(), any(), any(), any())).thenReturn(successResult);
+            when(paymentPort.createCheckout(any(), any(), any(), any())).thenReturn(successResult);
 
             // When/Then
             assertThatThrownBy(() -> useCase.execute(command))

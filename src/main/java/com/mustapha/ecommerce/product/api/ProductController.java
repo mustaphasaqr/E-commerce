@@ -1,6 +1,10 @@
 package com.mustapha.ecommerce.product.api;
 
 import com.mustapha.ecommerce.product.application.facade.ProductFacade;
+import com.mustapha.ecommerce.product.application.port.RecommendationPort;
+import com.mustapha.ecommerce.product.application.port.RecommendationPort.ProductRecommendation;
+import com.mustapha.ecommerce.product.application.port.ProductReviewPort;
+import com.mustapha.ecommerce.product.application.port.ProductReviewPort.*;
 import com.mustapha.ecommerce.product.dto.ProductListResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
@@ -8,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,9 +31,15 @@ import java.util.Map;
 public class ProductController {
 
     private final ProductFacade productFacade;
+    private final ProductReviewPort productReviewPort;
+    private final RecommendationPort recommendationPort;
 
-    public ProductController(ProductFacade productFacade) {
+    public ProductController(ProductFacade productFacade, 
+                           ProductReviewPort productReviewPort,
+                           RecommendationPort recommendationPort) {
         this.productFacade = productFacade;
+        this.productReviewPort = productReviewPort;
+        this.recommendationPort = recommendationPort;
     }
 
     /**
@@ -230,5 +241,104 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to delete image: " + e.getMessage()));
         }
+    }
+
+    // ========== REVIEW ENDPOINTS ==========
+
+    /**
+     * Get product reviews (paginated)
+     * GET /api/products/{id}/reviews?page=0&size=10&sortBy=MOST_HELPFUL
+     */
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<ReviewsPage> getProductReviews(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
+        
+        ReviewsPage reviews = productReviewPort.getProductReviews(id, page, size, sortBy);
+        return ResponseEntity.ok(reviews);
+    }
+
+    /**
+     * Get product review statistics
+     * GET /api/products/{id}/reviews/stats
+     */
+    @GetMapping("/{id}/reviews/stats")
+    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable Long id) {
+        ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Submit a product review
+     * POST /api/products/{id}/reviews
+     * Requires authentication
+     */
+    @PostMapping("/{id}/reviews")
+    public ResponseEntity<Map<String, Object>> submitReview(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody SubmitReviewRequest request) {
+        
+        Long reviewId = productReviewPort.submitReview(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("reviewId", reviewId, "message", "Review submitted successfully"));
+    }
+
+    /**
+     * Mark review as helpful
+     * POST /api/products/{productId}/reviews/{reviewId}/helpful
+     */
+    @PostMapping("/{productId}/reviews/{reviewId}/helpful")
+    public ResponseEntity<Map<String, String>> markReviewHelpful(
+            @PathVariable Long productId,
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal String userId) {
+        
+        productReviewPort.markHelpful(reviewId, Long.parseLong(userId));
+        return ResponseEntity.ok(Map.of("message", "Review marked as helpful"));
+    }
+
+    // ========== RECOMMENDATION ENDPOINTS ==========
+
+    /**
+     * Get trending product recommendations
+     * GET /api/products/recommendations/trending?limit=10
+     */
+    @GetMapping("/recommendations/trending")
+    public ResponseEntity<List<ProductRecommendation>> getTrendingProducts(
+            @RequestParam(defaultValue = "10") int limit) {
+        
+        List<ProductRecommendation> recommendations = recommendationPort.getTrendingProducts(limit);
+        return ResponseEntity.ok(recommendations);
+    }
+
+    /**
+     * Get personalized recommendations for a customer
+     * GET /api/products/recommendations/for-you?limit=10
+     */
+    @GetMapping("/recommendations/for-you")
+    public ResponseEntity<List<ProductRecommendation>> getPersonalizedRecommendations(
+            @AuthenticationPrincipal String userId,
+            @RequestParam(defaultValue = "10") int limit) {
+        
+        List<ProductRecommendation> recommendations = 
+            recommendationPort.getRecommendationsForCustomer(Long.parseLong(userId), limit);
+        return ResponseEntity.ok(recommendations);
+    }
+
+    /**
+     * Get frequently bought together products
+     * GET /api/products/{id}/recommendations/frequently-bought-together
+     */
+    @GetMapping("/{id}/recommendations/frequently-bought-together")
+    public ResponseEntity<List<ProductRecommendation>> getFrequentlyBoughtTogether(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "5") int limit) {
+        
+        List<ProductRecommendation> recommendations = 
+            recommendationPort.getFrequentlyBoughtTogether(id, limit);
+        return ResponseEntity.ok(recommendations);
     }
 }

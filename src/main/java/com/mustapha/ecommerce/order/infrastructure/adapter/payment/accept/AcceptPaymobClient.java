@@ -331,7 +331,7 @@ public class AcceptPaymobClient implements PaymentGatewayClient {
      * MOCK mode: Create fake checkout for testing
      */
     private CheckoutResponse createMockCheckout(String orderId, String idempotencyKey) {
-        String mockPaymentKey = "mock_payment_key_" + UUID.randomUUID().toString().substring(0, 8);
+        String mockPaymentKey = "txn_mock_" + UUID.randomUUID().toString().substring(0, 8);
         idempotencyStore.put(idempotencyKey, mockPaymentKey);
         
         logger.info("🎭 MOCK checkout created: orderId={}, paymentKey={}", orderId, mockPaymentKey);
@@ -354,35 +354,41 @@ public class AcceptPaymobClient implements PaymentGatewayClient {
      */
     @Override
     public String chargeWithIdempotency(double amount, String paymentToken, String idempotencyKey) {
-        // Check idempotency store first
-        if (idempotencyStore.containsKey(idempotencyKey)) {
-            String cachedResult = idempotencyStore.get(idempotencyKey);
-            logger.debug("Idempotency hit: key={}, result={}", idempotencyKey, cachedResult);
-            return cachedResult;
-        }
-        
-        try {
-            // Create checkout and return payment key as transaction ID
-            CheckoutResponse response = createCheckout(
-                idempotencyKey,  // Use idempotency key as order ID
-                amount,
-                "EGP",
-                "test@example.com",
-                null
-            );
+        // Use computeIfAbsent for thread-safe idempotency
+        return idempotencyStore.computeIfAbsent(idempotencyKey, key -> {
+            logger.debug("Idempotency miss: key={}, creating new charge", idempotencyKey);
             
-            if (response.paymentKey() != null) {
-                // Store in idempotency cache
-                idempotencyStore.put(idempotencyKey, response.paymentKey());
-                return response.paymentKey();
-            } else {
-                throw new RuntimeException("Payment failed: " + response.error());
+            try {
+                // Generate transaction ID directly (don't go through createCheckout to avoid double idempotency)
+                String txnId;
+                if (!isRealModeEnabled) {
+                    // MOCK mode: generate mock transaction ID
+                    txnId = "txn_mock_" + UUID.randomUUID().toString().substring(0, 8);
+                    logger.info("🎭 MOCK charge: key={}, txnId={}", idempotencyKey, txnId);
+                } else {
+                    // Real mode: create checkout and return payment key as transaction ID
+                    CheckoutResponse response = createCheckout(
+                        idempotencyKey,  // Use idempotency key as order ID
+                        amount,
+                        "EGP",
+                        "test@example.com",
+                        null
+                    );
+                    
+                    if (response.paymentKey() != null) {
+                        txnId = response.paymentKey();
+                    } else {
+                        throw new RuntimeException("Payment failed: " + response.error());
+                    }
+                }
+                
+                return txnId;
+                
+            } catch (Exception e) {
+                logger.error("Charge failed: key={}, error={}", idempotencyKey, e.getMessage());
+                throw new RuntimeException("Payment charge failed: " + e.getMessage(), e);
             }
-            
-        } catch (Exception e) {
-            logger.error("Charge failed: key={}, error={}", idempotencyKey, e.getMessage());
-            throw new RuntimeException("Payment charge failed: " + e.getMessage(), e);
-        }
+        });
     }
     
     /**

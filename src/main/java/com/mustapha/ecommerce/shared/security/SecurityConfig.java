@@ -112,8 +112,9 @@ public class SecurityConfig {
             
             // Configure authorization
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints - Health checks
+                // Public endpoints - Health checks & Actuator
                 .requestMatchers("/health/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 
                 // Public endpoints - Authentication (login, register, refresh, password reset, email verification)
                 .requestMatchers("/api/auth/login").permitAll()
@@ -130,6 +131,9 @@ public class SecurityConfig {
                 
                 // Public endpoints - Product browsing (GET only)
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                
+                // Public endpoints - Tax calculation preview (POST allowed for tax preview)
+                .requestMatchers(HttpMethod.POST, "/api/orders/calculate-tax").permitAll()
                 
                 // All other /api/** endpoints require authentication
                 .requestMatchers("/api/**").authenticated()

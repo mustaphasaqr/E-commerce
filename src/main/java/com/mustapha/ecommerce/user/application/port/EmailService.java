@@ -33,4 +33,13 @@ public interface EmailService {
      * @param username User's username
      */
     void sendWelcomeEmail(String toEmail, String username);
+    
+    /**
+     * Send transactional email (orders, shipping, etc.)
+     * 
+     * @param toEmail Recipient email address
+     * @param subject Email subject
+     * @param htmlContent HTML email content
+     */
+    void sendTransactionalEmail(String toEmail, String subject, String htmlContent);
 }

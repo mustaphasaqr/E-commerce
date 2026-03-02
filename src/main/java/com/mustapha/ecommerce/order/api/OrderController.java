@@ -1,5 +1,8 @@
 package com.mustapha.ecommerce.order.api;
 
+import com.mustapha.ecommerce.order.application.port.TaxCalculationPort;
+import com.mustapha.ecommerce.order.application.port.TaxCalculationPort.TaxCalculation;
+import com.mustapha.ecommerce.order.application.port.TaxCalculationPort.TaxCalculationRequest;
 import com.mustapha.ecommerce.shared.security.authorization.ResourceType;
 import com.mustapha.ecommerce.shared.security.authorization.VerifyOwnership;
 import jakarta.validation.Valid;
@@ -27,10 +30,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrderController {
 
     private final OrderFacade orderFacade;
+    private final TaxCalculationPort taxCalculationPort;
     private final ConcurrentHashMap<String, OrderResponse> idempotencyCache = new ConcurrentHashMap<>();
 
-    public OrderController(OrderFacade orderFacade) {
+    public OrderController(OrderFacade orderFacade, TaxCalculationPort taxCalculationPort) {
         this.orderFacade = orderFacade;
+        this.taxCalculationPort = taxCalculationPort;
     }
 
     @PostMapping
@@ -106,5 +111,17 @@ public class OrderController {
             @RequestParam String reason) {
         OrderResponse response = orderFacade.cancelOrder(orderId, reason);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Calculate tax for an order (preview before order placement)
+     * POST /api/orders/calculate-tax
+     * Public endpoint - no authentication required for tax preview
+     */
+    @PostMapping("/calculate-tax")
+    public ResponseEntity<TaxCalculation> calculateTax(
+            @Valid @RequestBody TaxCalculationRequest request) {
+        TaxCalculation taxCalculation = taxCalculationPort.calculateTax(request);
+        return ResponseEntity.ok(taxCalculation);
     }
 }

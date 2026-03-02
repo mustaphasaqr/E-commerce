@@ -58,6 +58,12 @@ class ProductControllerTest {
     @MockBean
     private TokenBlacklistService tokenBlacklistService;
 
+    @MockBean
+    private com.mustapha.ecommerce.product.application.port.ProductReviewPort productReviewPort;
+
+    @MockBean
+    private com.mustapha.ecommerce.product.application.port.RecommendationPort recommendationPort;
+
     private ProductResponse testProductResponse;
     private ProductRequest testProductRequest;
 

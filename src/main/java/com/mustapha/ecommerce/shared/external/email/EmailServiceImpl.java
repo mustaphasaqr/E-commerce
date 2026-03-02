@@ -272,4 +272,49 @@ public class EmailServiceImpl implements EmailService {
         
         // TODO: Store failed email for manual retry
     }
+    
+    @Override
+    @Async("emailTaskExecutor")
+    @Retry(name = "emailService", fallbackMethod = "sendTransactionalEmailFallback")
+    @CircuitBreaker(name = "emailService")
+    public void sendTransactionalEmail(String email, String subject, String htmlContent) {
+        if (sendGrid == null || !isEmailEnabled) {
+            logger.info("📧 [MOCK] Transactional email to: {} (subject: {})", email, subject);
+            return;
+        }
+        
+        try {
+            Email from = new Email(fromEmail, fromName);
+            Email to = new Email(email);
+            Content content = new Content("text/html", htmlContent);
+            
+            Mail mail = new Mail(from, subject, to, content);
+            
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            
+            Response response = sendGrid.api(request);
+            
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                logger.info("✅ Transactional email sent to: {} (subject: {})", email, subject);
+            } else {
+                logger.error("❌ Failed to send transactional email to: {}. Status: {}, Body: {}", 
+                           email, response.getStatusCode(), response.getBody());
+                throw new RuntimeException("SendGrid returned status: " + response.getStatusCode());
+            }
+            
+        } catch (IOException e) {
+            logger.error("Failed to send transactional email to: {}", email, e);
+            throw new RuntimeException("Email sending failed", e);
+        }
+    }
+    
+    private void sendTransactionalEmailFallback(String email, String subject, String htmlContent, Throwable throwable) {
+        logger.warn("Transactional email fallback triggered for: {}, reason: {}. Logging to database.", 
+                   email, throwable.getMessage());
+        
+        // TODO: Store failed email for manual retry
+    }
 }

@@ -17,7 +17,10 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
  * - config/         : Composition Root (Dependency Injection)
  */
 @SpringBootApplication
-@EntityScan(basePackages = "com.mustapha.ecommerce.*.infrastructure.persistence.entity")
+@EntityScan(basePackages = {
+    "com.mustapha.ecommerce.*.infrastructure.persistence.entity",
+    "com.mustapha.ecommerce.*.domain.model"
+})
 public class ECommerceApplication {
 
     public static void main(String[] args) {
