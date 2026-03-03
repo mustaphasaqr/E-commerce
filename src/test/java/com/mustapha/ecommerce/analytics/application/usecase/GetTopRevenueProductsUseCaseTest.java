@@ -1,0 +1,89 @@
+package com.mustapha.ecommerce.analytics.application.usecase;
+
+import com.mustapha.ecommerce.analytics.application.port.out.AnalyticsQueryPort;
+import com.mustapha.ecommerce.analytics.application.query.GetTopRevenueProductsQuery;
+import com.mustapha.ecommerce.analytics.domain.model.ProductPerformance;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * GetTopRevenueProductsUseCase Unit Tests
+ */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("GetTopRevenueProductsUseCase Tests")
+class GetTopRevenueProductsUseCaseTest {
+
+    @Mock
+    private AnalyticsQueryPort analyticsQueryPort;
+
+    @InjectMocks
+    private GetTopRevenueProductsUseCase useCase;
+
+    private GetTopRevenueProductsQuery query;
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    @BeforeEach
+    void setUp() {
+        startDate = LocalDate.of(2026, 3, 1);
+        endDate = LocalDate.of(2026, 3, 31);
+        query = new GetTopRevenueProductsQuery(10, startDate, endDate);
+    }
+
+    @Test
+    @DisplayName("execute() - Should delegate to analytics query port")
+    void testExecuteDelegatesToPort() {
+        // Given: Mock port returns top revenue products
+        List<ProductPerformance> expectedProducts = List.of(
+            new ProductPerformance("PROD-001", "Laptop", 50, new BigDecimal("50000.00"), 25),
+            new ProductPerformance("PROD-002", "Desktop", 30, new BigDecimal("45000.00"), 20)
+        );
+        when(analyticsQueryPort.getTopRevenueProducts(eq(10), eq(startDate), eq(endDate)))
+            .thenReturn(expectedProducts);
+
+        // When: Execute use case
+        List<ProductPerformance> result = useCase.execute(query);
+
+        // Then: Should return port result sorted by revenue
+        assertThat(result).isEqualTo(expectedProducts);
+        verify(analyticsQueryPort).getTopRevenueProducts(10, startDate, endDate);
+    }
+
+    @Test
+    @DisplayName("execute() - Should pass query parameters correctly")
+    void testExecutePassesParametersCorrectly() {
+        // Given: Query with specific parameters
+        GetTopRevenueProductsQuery customQuery = new GetTopRevenueProductsQuery(
+            20,
+            LocalDate.of(2026, 7, 1),
+            LocalDate.of(2026, 7, 31)
+        );
+        when(analyticsQueryPort.getTopRevenueProducts(any(), any(), any()))
+            .thenReturn(List.of());
+
+        // When: Execute use case
+        useCase.execute(customQuery);
+
+        // Then: Should pass exact parameters
+        verify(analyticsQueryPort).getTopRevenueProducts(
+            20,
+            LocalDate.of(2026, 7, 1),
+            LocalDate.of(2026, 7, 31)
+        );
+    }
+}

@@ -8,6 +8,15 @@ import com.mustapha.ecommerce.product.application.port.ProductReviewPort.*;
 import com.mustapha.ecommerce.product.dto.ProductListResponse;
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +37,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/products")
+@Tag(name = "Product Management", description = "Comprehensive product catalog management including CRUD operations, inventory management, image uploads, reviews, and recommendations")
 public class ProductController {
 
     private final ProductFacade productFacade;
@@ -42,12 +52,58 @@ public class ProductController {
         this.recommendationPort = recommendationPort;
     }
 
-    /**
-     * Create new product
-     */
+    @Operation(
+        summary = "Create Product",
+        description = """
+            Create a new product in the catalog. Requires EMPLOYEE or OWNER role.
+            
+            **Features:**
+            - Validates product data
+            - Generates unique SKU
+            - XSS protection on name/description
+            - Sets initial stock levels
+            - Creates product status as ACTIVE
+            
+            **Security:** Requires EMPLOYEE or OWNER role
+            """,
+        security = @SecurityRequirement(name = "Bearer Authentication"),
+        tags = {"Product Management"}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Product created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProductResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Bad Request - Validation error or HTML tags detected",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - Missing or invalid JWT token",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Insufficient permissions (requires EMPLOYEE or OWNER)",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal Server Error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PostMapping
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
-    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
+    public ResponseEntity<ProductResponse> createProduct(
+            @Parameter(description = "Product details to create", required = true)
+            @Valid @RequestBody ProductRequest request) {
         // XSS prevention - reject HTML tags in product name
         if (request.getName() != null && (request.getName().contains("<") || request.getName().contains(">"))) {
             throw new IllegalArgumentException("Product name cannot contain HTML tags");
@@ -56,20 +112,50 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * List all products or get product by SKU
-     * Performance: Returns lightweight ProductListResponse (46% smaller than ProductResponse)
-     */
+    @Operation(
+        summary = "List Products or Get by SKU",
+        description = """
+            List all products or get specific product by SKU parameter.
+            
+            **Modes:**
+            - No parameters: Returns all products (lightweight ProductListResponse - 46% smaller)
+            - With SKU: Returns full product details by SKU
+            
+            **Performance:** Lightweight list response for better performance
+            
+            **Security:** Public endpoint
+            """,
+        tags = {"Product Management"}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Success - Returns product list or single product",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Not Found - Product with specified SKU not found",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal Server Error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @GetMapping
-    public ResponseEntity<?> listProducts(@RequestParam(required = false) String sku) {
+    public ResponseEntity<?> listProducts(
+            @Parameter(description = "Optional SKU to get specific product")
+            @RequestParam(required = false) String sku) {
         if (sku != null && !sku.isBlank()) {
             // Get product by SKU - full details
             ProductResponse response = productFacade.getProductBySku(sku);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
         }
         // List all products - lightweight DTOs
         List<ProductListResponse> products = productFacade.listProducts();
-        return ResponseEntity.ok(products);
+        return ResponseEntity.status(HttpStatus.OK).body(products);
     }
 
     /**
@@ -78,16 +164,51 @@ public class ProductController {
     @GetMapping("/search")
     public ResponseEntity<?> searchProducts(@RequestParam(required = false) String name) {
         // For now, return empty list (would need search use case)
-        return ResponseEntity.ok(java.util.Collections.emptyList());
+        return ResponseEntity.status(HttpStatus.OK).body(java.util.Collections.emptyList());
     }
 
-    /**
-     * Get product by internal ID
-     */
+    @Operation(
+        summary = "Get Product by ID",
+        description = """
+            Retrieve complete product details by internal product ID.
+            
+            **Returns:**
+            - Full product information
+            - Current stock levels
+            - Price and currency
+            - Product status
+            - Image URLs
+            
+            **Security:** Public endpoint
+            """,
+        tags = {"Product Management"}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Product found successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProductResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Product not found with specified ID",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal Server Error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
+    public ResponseEntity<ProductResponse> getProductById(
+            @Parameter(description = "Product internal ID", required = true, example = "PROD-123456")
+            @PathVariable String id) {
         ProductResponse response = productFacade.getProductById(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -99,7 +220,7 @@ public class ProductController {
             @RequestParam String orderId,
             @RequestParam int quantity) {
         ProductResponse response = productFacade.reserveStock(id, orderId, quantity);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -110,7 +231,7 @@ public class ProductController {
             @PathVariable String id,
             @RequestParam String orderId) {
         ProductResponse response = productFacade.releaseReservation(id, orderId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -121,20 +242,70 @@ public class ProductController {
             @PathVariable String id,
             @RequestParam String orderId) {
         ProductResponse response = productFacade.fulfillReservation(id, orderId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    /**
-     * Update product price
-     */
+    @Operation(
+        summary = "Update Product Price",
+        description = """
+            Update product price and currency. Requires EMPLOYEE or OWNER role.
+            
+            **Features:**
+            - Validates price (must be positive)
+            - Supports multi-currency
+            - Audit trail for price changes
+            
+            **Security:** Requires EMPLOYEE or OWNER role
+            """,
+        security = @SecurityRequirement(name = "Bearer Authentication"),
+        tags = {"Product Management"}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Price updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProductResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Bad Request - Invalid price or currency",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - Missing or invalid JWT token",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Insufficient permissions",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Product not found",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal Server Error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PutMapping("/{id}/price")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> updatePrice(
+            @Parameter(description = "Product ID", required = true, example = "PROD-123456")
             @PathVariable String id,
+            @Parameter(description = "New price (must be positive)", required = true, example = "29.99")
             @RequestParam java.math.BigDecimal newPrice,
+            @Parameter(description = "Currency code (ISO 4217)", required = true, example = "USD")
             @RequestParam String currencyCode) {
         ProductResponse response = productFacade.updatePrice(id, newPrice, currencyCode);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -147,7 +318,7 @@ public class ProductController {
             @RequestParam String name,
             @RequestParam String description) {
         ProductResponse response = productFacade.updateProductDetails(id, name, description);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -157,7 +328,7 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> activateProduct(@PathVariable String id) {
         ProductResponse response = productFacade.activateProduct(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -167,7 +338,7 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> deactivateProduct(@PathVariable String id) {
         ProductResponse response = productFacade.deactivateProduct(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -177,18 +348,80 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<ProductResponse> discontinueProduct(@PathVariable String id) {
         ProductResponse response = productFacade.discontinueProduct(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     
-    /**
-     * Upload product image
-     * Accepts: image/jpeg, image/png, image/gif, image/webp
-     * Max size: 5 MB (configured in storage service)
-     */
+    @Operation(
+        summary = "Upload Product Image",
+        description = """
+            Upload product image (JPEG, PNG, GIF, WebP). Requires EMPLOYEE or OWNER role.
+            
+            **Features:**
+            - Supported formats: JPEG, PNG, GIF, WebP
+            - Max file size: 5 MB
+            - Automatic image optimization
+            - Generates CDN URL
+            - XSS protection on filenames
+            
+            **Security:** Requires EMPLOYEE or OWNER role
+            """,
+        security = @SecurityRequirement(name = "Bearer Authentication"),
+        tags = {"Product Management"}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Image uploaded successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = """
+                        {
+                          "productId": "PROD-123456",
+                          "imageUrl": "https://cdn.example.com/products/prod-123456/image1.jpg",
+                          "message": "Image uploaded successfully"
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Bad Request - Invalid file type or empty file",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"error\": \"Only image files are allowed\"}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - Missing or invalid JWT token",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - Insufficient permissions",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "413",
+            description = "Payload Too Large - File exceeds 5 MB limit",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal Server Error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PostMapping("/{id}/images")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'OWNER')")
     public ResponseEntity<Map<String, Object>> uploadImage(
+            @Parameter(description = "Product ID", required = true, example = "PROD-123456")
             @PathVariable String id,
+            @Parameter(description = "Image file (JPEG/PNG/GIF/WebP, max 5MB)", required = true)
             @RequestParam("file") MultipartFile file) {
         
         // Validate file
@@ -232,7 +465,7 @@ public class ProductController {
         try {
             productFacade.deleteProductImage(id, imageUrl);
             
-            return ResponseEntity.ok(Map.of(
+            return ResponseEntity.status(HttpStatus.OK).body(Map.of(
                     "productId", id,
                     "message", "Image deleted successfully"
             ));
@@ -257,7 +490,7 @@ public class ProductController {
             @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
         
         ReviewsPage reviews = productReviewPort.getProductReviews(id, page, size, sortBy);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.status(HttpStatus.OK).body(reviews);
     }
 
     /**
@@ -267,7 +500,7 @@ public class ProductController {
     @GetMapping("/{id}/reviews/stats")
     public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable Long id) {
         ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
 
     /**
@@ -297,7 +530,7 @@ public class ProductController {
             @AuthenticationPrincipal String userId) {
         
         productReviewPort.markHelpful(reviewId, Long.parseLong(userId));
-        return ResponseEntity.ok(Map.of("message", "Review marked as helpful"));
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Review marked as helpful"));
     }
 
     // ========== RECOMMENDATION ENDPOINTS ==========
@@ -311,7 +544,7 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int limit) {
         
         List<ProductRecommendation> recommendations = recommendationPort.getTrendingProducts(limit);
-        return ResponseEntity.ok(recommendations);
+        return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
     /**
@@ -325,7 +558,7 @@ public class ProductController {
         
         List<ProductRecommendation> recommendations = 
             recommendationPort.getRecommendationsForCustomer(Long.parseLong(userId), limit);
-        return ResponseEntity.ok(recommendations);
+        return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
     /**
@@ -339,6 +572,6 @@ public class ProductController {
         
         List<ProductRecommendation> recommendations = 
             recommendationPort.getFrequentlyBoughtTogether(id, limit);
-        return ResponseEntity.ok(recommendations);
+        return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 }

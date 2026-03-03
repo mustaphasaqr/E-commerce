@@ -18,9 +18,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Health Check & Observability Tests
  * Tests Spring Boot Actuator endpoints and health indicators
  * 
- * NOTE: Disabled until Spring Boot Actuator is added to dependencies
+ * Spring Boot Actuator is configured and ready
+ * Endpoints exposed: /actuator/health, /actuator/metrics, /actuator/prometheus
  */
-@Disabled("Actuator not yet implemented - add spring-boot-starter-actuator dependency first")
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Health Check & Observability Tests")

@@ -58,6 +58,13 @@ public class ProductJpaEntity {
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal price;
+    
+    /**
+     * Cost of Goods Sold (COGS) - unit cost for profit margin calculations
+     * Default to 0 if not set
+     */
+    @Column(name = "cost_of_goods", precision = 19, scale = 4)
+    private BigDecimal costOfGoods = BigDecimal.ZERO;
 
     @Column(nullable = false, length = 3)
     private String currency;
@@ -159,6 +166,14 @@ public class ProductJpaEntity {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+    
+    public BigDecimal getCostOfGoods() {
+        return costOfGoods;
+    }
+    
+    public void setCostOfGoods(BigDecimal costOfGoods) {
+        this.costOfGoods = costOfGoods;
     }
 
     public String getCurrency() {

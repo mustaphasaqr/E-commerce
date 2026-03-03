@@ -67,6 +67,50 @@ public class OrderJpaEntity {
     
     @Column(name = "transaction_id")
     private String transactionId;
+    
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+    
+    // Refund information - populated when order is refunded
+    @Column(name = "refund_status")
+    @Enumerated(EnumType.STRING)
+    private RefundStatus refundStatus = RefundStatus.NONE;
+    
+    @Column(name = "refund_amount", precision = 19, scale = 2)
+    private BigDecimal refundAmount;
+    
+    @Column(name = "refund_date")
+    private LocalDateTime refundDate;
+    
+    @Column(name = "refund_reason", length = 500)
+    private String refundReason;
+    
+    // Geographic information - populated from shipping address
+    @Column(name = "shipping_city", length = 100)
+    private String shippingCity;
+    
+    @Column(name = "shipping_state", length = 100)
+    private String shippingState;
+    
+    @Column(name = "shipping_country", length = 100)
+    private String shippingCountry;
+    
+    @Column(name = "shipping_zip_code", length = 20)
+    private String shippingZipCode;
+    
+    // Shipping timeline - populated when order is shipped
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+    
+    // Marketing attribution - populated at order creation
+    @Column(name = "utm_source", length = 100)
+    private String utmSource;
+    
+    @Column(name = "utm_campaign", length = 100)
+    private String utmCampaign;
+    
+    @Column(name = "referrer", length = 500)
+    private String referrer;
 
     /**
      * Optimistic locking version
@@ -182,6 +226,113 @@ public class OrderJpaEntity {
     
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+    
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+    
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+    
+    public RefundStatus getRefundStatus() {
+        return refundStatus;
+    }
+    
+    public void setRefundStatus(RefundStatus refundStatus) {
+        this.refundStatus = refundStatus;
+    }
+    
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+    
+    public void setRefundAmount(BigDecimal refundAmount) {
+        this.refundAmount = refundAmount;
+    }
+    
+    public LocalDateTime getRefundDate() {
+        return refundDate;
+    }
+    
+    public void setRefundDate(LocalDateTime refundDate) {
+        this.refundDate = refundDate;
+    }
+    
+    public String getRefundReason() {
+        return refundReason;
+    }
+    
+    public void setRefundReason(String refundReason) {
+        this.refundReason = refundReason;
+    }
+    
+    // Geographic getters and setters
+    public String getShippingCity() {
+        return shippingCity;
+    }
+    
+    public void setShippingCity(String shippingCity) {
+        this.shippingCity = shippingCity;
+    }
+    
+    public String getShippingState() {
+        return shippingState;
+    }
+    
+    public void setShippingState(String shippingState) {
+        this.shippingState = shippingState;
+    }
+    
+    public String getShippingCountry() {
+        return shippingCountry;
+    }
+    
+    public void setShippingCountry(String shippingCountry) {
+        this.shippingCountry = shippingCountry;
+    }
+    
+    public String getShippingZipCode() {
+        return shippingZipCode;
+    }
+    
+    public void setShippingZipCode(String shippingZipCode) {
+        this.shippingZipCode = shippingZipCode;
+    }
+    
+    // Shipping timeline getters and setters
+    public LocalDateTime getShippedAt() {
+        return shippedAt;
+    }
+    
+    public void setShippedAt(LocalDateTime shippedAt) {
+        this.shippedAt = shippedAt;
+    }
+    
+    // Marketing attribution getters and setters
+    public String getUtmSource() {
+        return utmSource;
+    }
+    
+    public void setUtmSource(String utmSource) {
+        this.utmSource = utmSource;
+    }
+    
+    public String getUtmCampaign() {
+        return utmCampaign;
+    }
+    
+    public void setUtmCampaign(String utmCampaign) {
+        this.utmCampaign = utmCampaign;
+    }
+    
+    public String getReferrer() {
+        return referrer;
+    }
+    
+    public void setReferrer(String referrer) {
+        this.referrer = referrer;
     }
 
     public Long getVersion() {

@@ -1,9 +1,14 @@
 package com.mustapha.ecommerce.config;
 
+import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
+import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import static org.mockito.Mockito.mock;
 
@@ -16,9 +21,10 @@ import static org.mockito.Mockito.mock;
  * Used by:
  * - PaymentControllerTest
  * - PaymentWebhookControllerTest
- * - Any other @WebMvcTest that needs Redis
+ * - Any other @WebMvcTest that needs Redis or method security
  */
 @TestConfiguration
+@EnableMethodSecurity
 public class WebMvcTestConfig {
     
     /**
@@ -48,5 +54,30 @@ public class WebMvcTestConfig {
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         return mock(RedisConnectionFactory.class);
+    }
+    
+    /**
+     * Mock JwtTokenGenerator for JwtAuthenticationFilter
+     */
+    @Bean
+    public JwtTokenGenerator jwtTokenGenerator() {
+        return mock(JwtTokenGenerator.class);
+    }
+    
+    /**
+     * MeterRegistry for HttpMetricsFilter
+     * Using SimpleMeterRegistry instead of mock to avoid config() returning null
+     */
+    @Bean
+    public MeterRegistry meterRegistry() {
+        return new SimpleMeterRegistry();
+    }
+    
+    /**
+     * Mock TokenBlacklistService for JwtAuthenticationFilter
+     */
+    @Bean
+    public TokenBlacklistService tokenBlacklistService() {
+        return mock(TokenBlacklistService.class);
     }
 }

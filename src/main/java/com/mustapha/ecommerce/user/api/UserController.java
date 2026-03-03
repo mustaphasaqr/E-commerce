@@ -67,7 +67,7 @@ public class UserController {
     public ResponseEntity<UserResponse> getCurrentUser(
             @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.getUserById(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -79,7 +79,7 @@ public class UserController {
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody ChangeEmailRequest request) {
         UserResponse response = userFacade.changeEmail(userId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -93,7 +93,7 @@ public class UserController {
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody ChangePasswordRequest request) {
         UserResponse response = userFacade.changePassword(userId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -107,7 +107,7 @@ public class UserController {
     public ResponseEntity<UserResponse> verifyEmail(
             @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.verifyEmail(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -120,7 +120,7 @@ public class UserController {
     public ResponseEntity<UserResponse> grantMarketingConsent(
             @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.grantMarketingConsent(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -133,7 +133,7 @@ public class UserController {
     public ResponseEntity<UserResponse> revokeMarketingConsent(
             @AuthenticationPrincipal String userId) {
         UserResponse response = userFacade.revokeMarketingConsent(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // ========== Query Endpoints (Admin or specific roles) ==========
@@ -154,7 +154,7 @@ public class UserController {
             throw new org.springframework.security.access.AccessDeniedException("Cannot access other user's profile");
         }
         UserResponse response = userFacade.getUserById(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -165,7 +165,7 @@ public class UserController {
     @GetMapping("/email/{email}")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         UserResponse response = userFacade.getUserByEmail(email);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -176,7 +176,7 @@ public class UserController {
     @GetMapping("/username/{username}")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         UserResponse response = userFacade.getUserByUsername(username);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // ========== Admin Endpoints ==========
@@ -189,7 +189,7 @@ public class UserController {
     @PostMapping("/{id}/activate")
     public ResponseEntity<UserResponse> activateUser(@PathVariable String id) {
         UserResponse response = userFacade.activateUser(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -200,7 +200,7 @@ public class UserController {
     @PostMapping("/{id}/deactivate")
     public ResponseEntity<UserResponse> deactivateUser(@PathVariable String id) {
         UserResponse response = userFacade.deactivateUser(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -211,7 +211,7 @@ public class UserController {
     @PostMapping("/{id}/block")
     public ResponseEntity<UserResponse> blockUser(@PathVariable String id, @RequestParam String reason) {
         UserResponse response = userFacade.blockUser(id, reason);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -222,7 +222,7 @@ public class UserController {
     @PostMapping("/{id}/unblock")
     public ResponseEntity<UserResponse> unblockUser(@PathVariable String id) {
         UserResponse response = userFacade.unblockUser(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     /**
@@ -233,6 +233,6 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<UserResponse> deleteUser(@PathVariable String id, @RequestParam String reason) {
         UserResponse response = userFacade.deleteUser(id, reason);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

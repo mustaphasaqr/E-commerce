@@ -116,6 +116,13 @@ public class SecurityConfig {
                 .requestMatchers("/health/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 
+                // Public endpoints - API Documentation (Swagger/OpenAPI)
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/swagger-ui.html").permitAll()
+                .requestMatchers("/swagger-resources/**").permitAll()
+                .requestMatchers("/webjars/**").permitAll()
+                
                 // Public endpoints - Authentication (login, register, refresh, password reset, email verification)
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/refresh").permitAll()

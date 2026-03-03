@@ -94,7 +94,15 @@ public class OrderFacade {
                     item.getQuantity(),
                     new Money(item.getPrice())
                 ))
-                .collect(Collectors.toList())
+                .collect(Collectors.toList()),
+            request.getShippingCity(),
+            request.getShippingState(),
+            request.getShippingCountry(),
+            request.getShippingZipCode(),
+            request.getUtmSource(),
+            request.getUtmCampaign(),
+            request.getReferrer(),
+            request.getCartId()
         );
         
         // Step 2: Delegate to Use Case (handles @Transactional, events, business rules)

@@ -32,9 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Logging Validation Tests
  * Tests structured logging, log levels, and sensitive data masking
  * 
- * NOTE: Disabled until structured logging, MDC, and audit logging are implemented
+ * Tests basic logging functionality with potential enhancements for structured logging
  */
-@Disabled("Structured logging and audit features not yet fully implemented")
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Logging Validation Tests")

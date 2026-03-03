@@ -18,10 +18,28 @@ public class PlaceOrderCommand {
     
     private final CustomerId customerId;
     private final List<OrderItemData> items;
+    private final String shippingCity;
+    private final String shippingState;
+    private final String shippingCountry;
+    private final String shippingZipCode;
+    private final String utmSource;
+    private final String utmCampaign;
+    private final String referrer;
+    private final Long cartId;
     
-    public PlaceOrderCommand(CustomerId customerId, List<OrderItemData> items) {
+    public PlaceOrderCommand(CustomerId customerId, List<OrderItemData> items,
+                            String shippingCity, String shippingState, String shippingCountry, String shippingZipCode,
+                            String utmSource, String utmCampaign, String referrer, Long cartId) {
         this.customerId = customerId;
         this.items = items;
+        this.shippingCity = shippingCity;
+        this.shippingState = shippingState;
+        this.shippingCountry = shippingCountry;
+        this.shippingZipCode = shippingZipCode;
+        this.utmSource = utmSource;
+        this.utmCampaign = utmCampaign;
+        this.referrer = referrer;
+        this.cartId = cartId;
     }
     
     public CustomerId getCustomerId() {
@@ -30,6 +48,38 @@ public class PlaceOrderCommand {
     
     public List<OrderItemData> getItems() {
         return items;
+    }
+    
+    public String getShippingCity() {
+        return shippingCity;
+    }
+    
+    public String getShippingState() {
+        return shippingState;
+    }
+    
+    public String getShippingCountry() {
+        return shippingCountry;
+    }
+    
+    public String getShippingZipCode() {
+        return shippingZipCode;
+    }
+    
+    public String getUtmSource() {
+        return utmSource;
+    }
+    
+    public String getUtmCampaign() {
+        return utmCampaign;
+    }
+    
+    public String getReferrer() {
+        return referrer;
+    }
+    
+    public Long getCartId() {
+        return cartId;
     }
     
     /**

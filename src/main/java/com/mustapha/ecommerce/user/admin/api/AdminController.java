@@ -9,6 +9,7 @@ import com.mustapha.ecommerce.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,31 +35,31 @@ public class AdminController {
     @PostMapping("/{id}/block")
     public ResponseEntity<UserResponse> blockUser(@PathVariable String id, @RequestBody BlockUserRequest request) {
         User user = adminFacade.blockUser(id, request.reason());
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     @PostMapping("/{id}/unblock")
     public ResponseEntity<UserResponse> unblockUser(@PathVariable String id, @RequestBody UnblockUserRequest request) {
         User user = adminFacade.unblockUser(id, request.reason());
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     @PostMapping("/{id}/activate")
     public ResponseEntity<UserResponse> activateUser(@PathVariable String id, @RequestBody ActivateUserRequest request) {
         User user = adminFacade.activateUser(id, request.activationNote());
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     @PostMapping("/{id}/deactivate")
     public ResponseEntity<UserResponse> deactivateUser(@PathVariable String id, @RequestBody DeactivateUserRequest request) {
         User user = adminFacade.deactivateUser(id, request.reason());
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<UserResponse> deleteUser(@PathVariable String id, @RequestBody DeleteUserRequest request) {
         User user = adminFacade.deleteUser(id, request.reason());
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     @GetMapping
@@ -70,7 +71,7 @@ public class AdminController {
         int safeSize = size <= 0 ? 20 : size; // Zero or negative size defaults to 20
         
         Page<User> users = adminFacade.getAllUsers(PageRequest.of(safePage, safeSize));
-        return ResponseEntity.ok(toPaginatedResponse(users));
+        return ResponseEntity.status(HttpStatus.OK).body(toPaginatedResponse(users));
     }
 
     @GetMapping("/search")
@@ -86,7 +87,7 @@ public class AdminController {
         Role userRole = role != null ? Role.valueOf(role.toUpperCase()) : null;
         
         Page<User> users = adminFacade.searchUsers(email, username, userStatus, userRole, PageRequest.of(page, size));
-        return ResponseEntity.ok(toPaginatedResponse(users));
+        return ResponseEntity.status(HttpStatus.OK).body(toPaginatedResponse(users));
     }
 
     @PostMapping("/search")
@@ -98,7 +99,7 @@ public class AdminController {
             request.role(),
             PageRequest.of(request.page(), request.size())
         );
-        return ResponseEntity.ok(toPaginatedResponse(users));
+        return ResponseEntity.status(HttpStatus.OK).body(toPaginatedResponse(users));
     }
 
     @PostMapping("/{id}/role")
@@ -106,7 +107,7 @@ public class AdminController {
             @PathVariable String id, 
             @Valid @RequestBody ChangeUserRoleRequest request) {
         User user = adminFacade.changeUserRole(id, request.newRole(), "SYSTEM");
-        return ResponseEntity.ok(UserResponse.fromDomain(user));
+        return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 
     private PaginatedUsersResponse toPaginatedResponse(Page<User> page) {

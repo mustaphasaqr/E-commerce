@@ -69,7 +69,9 @@ class PlaceOrderUseCaseTest {
                     "Laptop", 
                     2, 
                     new Money(50.0)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
 
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -97,7 +99,9 @@ class PlaceOrderUseCaseTest {
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-001"), "Laptop", 2, new Money(50.0)),
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-002"), "Mouse", 1, new Money(30.0)),
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-003"), "Keyboard", 3, new Money(20.0))
-                )
+                ),
+                null, null, null, null,
+                null, null, null, null
             );
 
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -157,7 +161,9 @@ class PlaceOrderUseCaseTest {
                     "Phone", 
                     1, 
                     new Money(100.0)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
 
             ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
@@ -204,7 +210,9 @@ class PlaceOrderUseCaseTest {
                     "Tablet", 
                     2, 
                     new Money(75.0)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
 
             ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
@@ -255,7 +263,9 @@ class PlaceOrderUseCaseTest {
                     "Monitor", 
                     5, 
                     new Money(20.0)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -277,7 +287,9 @@ class PlaceOrderUseCaseTest {
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-001"), "Headphones", 3, new Money(25.0)),  // 75
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-002"), "Cable", 2, new Money(15.5)),       // 31
                     new PlaceOrderCommand.OrderItemData(new ProductId("PROD-003"), "Webcam", 1, new Money(100.0))      // 100
-                )
+                ),
+                null, null, null, null,
+                null, null, null, null
             );
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -305,7 +317,9 @@ class PlaceOrderUseCaseTest {
                     "Book", 
                     50, 
                     new Money(10.0)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -330,7 +344,9 @@ class PlaceOrderUseCaseTest {
                     "Pen", 
                     3, 
                     new Money(19.99)
-                ))
+                )),
+                null, null, null, null,
+                null, null, null, null
             );
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -352,7 +368,9 @@ class PlaceOrderUseCaseTest {
                 "DefaultProduct", 
                 2, 
                 new Money(50.0)
-            ))
+            )),
+            null, null, null, null,
+            null, null, null, null
         );
     }
 }

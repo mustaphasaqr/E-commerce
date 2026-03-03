@@ -52,6 +52,8 @@ public class RequestIdFilter extends OncePerRequestFilter {
      * This key is referenced in logback-spring.xml for automatic inclusion in logs.
      */
     private static final String MDC_REQUEST_ID_KEY = "requestId";
+    private static final String MDC_TRACE_ID_KEY = "traceId";
+    private static final String MDC_CORRELATION_ID_KEY = "correlationId";
     
     @Override
     protected void doFilterInternal(
@@ -65,6 +67,11 @@ public class RequestIdFilter extends OncePerRequestFilter {
             
             // Add to MDC for logging - all log statements in this thread will include requestId
             MDC.put(MDC_REQUEST_ID_KEY, requestId);
+            
+            // Set traceId and correlationId (same as requestId at HTTP entry point)
+            // These are used by LoggingAspect and TracingAspect for distributed tracing
+            MDC.put(MDC_TRACE_ID_KEY, requestId);
+            MDC.put(MDC_CORRELATION_ID_KEY, requestId);
             
             // Add additional request context to MDC using LoggingContextHolder
             LoggingContextHolder.setIpAddress(extractClientIpAddress(request));
