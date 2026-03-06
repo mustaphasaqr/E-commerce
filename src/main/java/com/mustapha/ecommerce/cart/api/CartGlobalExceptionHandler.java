@@ -4,6 +4,8 @@ import com.mustapha.ecommerce.cart.domain.exception.CartModificationNotAllowedEx
 import com.mustapha.ecommerce.cart.domain.exception.CartNotFoundException;
 import com.mustapha.ecommerce.cart.domain.exception.InvalidCartItemException;
 import com.mustapha.ecommerce.cart.domain.exception.InvalidCartStateException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,7 +22,8 @@ import java.time.LocalDateTime;
  * Pattern: Exception Translation (Domain → HTTP)
  * SOLID: SRP (HTTP error handling only)
  */
-@RestControllerAdvice("com.mustapha.ecommerce.cart")
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class CartGlobalExceptionHandler {
 
     @ExceptionHandler(CartNotFoundException.class)

@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,8 +26,12 @@ import java.util.concurrent.TimeUnit;
  * - Micrometer/Prometheus metrics
  * - Grafana dashboards
  * - Custom observability endpoints
+ * 
+ * Note: Only enabled when MeterRegistry bean is available
+ * (disabled in @WebMvcTest contexts where metrics aren't loaded)
  */
 @Component
+@ConditionalOnBean(MeterRegistry.class)
 public class HttpMetricsFilter extends OncePerRequestFilter {
 
     private final MeterRegistry meterRegistry;

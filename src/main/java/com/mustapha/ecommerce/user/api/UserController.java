@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.*;
  * Note: Authentication/Authorization will be added via Spring Security (Week 3)
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 public class UserController {
 
     private final UserFacade userFacade;

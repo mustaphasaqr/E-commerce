@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.cart.infrastructure.persistence.entity;
 
+import com.mustapha.ecommerce.shared.domain.AuditedEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,6 +12,10 @@ import java.util.List;
  * Infrastructure Layer - Persistence Model
  * 
  * Tracks shopping carts for abandonment analysis and order conversion
+ * 
+ * Audit Support:
+ * - Extends AuditedEntity for created_by, created_at, updated_by, updated_at
+ * - Tracks cart modifications for analytics
  */
 @Entity(name = "Cart")
 @Table(name = "carts", indexes = {
@@ -21,7 +26,7 @@ import java.util.List;
     @Index(name = "idx_cart_updated", columnList = "last_updated_at"),
     @Index(name = "idx_cart_converted_order", columnList = "converted_order_id")
 })
-public class CartJpaEntity {
+public class CartJpaEntity extends AuditedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,9 +48,6 @@ public class CartJpaEntity {
     @Enumerated(EnumType.STRING)
     private CartStatusEntity status = CartStatusEntity.ACTIVE;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
     @Column(name = "last_updated_at", nullable = false)
     private LocalDateTime lastUpdatedAt;
     
@@ -57,9 +59,7 @@ public class CartJpaEntity {
 
     // Constructors
     public CartJpaEntity() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.lastUpdatedAt = now;
+        this.lastUpdatedAt = LocalDateTime.now();
     }
 
     // Getters and setters
@@ -109,14 +109,6 @@ public class CartJpaEntity {
 
     public void setStatus(CartStatusEntity status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 
     public LocalDateTime getLastUpdatedAt() {

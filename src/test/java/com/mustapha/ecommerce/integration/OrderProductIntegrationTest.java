@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,7 +167,7 @@ class OrderProductIntegrationTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -202,7 +203,7 @@ class OrderProductIntegrationTest {
             50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -223,7 +224,7 @@ class OrderProductIntegrationTest {
         // Act & Assert - Should fail because price doesn't match catalog in real Product module
         // ProductServiceAdapter calls ProductFacade.getProductById() - returns 1500.00
         // Order validation detects mismatch: 999.99 != 1500.00
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError()); // Accept any 4xx error
@@ -247,7 +248,7 @@ class OrderProductIntegrationTest {
             50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -265,7 +266,7 @@ class OrderProductIntegrationTest {
             new OrderItemRequest(product.getId(), "Test Product", 1, 99.99)
         ));
 
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated());
@@ -284,7 +285,7 @@ class OrderProductIntegrationTest {
             100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -303,7 +304,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Act & Assert - Should succeed with real cross-module communication
-        MvcResult orderResult = mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated())
@@ -345,13 +346,13 @@ class OrderProductIntegrationTest {
             30
         );
 
-        MvcResult keyboardResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult keyboardResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(keyboard)))
             .andExpect(status().isCreated())
             .andReturn();
 
-        MvcResult monitorResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult monitorResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(monitor)))
             .andExpect(status().isCreated())
@@ -376,7 +377,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Act
-        MvcResult orderResult = mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated())
@@ -406,7 +407,7 @@ class OrderProductIntegrationTest {
             40
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -418,7 +419,7 @@ class OrderProductIntegrationTest {
         );
 
         // Update product price in catalog via PUT /{id}/price endpoint
-        mockMvc.perform(put("/api/products/" + product.getId() + "/price")
+        mockMvc.perform(put("/api/v1/products/" + product.getId() + "/price")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .param("newPrice", "69.99")
                 .param("currencyCode", "USD"))
@@ -432,7 +433,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Act & Assert - Should fail because real Product module returns current price 69.99
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isBadRequest());
@@ -451,7 +452,7 @@ class OrderProductIntegrationTest {
             25
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -463,7 +464,7 @@ class OrderProductIntegrationTest {
         );
 
         // Update product price via PUT /{id}/price endpoint
-        mockMvc.perform(put("/api/products/" + product.getId() + "/price")
+        mockMvc.perform(put("/api/v1/products/" + product.getId() + "/price")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .param("newPrice", "44.99")
                 .param("currencyCode", "USD"))
@@ -477,7 +478,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Act & Assert - Should succeed with real cross-module price sync
-        MvcResult orderResult = mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated())
@@ -507,7 +508,7 @@ class OrderProductIntegrationTest {
             100
         );
 
-        MvcResult result = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult result = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -543,7 +544,7 @@ class OrderProductIntegrationTest {
             50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -558,7 +559,7 @@ class OrderProductIntegrationTest {
         testEventListener.reset();
 
         // Act - Update price via Product API
-        MvcResult priceUpdateResult = mockMvc.perform(put("/api/products/" + product.getId() + "/price")
+        MvcResult priceUpdateResult = mockMvc.perform(put("/api/v1/products/" + product.getId() + "/price")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .param("newPrice", "75.00")
                 .param("currencyCode", "USD"))
@@ -594,7 +595,7 @@ class OrderProductIntegrationTest {
             25
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -608,7 +609,7 @@ class OrderProductIntegrationTest {
         testEventListener.reset();
 
         // Act - Reserve stock (triggers StockUpdatedEvent)
-        MvcResult reserveResult = mockMvc.perform(post("/api/products/" + product.getId() + "/reserve-stock")
+        MvcResult reserveResult = mockMvc.perform(post("/api/v1/products/" + product.getId() + "/reserve-stock")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .param("orderId", "ORDER-123")
                 .param("quantity", "5"))
@@ -643,7 +644,7 @@ class OrderProductIntegrationTest {
         ));
 
         // System properly returns 400 for non-existent product
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -662,7 +663,7 @@ class OrderProductIntegrationTest {
             100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -681,7 +682,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Should fail validation
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -700,7 +701,7 @@ class OrderProductIntegrationTest {
             50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -719,7 +720,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Should fail validation
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -738,7 +739,7 @@ class OrderProductIntegrationTest {
             5 // Only 5 units available
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -757,7 +758,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Stock validation now implemented - should reject when quantity exceeds available stock
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isBadRequest());
@@ -779,7 +780,7 @@ class OrderProductIntegrationTest {
             100 // Initial stock: 100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -799,13 +800,13 @@ class OrderProductIntegrationTest {
             new OrderItemRequest(initialProduct.getId(), "Stock Tracking Product", 15, 150.00)
         ));
 
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated());
 
         // Assert - Check stock decreased
-        MvcResult updatedProductResult = mockMvc.perform(get("/api/products/" + initialProduct.getId())
+        MvcResult updatedProductResult = mockMvc.perform(get("/api/v1/products/" + initialProduct.getId())
                 .header("Authorization", "Bearer " + employeeJwt))
             .andExpect(status().isOk())
             .andReturn();
@@ -834,7 +835,7 @@ class OrderProductIntegrationTest {
             50 // Initial stock: 50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -853,14 +854,14 @@ class OrderProductIntegrationTest {
                 new OrderItemRequest(product.getId(), "Concurrent Stock Test", 5, 200.00)
             ));
 
-            mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+            mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isCreated());
         }
 
         // Assert - Verify all orders succeeded (stock integration not yet implemented)
-        MvcResult updatedProductResult = mockMvc.perform(get("/api/products/" + product.getId())
+        MvcResult updatedProductResult = mockMvc.perform(get("/api/v1/products/" + product.getId())
                 .header("Authorization", "Bearer " + employeeJwt))
             .andExpect(status().isOk())
             .andReturn();
@@ -891,7 +892,7 @@ class OrderProductIntegrationTest {
             50
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -903,7 +904,7 @@ class OrderProductIntegrationTest {
         );
 
         // Discontinue the product
-        mockMvc.perform(post("/api/products/" + product.getId() + "/discontinue")
+        mockMvc.perform(post("/api/v1/products/" + product.getId() + "/discontinue")
                 .header("Authorization", "Bearer " + employeeJwt))
             .andExpect(status().isOk());
 
@@ -915,7 +916,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Discontinued product check now implemented - should reject discontinued products
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isBadRequest());
@@ -930,7 +931,7 @@ class OrderProductIntegrationTest {
         orderRequest.setItems(Arrays.asList()); // Empty list
 
         // Should fail validation
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -949,7 +950,7 @@ class OrderProductIntegrationTest {
             100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -968,7 +969,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Should either round or reject - test that system handles it
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -987,7 +988,7 @@ class OrderProductIntegrationTest {
             100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -1006,7 +1007,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Should fail validation
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError());
@@ -1026,7 +1027,7 @@ class OrderProductIntegrationTest {
             10 // Exactly 10 units
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -1045,7 +1046,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Should succeed - ordering exact available stock
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated())
@@ -1065,7 +1066,7 @@ class OrderProductIntegrationTest {
             1000 // Large stock
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products").header("Authorization", "Bearer " + employeeJwt)
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
             .andExpect(status().isCreated())
@@ -1084,7 +1085,7 @@ class OrderProductIntegrationTest {
         ));
 
         // Large quantities allowed up to MAX_TOTAL_QUANTITY business limit
-        mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + employeeJwt)
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().isCreated())

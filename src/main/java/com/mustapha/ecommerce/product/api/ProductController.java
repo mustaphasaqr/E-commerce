@@ -36,7 +36,7 @@ import java.util.Map;
  * SOLID: SRP (HTTP only), DIP (depends on application interfaces)
  */
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api/v1/products")
 @Tag(name = "Product Management", description = "Comprehensive product catalog management including CRUD operations, inventory management, image uploads, reviews, and recommendations")
 public class ProductController {
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
@@ -54,7 +55,7 @@ class ResilienceTest {
         @DisplayName("Long-running requests should timeout gracefully")
         void longRunningRequestsShouldTimeout() throws Exception {
             // Attempt a request that might take long
-            var result = mockMvc.perform(get("/api/products/search")
+            var result = mockMvc.perform(get("/api/v1/products/search")
                     .param("name", "test")
                     .param("timeout", "30000")) // 30 seconds
                 .andReturn();
@@ -73,7 +74,7 @@ class ResilienceTest {
                 null,
                 java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
             );
-            mockMvc.perform(get("/api/orders")
+            mockMvc.perform(get("/api/v1/orders")
                     .with(csrf())
                     .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(status().is2xxSuccessful());
@@ -100,7 +101,7 @@ class ResilienceTest {
             // Simulate transient error scenario
             // First attempt might fail, but should recover
             for (int i = 0; i < 3; i++) {
-                var result = mockMvc.perform(get("/api/products"))
+                var result = mockMvc.perform(get("/api/v1/products"))
                     .andReturn();
                 
                 int status = result.getResponse().getStatus();
@@ -118,7 +119,7 @@ class ResilienceTest {
             request.setCustomerId("customer-123");
             request.setItems(Collections.emptyList());
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()));
@@ -137,7 +138,7 @@ class ResilienceTest {
             request.setCurrencyCode("USD");
             request.setInitialStock(100);
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -289,7 +290,7 @@ class ResilienceTest {
         @DisplayName("Application should work with cache unavailable")
         void shouldWorkWithoutCache() throws Exception {
             // Even if Redis/cache fails, application should continue
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk());
         }
 
@@ -298,7 +299,7 @@ class ResilienceTest {
         void shouldWorkWithReducedFeatures() throws Exception {
             // Core functionality should work even if optional features fail
             // Test that the application returns proper error responses instead of crashing
-            mockMvc.perform(get("/api/products/{id}", "non-existent-product-id"))
+            mockMvc.perform(get("/api/v1/products/{id}", "non-existent-product-id"))
                 .andExpect(status().isBadRequest()); // Returns 400 for invalid UUID format
         }
 
@@ -317,7 +318,6 @@ class ResilienceTest {
     @Nested
     @DisplayName("Health Check Integration Tests")
     @WithMockUser(roles = "ADMIN")
-    @Disabled("Flaky tests - health endpoint configuration varies")
     class HealthCheckIntegrationTests {
 
         @Test
@@ -342,8 +342,8 @@ class ResilienceTest {
     }
 
     @Nested
-    @Disabled("Resource cleanup behavior differs")
     @DisplayName("Resource Cleanup Tests")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class ResourceCleanupTests {
 
         @Test
@@ -351,14 +351,14 @@ class ResilienceTest {
         void connectionsShouldBeClosedAfterErrors() throws Exception {
             // Even if request fails, resources should be cleaned up
             try {
-                mockMvc.perform(get("/api/products/{id}", "invalid-id"))
-                    .andExpect(status().isNotFound());
+                mockMvc.perform(get("/api/v1/products/{id}", "invalid-id"))
+                    .andExpect(status().isBadRequest()); // Invalid ID format returns 400
             } catch (Exception e) {
                 // Exception should not leak resources
             }
 
             // Subsequent requests should work fine
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk());
         }
 
@@ -371,13 +371,13 @@ class ResilienceTest {
             request.setCustomerId("customer-123");
             request.setItems(Collections.emptyList());
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()));
 
             // Locks should be released, allowing subsequent operations
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()));
@@ -385,15 +385,15 @@ class ResilienceTest {
     }
 
     @Nested
-    @Disabled("Error codes differ from expectations")
     @DisplayName("Error Response Format Tests")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class ErrorResponseFormatTests {
 
         @Test
         @DisplayName("Error responses should have consistent format")
         void errorResponsesShouldHaveConsistentFormat() throws Exception {
-            var result = mockMvc.perform(get("/api/products/{id}", "non-existent"))
-                .andExpect(status().isNotFound())
+            var result = mockMvc.perform(get("/api/v1/products/{id}", "non-existent"))
+                .andExpect(status().isBadRequest()) // Invalid ID format returns 400
                 .andReturn();
 
             String content = result.getResponse().getContentAsString();
@@ -405,7 +405,7 @@ class ResilienceTest {
         @Test
         @DisplayName("Error responses should not expose internal details")
         void errorsShouldNotExposeInternals() throws Exception {
-            var result = mockMvc.perform(get("/api/products/{id}", "invalid"))
+            var result = mockMvc.perform(get("/api/v1/products/{id}", "invalid"))
                 .andReturn();
 
             String content = result.getResponse().getContentAsString();
@@ -421,7 +421,7 @@ class ResilienceTest {
         void serverErrorsShouldProvideCorrelationId() throws Exception {
             // When server errors occur, response should include correlation ID
             // for troubleshooting
-            var result = mockMvc.perform(get("/api/products"))
+            var result = mockMvc.perform(get("/api/v1/products"))
                 .andReturn();
 
             // Check for correlation ID header or in response
@@ -445,7 +445,7 @@ class ResilienceTest {
             String idempotencyKey = "order-" + System.currentTimeMillis();
 
             // First request
-            var result1 = mockMvc.perform(post("/api/orders")
+            var result1 = mockMvc.perform(post("/api/v1/orders")
                     .header("Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -453,7 +453,7 @@ class ResilienceTest {
                 .andReturn();
 
             // Duplicate request with same idempotency key
-            var result2 = mockMvc.perform(post("/api/orders")
+            var result2 = mockMvc.perform(post("/api/v1/orders")
                     .header("Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -486,7 +486,7 @@ class ResilienceTest {
         @DisplayName("System should recover after load reduces")
         void shouldRecoverAfterLoadReduces() throws Exception {
             // After high load period, system should accept requests again
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk());
         }
     }

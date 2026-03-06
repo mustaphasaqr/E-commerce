@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.*;
  * Note: IP and UserAgent extracted from HttpServletRequest
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "User authentication and session management endpoints. Handles login, logout, token refresh, and password reset operations.")
 public class AuthController {
 

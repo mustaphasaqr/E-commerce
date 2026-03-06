@@ -55,12 +55,12 @@ public class RecommendationAdapter implements RecommendationPort {
         // Strategy: Find products with similar price range
         String sql = """
             SELECT p2.id, p2.name, CAST(p2.price AS DOUBLE) as price,
-                   ABS(p2.price - p1.price) as price_diff
+                   ABS(CAST(p2.price AS DOUBLE) - CAST(p1.price AS DOUBLE)) as price_diff
             FROM products p1
             CROSS JOIN products p2
             WHERE p1.id = :productId
               AND p2.id != :productId
-              AND ABS(p2.price - p1.price) < (p1.price * 0.5)
+              AND ABS(CAST(p2.price AS DOUBLE) - CAST(p1.price AS DOUBLE)) < (CAST(p1.price AS DOUBLE) * 0.5)
             ORDER BY price_diff ASC
             LIMIT :limit
             """;
@@ -74,9 +74,9 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                ((Number) row[0]).longValue(),
+                convertToLong(row[0]),
                 (String) row[1],
-                ((Number) row[2]).doubleValue(),
+                convertToDouble(row[2]),
                 null,  // imageUrl not available in database
                 0.8, // High confidence for similar products
                 "Similar products with comparable pricing"
@@ -119,9 +119,9 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                ((Number) row[0]).longValue(),
+                convertToLong(row[0]),
                 (String) row[1],
-                ((Number) row[2]).doubleValue(),
+                convertToDouble(row[2]),
                 null,  // imageUrl not available in database
                 0.9, // Very high confidence for co-purchased items
                 "Customers who bought this also bought"
@@ -189,9 +189,9 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                ((Number) row[0]).longValue(),
+                convertToLong(row[0]),
                 (String) row[1],
-                ((Number) row[2]).doubleValue(),
+                convertToDouble(row[2]),
                 null,  // imageUrl not available in database
                 0.7, // Medium confidence for trending
                 "Trending now"
@@ -244,13 +244,60 @@ public class RecommendationAdapter implements RecommendationPort {
 
         return results.stream()
             .map(row -> new ProductRecommendation(
-                ((Number) row[0]).longValue(),
+                convertToLong(row[0]),
                 (String) row[1],
-                ((Number) row[2]).doubleValue(),
+                convertToDouble(row[2]),
                 null,  // imageUrl not available in database
                 0.75,
                 "Based on your purchase history"
             ))
             .toList();
     }
+
+    /**
+     * Helper method to convert ID value to long
+     * Handles both Number and String types (H2 DB compatibility)
+     */
+    private long convertToLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String string) {
+            try {
+                return Long.parseLong(string);
+            } catch (NumberFormatException e) {
+                log.warn("⚠️ Failed to parse ID value: {}", string);
+                return 0L;
+            }
+        }
+        log.warn("⚠️ Unexpected ID type: {}", value.getClass());
+        return 0L;
+    }
+
+    /**
+     * Helper method to convert price value to double
+     * Handles both Number and String types (H2 DB compatibility)
+     */
+    private double convertToDouble(Object value) {
+        if (value == null) {
+            return 0.0;
+        }
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String string) {
+            try {
+                return Double.parseDouble(string);
+            } catch (NumberFormatException e) {
+                log.warn("⚠️ Failed to parse price value: {}", string);
+                return 0.0;
+            }
+        }
+        log.warn("⚠️ Unexpected price type: {}", value.getClass());
+        return 0.0;
+    }
 }
+

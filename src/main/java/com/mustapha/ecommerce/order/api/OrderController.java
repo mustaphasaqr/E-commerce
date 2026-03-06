@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * SOLID: SRP (HTTP only), DIP (depends on application interfaces)
  */
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/v1/orders")
 @Tag(name = "Order Management", description = "Order lifecycle management including creation, payment processing, shipping, delivery, and cancellation. Supports idempotent operations and tax calculation.")
 public class OrderController {
 

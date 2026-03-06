@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * - Circuit breaker status
  */
 @RestController
-@RequestMapping("/api/observability")
+@RequestMapping("/api/v1/observability")
 public class ObservabilityController {
 
     private final MeterRegistry meterRegistry;

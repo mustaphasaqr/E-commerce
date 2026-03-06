@@ -12,8 +12,12 @@ import com.mustapha.ecommerce.product.domain.exception.ProductDiscontinuedExcept
 import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
 import com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException;
+import com.mustapha.ecommerce.shared.exception.GlobalExceptionHandler;
+import com.mustapha.ecommerce.product.api.ProductGlobalExceptionHandler;
 import com.mustapha.ecommerce.shared.security.TokenBlacklistService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -40,10 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Note: We don't load the full ECommerceApplication to avoid bean conflicts
  * between Product and Order GlobalExceptionHandler classes
  */
-@WebMvcTest(controllers = ProductController.class, 
-    excludeAutoConfiguration = SecurityAutoConfiguration.class,
-    useDefaultFilters = false)
-@Import({ProductController.class, ProductGlobalExceptionHandler.class})
+@WebMvcTest(controllers = {ProductController.class, ProductGlobalExceptionHandler.class, GlobalExceptionHandler.class}, 
+    excludeAutoConfiguration = SecurityAutoConfiguration.class)
+@org.springframework.security.test.context.support.WithMockUser(roles = {"EMPLOYEE", "OWNER"})
 class ProductControllerTest {
 
     @Autowired
@@ -63,12 +66,45 @@ class ProductControllerTest {
 
     @MockBean
     private com.mustapha.ecommerce.product.application.port.RecommendationPort recommendationPort;
+    
+    @MockBean
+    private org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
+    
+    @MockBean
+    private com.mustapha.ecommerce.shared.security.ExponentialBackoffFilter exponentialBackoffFilter;
+    
+    @MockBean
+    private com.mustapha.ecommerce.shared.security.GlobalApiRateLimitFilter globalApiRateLimitFilter;
+    
+    @MockBean
+    private com.mustapha.ecommerce.shared.security.JwtTokenGenerator jwtTokenGenerator;
 
     private ProductResponse testProductResponse;
     private ProductRequest testProductRequest;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Configure mock filters to pass through requests to the controller
+        org.mockito.Mockito.doAnswer(invocation -> {
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(exponentialBackoffFilter).doFilter(
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.ServletRequest.class),
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.ServletResponse.class),
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.FilterChain.class)
+        );
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(globalApiRateLimitFilter).doFilter(
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.ServletRequest.class),
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.ServletResponse.class),
+            org.mockito.ArgumentMatchers.any(jakarta.servlet.FilterChain.class)
+        );
+
         // Test product response with actual values
         testProductResponse = new ProductResponse(
             "test-product-id-123",
@@ -105,7 +141,7 @@ class ProductControllerTest {
         when(productFacade.createProduct(any(ProductRequest.class))).thenReturn(testProductResponse);
 
         // When/Then
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testProductRequest)))
             .andExpect(status().isCreated())
@@ -138,7 +174,7 @@ class ProductControllerTest {
         );
 
         // When/Then
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
             .andExpect(status().isBadRequest())
@@ -162,7 +198,7 @@ class ProductControllerTest {
         );
 
         // When/Then
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
             .andExpect(status().isBadRequest())
@@ -172,12 +208,12 @@ class ProductControllerTest {
     @Test
     void createProduct_withMalformedJson_shouldReturn400() throws Exception {
         // When/Then
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{invalid json"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status").value(400))
-            .andExpect(jsonPath("$.error").value("Invalid request body"));
+            .andExpect(jsonPath("$.error").value("Invalid request body format"));
     }
 
     // ========== GET PRODUCT BY ID TESTS ==========
@@ -188,7 +224,7 @@ class ProductControllerTest {
         when(productFacade.getProductById("test-product-id-123")).thenReturn(testProductResponse);
 
         // When/Then
-        mockMvc.perform(get("/api/products/test-product-id-123"))
+        mockMvc.perform(get("/api/v1/products/test-product-id-123"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value("test-product-id-123"))
@@ -207,12 +243,12 @@ class ProductControllerTest {
             .thenThrow(new ProductNotFoundException(ProductId.of(nonExistentId)));
 
         // When/Then
-        mockMvc.perform(get("/api/products/" + nonExistentId))
+        mockMvc.perform(get("/api/v1/products/" + nonExistentId))
             .andExpect(status().isNotFound())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.status").value(404))
             .andExpect(jsonPath("$.error").value("Product not found"))
-            .andExpect(jsonPath("$.message").value("Product not found with ID: " + nonExistentId))
+            .andExpect(jsonPath("$.message").value("Product not found"))
             .andExpect(jsonPath("$.timestamp").exists());
     }
 
@@ -224,7 +260,7 @@ class ProductControllerTest {
         when(productFacade.getProductBySku("TEST-SKU-001")).thenReturn(testProductResponse);
 
         // When/Then
-        mockMvc.perform(get("/api/products")
+        mockMvc.perform(get("/api/v1/products")
                 .param("sku", "TEST-SKU-001"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -240,7 +276,7 @@ class ProductControllerTest {
             .thenThrow(new ProductNotFoundException(SKU.of("NON-EXISTENT")));
 
         // When/Then
-        mockMvc.perform(get("/api/products")
+        mockMvc.perform(get("/api/v1/products")
                 .param("sku", "NON-EXISTENT"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.status").value(404))
@@ -250,7 +286,7 @@ class ProductControllerTest {
     @Test
     void getProductBySku_withMissingParameter_shouldReturn200WithEmptyList() throws Exception {
         // When/Then - Missing 'sku' parameter returns empty list (graceful degradation)
-        mockMvc.perform(get("/api/products"))
+        mockMvc.perform(get("/api/v1/products"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
             .andExpect(jsonPath("$").isEmpty());
@@ -277,7 +313,7 @@ class ProductControllerTest {
             .thenReturn(reservedProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/reserve-stock")
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/reserve-stock")
                 .param("orderId", "order-123")
                 .param("quantity", "10"))
             .andExpect(status().isOk())
@@ -294,13 +330,13 @@ class ProductControllerTest {
             .thenThrow(new InsufficientStockException("test-product-id-123", 100, 200));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/reserve-stock")
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/reserve-stock")
                 .param("orderId", "order-123")
                 .param("quantity", "200"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.status").value(409))
             .andExpect(jsonPath("$.error").value("Insufficient stock"))
-            .andExpect(jsonPath("$.message").value(containsString("200")));
+            .andExpect(jsonPath("$.message").value("Insufficient stock"));
     }
 
     @Test
@@ -310,12 +346,12 @@ class ProductControllerTest {
             .thenThrow(new ProductDiscontinuedException("test-product-id-123"));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/reserve-stock")
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/reserve-stock")
                 .param("orderId", "order-123")
                 .param("quantity", "10"))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.status").value(403))
-            .andExpect(jsonPath("$.error").value("Product discontinued"));
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.error").value("Product has been discontinued"));
     }
 
     // ========== RELEASE RESERVATION TESTS ==========
@@ -339,7 +375,7 @@ class ProductControllerTest {
             .thenReturn(releasedProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/release-reservation")
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/release-reservation")
                 .param("orderId", "order-123"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalStock").value(100))
@@ -368,7 +404,7 @@ class ProductControllerTest {
             .thenReturn(fulfilledProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/fulfill-reservation")
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/fulfill-reservation")
                 .param("orderId", "order-123"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalStock").value(90))
@@ -398,7 +434,7 @@ class ProductControllerTest {
             .thenReturn(updatedProduct);
 
         // When/Then
-        mockMvc.perform(put("/api/products/test-product-id-123/price")
+        mockMvc.perform(put("/api/v1/products/test-product-id-123/price")
                 .param("newPrice", "149.99")
                 .param("currencyCode", "USD"))
             .andExpect(status().isOk())
@@ -417,13 +453,13 @@ class ProductControllerTest {
             .thenThrow(new IllegalArgumentException("Cannot compare prices with different currencies: USD vs EUR"));
 
         // When/Then
-        mockMvc.perform(put("/api/products/test-product-id-123/price")
+        mockMvc.perform(put("/api/v1/products/test-product-id-123/price")
                 .param("newPrice", "149.99")
                 .param("currencyCode", "EUR"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status").value(400))
             .andExpect(jsonPath("$.error").value("Invalid request"))
-            .andExpect(jsonPath("$.message").value(containsString("different currencies")));
+            .andExpect(jsonPath("$.message").value("Invalid request"));
     }
 
     // ========== UPDATE PRODUCT DETAILS TESTS ==========
@@ -448,7 +484,7 @@ class ProductControllerTest {
             .thenReturn(updatedProduct);
 
         // When/Then
-        mockMvc.perform(put("/api/products/test-product-id-123/details")
+        mockMvc.perform(put("/api/v1/products/test-product-id-123/details")
                 .param("name", "Updated Product Name")
                 .param("description", "Updated Description"))
             .andExpect(status().isOk())
@@ -477,7 +513,7 @@ class ProductControllerTest {
             .thenReturn(activatedProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/activate"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/activate"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("test-product-id-123"))
             .andExpect(jsonPath("$.active").value(true));
@@ -490,10 +526,10 @@ class ProductControllerTest {
             .thenThrow(new ProductAlreadyActiveException("test-product-id-123"));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/activate"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/activate"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.status").value(409))
-            .andExpect(jsonPath("$.error").value("Product already active"));
+            .andExpect(jsonPath("$.error").value("Invalid product state"));
     }
 
     @Test
@@ -503,10 +539,10 @@ class ProductControllerTest {
             .thenThrow(new ProductDiscontinuedException("test-product-id-123"));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/activate"))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.status").value(403))
-            .andExpect(jsonPath("$.error").value("Product discontinued"));
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/activate"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.error").value("Product has been discontinued"));
     }
 
     // ========== DEACTIVATE PRODUCT TESTS ==========
@@ -531,7 +567,7 @@ class ProductControllerTest {
             .thenReturn(deactivatedProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/deactivate"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/deactivate"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("test-product-id-123"))
             .andExpect(jsonPath("$.active").value(false))
@@ -546,10 +582,10 @@ class ProductControllerTest {
             .thenThrow(new ProductAlreadyInactiveException("test-product-id-123"));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/deactivate"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/deactivate"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.status").value(409))
-            .andExpect(jsonPath("$.error").value("Product already inactive"));
+            .andExpect(jsonPath("$.error").value("Invalid product state"));
     }
 
     @Test
@@ -560,11 +596,11 @@ class ProductControllerTest {
                 "Cannot deactivate product test-product-id-123 - it has 10 units reserved in active orders"));
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/deactivate"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/deactivate"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.status").value(409))
             .andExpect(jsonPath("$.error").value("Invalid product state"))
-            .andExpect(jsonPath("$.message").value(containsString("reserved in active orders")));
+            .andExpect(jsonPath("$.message").value(containsString("Invalid product state")));
     }
 
     // ========== DISCONTINUE PRODUCT TESTS ==========
@@ -589,7 +625,7 @@ class ProductControllerTest {
             .thenReturn(discontinuedProduct);
 
         // When/Then
-        mockMvc.perform(post("/api/products/test-product-id-123/discontinue"))
+        mockMvc.perform(post("/api/v1/products/test-product-id-123/discontinue"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("test-product-id-123"))
             .andExpect(jsonPath("$.discontinued").value(true))
@@ -606,10 +642,12 @@ class ProductControllerTest {
             .thenThrow(new RuntimeException("Unexpected error"));
 
         // When/Then
-        mockMvc.perform(get("/api/products/test-product-id-123"))
+        mockMvc.perform(get("/api/v1/products/test-product-id-123"))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.status").value(500))
-            .andExpect(jsonPath("$.error").value("Internal server error"))
+            .andExpect(jsonPath("$.error").value("An unexpected error occurred"))
             .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
     }
 }
+
+

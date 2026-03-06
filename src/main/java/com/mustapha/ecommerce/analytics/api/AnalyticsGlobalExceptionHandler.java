@@ -9,6 +9,8 @@ import com.mustapha.ecommerce.analytics.infrastructure.exception.QueryExecutionE
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -33,7 +35,8 @@ import java.time.LocalDateTime;
  * This handler catches exceptions from analytics controllers and
  * converts them into meaningful HTTP responses with proper status codes.
  */
-@RestControllerAdvice("com.mustapha.ecommerce.analytics")
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class AnalyticsGlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(AnalyticsGlobalExceptionHandler.class);

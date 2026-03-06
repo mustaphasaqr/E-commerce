@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.cart.application.usecase;
 
 import com.mustapha.ecommerce.cart.application.command.AddToCartCommand;
+import com.mustapha.ecommerce.cart.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.cart.application.port.ProductPort;
 import com.mustapha.ecommerce.cart.domain.model.Cart;
 import com.mustapha.ecommerce.cart.domain.model.valueobject.Money;
@@ -23,10 +24,12 @@ public class AddToCartUseCase {
     
     private final CartRepository cartRepository;
     private final ProductPort productPort;
+    private final DomainEventPublisher eventPublisher;
     
-    public AddToCartUseCase(CartRepository cartRepository, ProductPort productPort) {
+    public AddToCartUseCase(CartRepository cartRepository, ProductPort productPort, DomainEventPublisher eventPublisher) {
         this.cartRepository = cartRepository;
         this.productPort = productPort;
+        this.eventPublisher = eventPublisher;
     }
     
     @Transactional
@@ -62,6 +65,6 @@ public class AddToCartUseCase {
         }
         
         // Create new cart using value objects
-        return new Cart(userId, sessionId);
+        return new Cart(userId, sessionId, eventPublisher);
     }
 }

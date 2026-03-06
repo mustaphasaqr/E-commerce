@@ -59,7 +59,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -84,7 +84,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            String response = mockMvc.perform(post("/api/products")
+            String response = mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -99,7 +99,7 @@ class HttpStatusCodeVerificationTest {
             if (!response.isEmpty() && response.contains("\"id\"")) {
                 try {
                     String productId = objectMapper.readTree(response).get("id").asText();
-                    mockMvc.perform(delete("/api/products/" + productId))
+                    mockMvc.perform(delete("/api/v1/products/" + productId))
                         .andExpect(status().isNoContent())
                         .andExpect(status().is(204));
                 } catch (Exception e) {
@@ -123,7 +123,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            String createResponse = mockMvc.perform(post("/api/products")
+            String createResponse = mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -150,7 +150,7 @@ class HttpStatusCodeVerificationTest {
                         }
                         """;
 
-                    mockMvc.perform(put("/api/products/" + productId)
+                    mockMvc.perform(put("/api/v1/products/" + productId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(updateRequest))
                         .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class HttpStatusCodeVerificationTest {
         void malformedRequestsShouldReturn400BadRequest() throws Exception {
             String invalidJson = "{ invalid json }";
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
                 .andExpect(status().isBadRequest())
@@ -182,7 +182,7 @@ class HttpStatusCodeVerificationTest {
         @Test
         @DisplayName("Unauthenticated requests should return explicit 401 UNAUTHORIZED")
         void unauthenticatedRequestsShouldReturn401Unauthorized() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("limit", "10"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(status().is(401));
@@ -192,7 +192,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("Insufficient permissions should return explicit 403 FORBIDDEN")
         @WithMockUser(roles = "CUSTOMER")
         void insufficientPermissionsShouldReturn403Forbidden() throws Exception {
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"))
                 .andExpect(result -> {
@@ -206,7 +206,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("Non-existent resources should return explicit 404 NOT FOUND")
         @WithMockUser
         void nonExistentResourcesShouldReturn404NotFound() throws Exception {
-            mockMvc.perform(get("/api/products/123e4567-e89b-12d3-a456-426614174000"))
+            mockMvc.perform(get("/api/v1/products/123e4567-e89b-12d3-a456-426614174000"))
                 .andExpect(status().isNotFound())
                 .andExpect(status().is(404));
         }
@@ -227,7 +227,7 @@ class HttpStatusCodeVerificationTest {
                 """, uniqueSku);
 
             // First request should succeed  
-            String response = mockMvc.perform(post("/api/products")
+            String response = mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -242,7 +242,7 @@ class HttpStatusCodeVerificationTest {
             if (!response.isEmpty() && response.contains("\"id\"")) {
                 try {
                     // Duplicate should return 409
-                    mockMvc.perform(post("/api/products")
+                    mockMvc.perform(post("/api/v1/products")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(productRequest))
                         .andExpect(result -> {
@@ -291,7 +291,7 @@ class HttpStatusCodeVerificationTest {
                 """;
 
             // May return 401 if credentials invalid, 429 if rate limited
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(loginRequest))
                 .andExpect(result -> {
@@ -306,7 +306,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("ProductController - List products should return explicit 200 OK")
         @WithMockUser
         void productControllerListShouldReturn200Ok() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk())
                 .andExpect(status().is(200));
         }
@@ -323,7 +323,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(orderRequest))
                 .andExpect(result -> {
@@ -338,7 +338,7 @@ class HttpStatusCodeVerificationTest {
         @WithMockUser(roles = "CUSTOMER")
         void cartControllerGetShouldReturn200Ok() throws Exception {
             // Cart endpoint requires authentication, will create empty cart if none exists
-            mockMvc.perform(get("/api/cart"))
+            mockMvc.perform(get("/api/v1/cart"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
                     // Should be 200 (OK with cart) or 400 (bad request if userId missing)
@@ -350,7 +350,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("AnalyticsController - All endpoints should return explicit 200 OK")
         @WithMockUser(roles = "OWNER")
         void analyticsControllerShouldReturn200Ok() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", "2024-01-01")
                     .param("endDate", "2024-01-31"))
                 .andExpect(result -> {
@@ -371,7 +371,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            mockMvc.perform(put("/api/users/profile")
+            mockMvc.perform(put("/api/v1/users/profile")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(updateRequest))
                 .andExpect(result -> {
@@ -385,7 +385,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("AdminController - All endpoints should use explicit status codes")
         @WithMockUser(roles = "OWNER")
         void adminControllerShouldUseExplicitStatusCodes() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "0")
                     .param("size", "10"))
                 .andExpect(status().isOk())
@@ -401,7 +401,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("All error responses should include explicit status code")
         @WithMockUser
         void allErrorResponsesShouldIncludeStatusCode() throws Exception {
-            mockMvc.perform(get("/api/products/invalid-id-format"))
+            mockMvc.perform(get("/api/v1/products/invalid-id-format"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").exists())
@@ -413,12 +413,12 @@ class HttpStatusCodeVerificationTest {
         @WithMockUser(roles = "OWNER")
         void errorResponsesShouldBeConsistent() throws Exception {
             // Test error response format consistency
-            mockMvc.perform(get("/api/products/123e4567-e89b-12d3-a456-426614174000"))
+            mockMvc.perform(get("/api/v1/products/123e4567-e89b-12d3-a456-426614174000"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").exists());
 
-            mockMvc.perform(get("/api/orders/123e4567-e89b-12d3-a456-426614174000"))
+            mockMvc.perform(get("/api/v1/orders/123e4567-e89b-12d3-a456-426614174000"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
                     // Order might return 403 (forbidden) or 404 (not found)
@@ -437,7 +437,7 @@ class HttpStatusCodeVerificationTest {
         @DisplayName("All GET requests should consistently return 200 OK on success")
         @WithMockUser
         void allGetRequestsShouldReturn200OnSuccess() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk());
 
             mockMvc.perform(get("/actuator/health"))
@@ -459,7 +459,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -485,7 +485,7 @@ class HttpStatusCodeVerificationTest {
                 }
                 """;
 
-            String response = mockMvc.perform(post("/api/products")
+            String response = mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productRequest))
                 .andExpect(result -> {
@@ -500,7 +500,7 @@ class HttpStatusCodeVerificationTest {
             if (!response.isEmpty() && response.contains("\"id\"")) {
                 try {
                     String productId = objectMapper.readTree(response).get("id").asText();
-                    mockMvc.perform(delete("/api/products/" + productId))
+                    mockMvc.perform(delete("/api/v1/products/" + productId))
                         .andExpect(status().isNoContent());
                 } catch (Exception e) {
                     // If product creation failed, test passes (verifies explicit status codes)

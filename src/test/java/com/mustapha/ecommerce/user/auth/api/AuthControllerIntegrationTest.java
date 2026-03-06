@@ -9,14 +9,18 @@ import com.mustapha.ecommerce.user.domain.model.valueobject.Username;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 import com.mustapha.ecommerce.user.infrastructure.security.BCryptPasswordHasher;
 import com.mustapha.ecommerce.user.dto.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -30,7 +34,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"spring.cache.type=none"})
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@TestPropertySource(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.generate-ddl=true",
+    "spring.jpa.defer-datasource-initialization=false",
+    "spring.sql.init.mode=never",
+    "spring.data.redis.host=localhost",
+    "spring.data.redis.port=6379",
+    "spring.cache.type=none"
+})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Transactional
 class AuthControllerIntegrationTest {
 
@@ -52,7 +66,13 @@ class AuthControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         // Clear all Redis data for tests to avoid deserialization issues with old cached objects
-        redisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
+        try {
+            if (redisTemplate != null && redisTemplate.getConnectionFactory() != null) {
+                redisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
+            }
+        } catch (Exception e) {
+            // Redis not available in test environment - continue anyway
+        }
 
         User testUser = User.create(
             Username.of("authtest"),
@@ -70,7 +90,7 @@ class AuthControllerIntegrationTest {
     void login_ValidCredentials_Returns200WithJwt() throws Exception {
         LoginRequest request = new LoginRequest("authtest@example.com", "AuthTest123!@#");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -93,7 +113,7 @@ class AuthControllerIntegrationTest {
     void login_InvalidPassword_Returns401() throws Exception {
         LoginRequest request = new LoginRequest("authtest@example.com", "WrongPassword123!");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized());
@@ -103,7 +123,7 @@ class AuthControllerIntegrationTest {
     void login_NonExistentUser_Returns401() throws Exception {
         LoginRequest request = new LoginRequest("nonexistent@example.com", "Password123!");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized());
@@ -113,7 +133,7 @@ class AuthControllerIntegrationTest {
     void login_JwtContainsCorrectClaims() throws Exception {
         LoginRequest request = new LoginRequest("authtest@example.com", "AuthTest123!@#");
 
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -131,7 +151,7 @@ class AuthControllerIntegrationTest {
     void refreshToken_ValidRefreshToken_Returns200WithNewJwt() throws Exception {
         // First login to get refresh token
         LoginRequest loginRequest = new LoginRequest("authtest@example.com", "AuthTest123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -143,7 +163,7 @@ class AuthControllerIntegrationTest {
         // Use refresh token to get new access token
         RefreshTokenRequest refreshRequest = new RefreshTokenRequest(refreshToken);
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest)))
             .andExpect(status().isOk())
@@ -159,7 +179,7 @@ class AuthControllerIntegrationTest {
     void refreshToken_InvalidToken_Returns400() throws Exception {
         RefreshTokenRequest request = new RefreshTokenRequest("invalid-refresh-token-12345");
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -169,7 +189,7 @@ class AuthControllerIntegrationTest {
     void logout_ValidSession_Returns204() throws Exception {
         // Login first
         LoginRequest loginRequest = new LoginRequest("authtest@example.com", "AuthTest123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -179,14 +199,14 @@ class AuthControllerIntegrationTest {
             .get("accessToken").asText();
 
         // Logout
-        mockMvc.perform(post("/api/auth/logout")
+        mockMvc.perform(post("/api/v1/auth/logout")
                 .header("Authorization", "Bearer " + accessToken))
             .andExpect(status().isNoContent());
     }
 
     @Test
     void logout_WithoutAuthentication_Returns401() throws Exception {
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/v1/auth/logout"))
             .andExpect(status().isUnauthorized()); // 401 for missing authentication
     }
 
@@ -195,13 +215,13 @@ class AuthControllerIntegrationTest {
         // Login twice to create multiple sessions
         LoginRequest loginRequest = new LoginRequest("authtest@example.com", "AuthTest123!@#");
         
-        MvcResult firstLogin = mockMvc.perform(post("/api/auth/login")
+        MvcResult firstLogin = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
             .andReturn();
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk());
@@ -210,7 +230,7 @@ class AuthControllerIntegrationTest {
             .get("accessToken").asText();
 
         // Logout all devices
-        mockMvc.perform(post("/api/auth/logout-all")
+        mockMvc.perform(post("/api/v1/auth/logout-all")
                 .header("Authorization", "Bearer " + accessToken))
             .andExpect(status().isNoContent());
     }
@@ -226,7 +246,7 @@ class AuthControllerIntegrationTest {
 
         // Attempt 5 failed logins (max allowed - should all return 401)
         for (int i = 0; i < 5; i++) {
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -234,7 +254,7 @@ class AuthControllerIntegrationTest {
         }
 
         // 6th attempt should be rate limited (returns 429)
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isTooManyRequests())
@@ -252,7 +272,7 @@ class AuthControllerIntegrationTest {
             true
         );
         
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))
             .andExpect(status().isCreated());
@@ -262,17 +282,17 @@ class AuthControllerIntegrationTest {
         LoginRequest request2 = new LoginRequest("ratelimit2@test.local", "WrongPass!");
 
         for (int i = 0; i < 10; i++) {
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request1)));
             
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request2)));
         }
 
         // 21st attempt should be blocked (IP level)
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request1)))
             .andExpect(status().isTooManyRequests());
@@ -282,7 +302,7 @@ class AuthControllerIntegrationTest {
     void passwordResetRequest_ValidEmail_Returns204() throws Exception {
         PasswordResetRequestRequest request = new PasswordResetRequestRequest("authtest@example.com");
 
-        mockMvc.perform(post("/api/auth/password-reset/request")
+        mockMvc.perform(post("/api/v1/auth/password-reset/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNoContent());
@@ -297,7 +317,7 @@ class AuthControllerIntegrationTest {
     void passwordResetRequest_NonExistentEmail_Returns204SilentFailure() throws Exception {
         PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@example.com");
 
-        mockMvc.perform(post("/api/auth/password-reset/request")
+        mockMvc.perform(post("/api/v1/auth/password-reset/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNoContent());
@@ -311,7 +331,7 @@ class AuthControllerIntegrationTest {
     void passwordResetComplete_ValidToken_Returns204AndChangesPassword() throws Exception {
         // Step 1: Request password reset
         PasswordResetRequestRequest resetRequest = new PasswordResetRequestRequest("authtest@example.com");
-        mockMvc.perform(post("/api/auth/password-reset/request")
+        mockMvc.perform(post("/api/v1/auth/password-reset/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(resetRequest)))
             .andExpect(status().isNoContent());
@@ -328,21 +348,21 @@ class AuthControllerIntegrationTest {
             token, 
             "NewPassword123!@#"
         );
-        mockMvc.perform(post("/api/auth/password-reset/complete")
+        mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(completeRequest)))
             .andExpect(status().isNoContent());
 
         // Step 4: Verify old password no longer works
         LoginRequest oldPasswordLogin = new LoginRequest("authtest@example.com", "AuthTest123!@#");
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(oldPasswordLogin)))
             .andExpect(status().isUnauthorized());
 
         // Step 5: Verify new password works
         LoginRequest newPasswordLogin = new LoginRequest("authtest@example.com", "NewPassword123!@#");
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newPasswordLogin)))
             .andExpect(status().isOk())
@@ -356,7 +376,7 @@ class AuthControllerIntegrationTest {
             "NewPassword123!@#"
         );
 
-        mockMvc.perform(post("/api/auth/password-reset/complete")
+        mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
@@ -367,7 +387,7 @@ class AuthControllerIntegrationTest {
     void passwordResetComplete_TokenReuseAttempt_Returns400() throws Exception {
         // Step 1: Request reset
         PasswordResetRequestRequest resetRequest = new PasswordResetRequestRequest("authtest@example.com");
-        mockMvc.perform(post("/api/auth/password-reset/request")
+        mockMvc.perform(post("/api/v1/auth/password-reset/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(resetRequest)))
             .andExpect(status().isNoContent());
@@ -381,7 +401,7 @@ class AuthControllerIntegrationTest {
             token, 
             "NewPassword123!@#"
         );
-        mockMvc.perform(post("/api/auth/password-reset/complete")
+        mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(completeRequest)))
             .andExpect(status().isNoContent());
@@ -391,7 +411,7 @@ class AuthControllerIntegrationTest {
             token, 
             "AnotherPassword123!@#"
         );
-        mockMvc.perform(post("/api/auth/password-reset/complete")
+        mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reuseRequest)))
             .andExpect(status().isBadRequest())
@@ -403,7 +423,7 @@ class AuthControllerIntegrationTest {
         // Step 1: Create 3 login sessions for same user
         LoginRequest loginRequest = new LoginRequest("authtest@example.com", "AuthTest123!@#");
         
-        MvcResult login1 = mockMvc.perform(post("/api/auth/login")
+        MvcResult login1 = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -411,7 +431,7 @@ class AuthControllerIntegrationTest {
         String session1Id = objectMapper.readTree(login1.getResponse().getContentAsString())
             .get("sessionId").asText();
 
-        MvcResult login2 = mockMvc.perform(post("/api/auth/login")
+        MvcResult login2 = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -419,7 +439,7 @@ class AuthControllerIntegrationTest {
         String session2Id = objectMapper.readTree(login2.getResponse().getContentAsString())
             .get("sessionId").asText();
 
-        MvcResult login3 = mockMvc.perform(post("/api/auth/login")
+        MvcResult login3 = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -434,7 +454,7 @@ class AuthControllerIntegrationTest {
         assertThat(sessionKeys).hasSize(3);
 
         // Step 3: Logout all devices from current session
-        mockMvc.perform(post("/api/auth/logout-all")
+        mockMvc.perform(post("/api/v1/auth/logout-all")
                 .header("Authorization", "Bearer " + currentSessionToken))
             .andExpect(status().isNoContent());
 
@@ -468,7 +488,7 @@ class AuthControllerIntegrationTest {
 
         RequestEmailVerificationRequest request = new RequestEmailVerificationRequest("unverified@example.com");
 
-        mockMvc.perform(post("/api/auth/email-verification/request")
+        mockMvc.perform(post("/api/v1/auth/email-verification/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNoContent());
@@ -483,7 +503,7 @@ class AuthControllerIntegrationTest {
     void emailVerificationRequest_AlreadyVerified_Returns400() throws Exception {
         RequestEmailVerificationRequest request = new RequestEmailVerificationRequest("authtest@example.com");
 
-        mockMvc.perform(post("/api/auth/email-verification/request")
+        mockMvc.perform(post("/api/v1/auth/email-verification/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
@@ -504,7 +524,7 @@ class AuthControllerIntegrationTest {
 
         // Request verification
         RequestEmailVerificationRequest verificationRequest = new RequestEmailVerificationRequest("unverified2@example.com");
-        mockMvc.perform(post("/api/auth/email-verification/request")
+        mockMvc.perform(post("/api/v1/auth/email-verification/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verificationRequest)))
             .andExpect(status().isNoContent());
@@ -516,7 +536,7 @@ class AuthControllerIntegrationTest {
 
         // Verify email with token
         VerifyEmailWithTokenRequest verifyRequest = new VerifyEmailWithTokenRequest(token);
-        mockMvc.perform(post("/api/auth/email-verification/verify")
+        mockMvc.perform(post("/api/v1/auth/email-verification/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verifyRequest)))
             .andExpect(status().isNoContent());
@@ -533,7 +553,7 @@ class AuthControllerIntegrationTest {
     void verifyEmailWithToken_InvalidToken_Returns400() throws Exception {
         VerifyEmailWithTokenRequest request = new VerifyEmailWithTokenRequest("invalid-token");
 
-        mockMvc.perform(post("/api/auth/email-verification/verify")
+        mockMvc.perform(post("/api/v1/auth/email-verification/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
@@ -554,7 +574,7 @@ class AuthControllerIntegrationTest {
 
         // Request verification
         RequestEmailVerificationRequest verificationRequest = new RequestEmailVerificationRequest("unverified3@example.com");
-        mockMvc.perform(post("/api/auth/email-verification/request")
+        mockMvc.perform(post("/api/v1/auth/email-verification/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verificationRequest)))
             .andExpect(status().isNoContent());
@@ -565,17 +585,19 @@ class AuthControllerIntegrationTest {
 
         // Use token once
         VerifyEmailWithTokenRequest verifyRequest = new VerifyEmailWithTokenRequest(token);
-        mockMvc.perform(post("/api/auth/email-verification/verify")
+        mockMvc.perform(post("/api/v1/auth/email-verification/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verifyRequest)))
             .andExpect(status().isNoContent());
 
         // Try to reuse token - should fail (token was deleted)
-        mockMvc.perform(post("/api/auth/email-verification/verify")
+        mockMvc.perform(post("/api/v1/auth/email-verification/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verifyRequest)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value(containsString("Invalid or expired verification token")));
     }
 }
+
+
 

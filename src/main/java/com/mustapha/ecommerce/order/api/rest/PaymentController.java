@@ -192,7 +192,7 @@ import java.util.Map;
  * ========================================
  */
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/v1/payments")
 @CrossOrigin(origins = "*") // TODO: Configure proper CORS in production
 public class PaymentController {
 

@@ -34,12 +34,10 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@DisplayName("Resource Ownership Integration Tests")
 class ResourceOwnershipIntegrationTest {
 
     @Autowired
@@ -86,7 +84,7 @@ class ResourceOwnershipIntegrationTest {
     @DisplayName("Owner should access their own order")
     void ownerAccessesOwnOrder() throws Exception {
         // This test assumes GET /api/orders/{orderId} endpoint exists with @VerifyOwnership
-        mockMvc.perform(get("/api/orders/" + testOrderId)
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId)
                        .header("Authorization", "Bearer " + ownerToken))
                .andExpect(status().isOk());
     }
@@ -94,7 +92,7 @@ class ResourceOwnershipIntegrationTest {
     @Test
     @DisplayName("Non-owner should receive 403 when accessing others order")
     void nonOwnerReceives403() throws Exception {
-        mockMvc.perform(get("/api/orders/" + testOrderId)
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId)
                        .header("Authorization", "Bearer " + attackerToken))
                .andExpect(status().isForbidden())
                .andExpect(jsonPath("$.errorCode").value("AUTHZ_FORBIDDEN_002")) // Error code value, not enum name
@@ -104,7 +102,7 @@ class ResourceOwnershipIntegrationTest {
     @Test
     @DisplayName("Unauthenticated user should receive 401")
     void unauthenticatedUserReceives401() throws Exception {
-        mockMvc.perform(get("/api/orders/" + testOrderId))
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId))
                .andExpect(status().isUnauthorized());
     }
 
@@ -112,7 +110,7 @@ class ResourceOwnershipIntegrationTest {
     @DisplayName("Should verify ownership on POST /cancel requests")
     void verifyOwnershipOnDelete() throws Exception {
         // Test ownership verification on cancel endpoint (POST with @VerifyOwnership)
-        mockMvc.perform(post("/api/orders/" + testOrderId + "/cancel")
+        mockMvc.perform(post("/api/v1/orders/" + testOrderId + "/cancel")
                        .header("Authorization", "Bearer " + attackerToken)
                        .param("reason", "Changed mind"))
                .andExpect(status().isForbidden());
@@ -122,7 +120,7 @@ class ResourceOwnershipIntegrationTest {
     @DisplayName("Should verify ownership on POST /ship requests")
     void verifyOwnershipOnUpdate() throws Exception {
         // Test ownership verification on ship endpoint (POST with @VerifyOwnership)
-        mockMvc.perform(post("/api/orders/" + testOrderId + "/ship")
+        mockMvc.perform(post("/api/v1/orders/" + testOrderId + "/ship")
                        .header("Authorization", "Bearer " + attackerToken)
                        .param("trackingNumber", "TRACK123")
                        .param("carrier", "UPS"))
@@ -132,7 +130,7 @@ class ResourceOwnershipIntegrationTest {
     @Test
     @DisplayName("Should include X-Request-ID in error response")
     void includeRequestIdInErrorResponse() throws Exception {
-        mockMvc.perform(get("/api/orders/" + testOrderId)
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId)
                        .header("Authorization", "Bearer " + attackerToken))
                .andExpect(status().isForbidden())
                .andExpect(header().exists("X-Request-ID"));
@@ -143,7 +141,7 @@ class ResourceOwnershipIntegrationTest {
     void workWithCustomRequestId() throws Exception {
         String customRequestId = "integration-test-request-123";
 
-        mockMvc.perform(get("/api/orders/" + testOrderId)
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId)
                        .header("Authorization", "Bearer " + attackerToken)
                        .header("X-Request-ID", customRequestId))
                .andExpect(status().isForbidden())
@@ -156,7 +154,7 @@ class ResourceOwnershipIntegrationTest {
     void ownerRoleBypassesOwnershipChecks() throws Exception {
         // OWNER role should bypass ownership checks (can access anyone's order without JWT)
         // testOrderId belongs to "owner" user from @BeforeEach
-        mockMvc.perform(get("/api/orders/" + testOrderId))
+        mockMvc.perform(get("/api/v1/orders/" + testOrderId))
                .andExpect(status().isOk());
     }
 
@@ -189,3 +187,5 @@ class ResourceOwnershipIntegrationTest {
         return orderRepository.save(order);
     }
 }
+
+

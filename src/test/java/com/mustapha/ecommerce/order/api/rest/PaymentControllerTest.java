@@ -8,6 +8,8 @@ import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentStatus;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentVerificationResult;
 import com.mustapha.ecommerce.order.application.usecase.InitiatePaymentUseCase;
 import com.mustapha.ecommerce.order.application.usecase.VerifyPaymentUseCase;
+import com.mustapha.ecommerce.order.api.OrderGlobalExceptionHandler;
+import com.mustapha.ecommerce.shared.exception.GlobalExceptionHandler;
 import com.mustapha.ecommerce.shared.security.ExponentialBackoffFilter;
 import com.mustapha.ecommerce.shared.security.GlobalApiRateLimitFilter;
 import com.mustapha.ecommerce.shared.security.JwtAuthenticationFilter;
@@ -44,11 +46,10 @@ import static org.hamcrest.Matchers.*;
  * - Test HTTP request/response handling
  * - Verify JSON serialization
  */
-@WebMvcTest(value = PaymentController.class,
+@WebMvcTest(controllers = {PaymentController.class, OrderGlobalExceptionHandler.class, GlobalExceptionHandler.class},
     excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
         classes = {JwtAuthenticationFilter.class, ExponentialBackoffFilter.class, GlobalApiRateLimitFilter.class}))
 @AutoConfigureMockMvc(addFilters = false)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class PaymentControllerTest {
 
     @Autowired
@@ -81,7 +82,7 @@ class PaymentControllerTest {
             .thenReturn(mockResult);
 
         // When/Then: POST /api/payments/checkout
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -106,7 +107,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/checkout - Should reject request without orderId")
     void testInitiatePaymentMissingOrderId() throws Exception {
         // When/Then: POST without orderId
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -126,7 +127,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/checkout - Should reject request without paymentMethod")
     void testInitiatePaymentMissingPaymentMethod() throws Exception {
         // When/Then: POST without paymentMethod
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -146,7 +147,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/checkout - Should reject request without customerEmail")
     void testInitiatePaymentMissingEmail() throws Exception {
         // When/Then: POST without customerEmail
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -166,7 +167,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/checkout - Should reject request with blank orderId")
     void testInitiatePaymentBlankOrderId() throws Exception {
         // When/Then: POST with blank orderId
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -199,7 +200,7 @@ class PaymentControllerTest {
             .thenReturn(mockResult);
 
         // When/Then: POST /api/payments/checkout
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -224,7 +225,7 @@ class PaymentControllerTest {
         when(initiatePaymentUseCase.execute(any())).thenReturn(mockResult);
 
         // Test MASTERCARD
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -237,7 +238,7 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
 
         // Test MADA
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -261,7 +262,7 @@ class PaymentControllerTest {
             .thenThrow(new IllegalArgumentException("Invalid order ID format"));
 
         // When/Then: Should return 400 Bad Request
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -284,7 +285,7 @@ class PaymentControllerTest {
             .thenThrow(new IllegalStateException("Order already paid"));
 
         // When/Then: Should return 200 OK with success=false
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -318,7 +319,7 @@ class PaymentControllerTest {
             .thenReturn(mockResult);
 
         // When/Then: POST /api/payments/verify
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -350,7 +351,7 @@ class PaymentControllerTest {
             .thenReturn(mockResult);
 
         // When/Then: POST /api/payments/verify
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -379,7 +380,7 @@ class PaymentControllerTest {
             .thenReturn(mockResult);
 
         // When/Then: POST /api/payments/verify
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -397,7 +398,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/verify - Should reject request without checkoutId")
     void testVerifyPaymentMissingCheckoutId() throws Exception {
         // When/Then: POST without checkoutId
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -412,7 +413,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/verify - Should reject request with blank checkoutId")
     void testVerifyPaymentBlankCheckoutId() throws Exception {
         // When/Then: POST with blank checkoutId
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -435,7 +436,7 @@ class PaymentControllerTest {
             .thenThrow(new IllegalStateException("Payment verification timeout"));
 
         // When/Then: Should return 200 OK with success=false
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -456,7 +457,7 @@ class PaymentControllerTest {
             .thenThrow(new RuntimeException("Database connection failed"));
 
         // When/Then: Should return 500 Internal Server Error
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -477,7 +478,7 @@ class PaymentControllerTest {
     @DisplayName("GET /api/payments/health - Should return healthy status")
     void testHealthCheck() throws Exception {
         // When/Then: GET /api/payments/health
-        mockMvc.perform(get("/api/payments/health"))
+        mockMvc.perform(get("/api/v1/payments/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("healthy"))
                 .andExpect(jsonPath("$.service").value("payment-api"))
@@ -494,7 +495,7 @@ class PaymentControllerTest {
     void testInitiatePaymentInvalidContentType() throws Exception {
         // When/Then: POST with text/plain should fail
         // In WebMvcTest without full context, returns 500 (can't deserialize)
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content("orderId=123"))
                 .andExpect(status().is5xxServerError());
@@ -506,7 +507,7 @@ class PaymentControllerTest {
     void testVerifyPaymentInvalidContentType() throws Exception {
         // When/Then: POST with text/plain should fail
         // In WebMvcTest without full context, returns 500 (can't deserialize)
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content("checkoutId=abc"))
                 .andExpect(status().is5xxServerError());
@@ -521,7 +522,7 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/checkout - Should reject malformed JSON")
     void testInitiatePaymentMalformedJson() throws Exception {
         // When/Then: POST with malformed JSON
-        mockMvc.perform(post("/api/payments/checkout")
+        mockMvc.perform(post("/api/v1/payments/checkout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{orderId: invalid json}"))
                 .andExpect(status().isBadRequest());
@@ -532,9 +533,11 @@ class PaymentControllerTest {
     @DisplayName("POST /api/payments/verify - Should reject malformed JSON")
     void testVerifyPaymentMalformedJson() throws Exception {
         // When/Then: POST with malformed JSON
-        mockMvc.perform(post("/api/payments/verify")
+        mockMvc.perform(post("/api/v1/payments/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{checkoutId: 'missing quotes'}"))
                 .andExpect(status().isBadRequest());
     }
 }
+
+

@@ -2,6 +2,8 @@ package com.mustapha.ecommerce.product.api;
 
 import java.time.LocalDateTime;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -25,7 +27,8 @@ import com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundEx
  * Pattern: Exception Translation (Domain → HTTP)
  * SOLID: SRP (HTTP error handling only)
  */
-@RestControllerAdvice("com.mustapha.ecommerce.product")
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class ProductGlobalExceptionHandler {
 
     @ExceptionHandler(ProductNotFoundException.class)

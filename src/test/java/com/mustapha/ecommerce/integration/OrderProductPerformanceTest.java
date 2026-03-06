@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,7 +116,7 @@ class OrderProductPerformanceTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -147,7 +148,7 @@ class OrderProductPerformanceTest {
             50 // Only 50 units available
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products")
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
@@ -178,7 +179,7 @@ class OrderProductPerformanceTest {
                         new OrderItemRequest(product.getId(), "High Demand Product", 1, 99.99)
                     ));
 
-                    MvcResult result = mockMvc.perform(post("/api/orders")
+                    MvcResult result = mockMvc.perform(post("/api/v1/orders")
                             .header("Authorization", "Bearer " + employeeJwt)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(orderRequest)))
@@ -231,7 +232,7 @@ class OrderProductPerformanceTest {
                 100
             );
 
-            MvcResult result = mockMvc.perform(post("/api/products")                    .header("Authorization", "Bearer " + employeeJwt)                    .contentType(MediaType.APPLICATION_JSON)
+            MvcResult result = mockMvc.perform(post("/api/v1/products")                    .header("Authorization", "Bearer " + employeeJwt)                    .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(productRequest)))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -272,7 +273,7 @@ class OrderProductPerformanceTest {
                     
                     for (int attempt = 0; attempt < maxRetries && !success; attempt++) {
                         try {
-                            mockMvc.perform(post("/api/orders")
+                            mockMvc.perform(post("/api/v1/orders")
                                     .header("Authorization", "Bearer " + employeeJwt)
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .content(objectMapper.writeValueAsString(orderRequest)))
@@ -372,7 +373,7 @@ class OrderProductPerformanceTest {
             500
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products")
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
@@ -396,7 +397,7 @@ class OrderProductPerformanceTest {
 
             long start = System.currentTimeMillis();
             
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + employeeJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(orderRequest)))
@@ -447,7 +448,7 @@ class OrderProductPerformanceTest {
             200
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products")
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
@@ -482,7 +483,7 @@ class OrderProductPerformanceTest {
                         new OrderItemRequest(product.getId(), "Flash Sale Product", 1, 29.99)
                     ));
 
-                    mockMvc.perform(post("/api/orders")
+                    mockMvc.perform(post("/api/v1/orders")
                             .header("Authorization", "Bearer " + employeeJwt)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(orderRequest)))
@@ -517,7 +518,7 @@ class OrderProductPerformanceTest {
         
         // Verify product stock was correctly managed
         MvcResult updatedProductResult = mockMvc.perform(
-                get("/api/products/" + product.getId()))
+                get("/api/v1/products/" + product.getId()))
             .andExpect(status().isOk())
             .andReturn();
 

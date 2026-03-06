@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,7 +77,7 @@ class GetBestSellingProductsUseCaseTest {
             LocalDate.of(2026, 1, 1), 
             LocalDate.of(2026, 12, 31)
         );
-        when(analyticsQueryPort.getBestSellingProducts(any(), any(), any()))
+        when(analyticsQueryPort.getBestSellingProducts(anyInt(), any(), any()))
             .thenReturn(List.of());
 
         // When: Execute use case
@@ -94,7 +95,7 @@ class GetBestSellingProductsUseCaseTest {
     @DisplayName("execute() - Should handle empty results")
     void testExecuteHandlesEmptyResults() {
         // Given: Port returns empty list
-        when(analyticsQueryPort.getBestSellingProducts(any(), any(), any()))
+        when(analyticsQueryPort.getBestSellingProducts(anyInt(), any(), any()))
             .thenReturn(List.of());
 
         // When: Execute use case

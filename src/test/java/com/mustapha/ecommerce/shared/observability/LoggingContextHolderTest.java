@@ -81,7 +81,7 @@ class LoggingContextHolderTest {
     @Test
     @DisplayName("Should set requestPath in MDC")
     void setRequestPath() {
-        String requestPath = "/api/orders/123";
+        String requestPath = "/api/v1/orders/123";
 
         LoggingContextHolder.setRequestPath(requestPath);
 

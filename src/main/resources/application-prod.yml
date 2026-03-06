@@ -1,0 +1,296 @@
+# ========================================
+# PRODUCTION CONFIGURATION
+# E-commerce Spring Boot Application
+# ========================================
+# Usage: java -jar app.jar --spring.profiles.active=prod
+# Or: export SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  application:
+    name: E-commerce-Monolith-Production
+
+  # ========== Production Database Configuration ==========
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ecommerce}?useSSL=true&requireSSL=true&serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+    # HikariCP Connection Pool - Production Optimized
+    hikari:
+      # Pool Sizing (adjust based on load testing and DB capacity)
+      maximum-pool-size: 100       # Max connections (default: 50, prod: 100)
+      minimum-idle: 50              # Min idle connections (default: 20, prod: 50)
+      
+      # Connection Timeouts
+      connection-timeout: 30000     # 30 seconds (wait for connection from pool)
+      idle-timeout: 600000          # 10 minutes (idle connections removed)
+      max-lifetime: 1800000         # 30 minutes (max connection lifetime)
+      
+      # Connection Testing
+      connection-test-query: SELECT 1
+      validation-timeout: 5000      # 5 seconds
+      
+      # Leak Detection (production debugging)
+      leak-detection-threshold: 120000  # 2 minutes (warn if connection held too long)
+      
+      # Pool Name
+      pool-name: EcommerceHikariCP-Production
+      
+      # Performance
+      auto-commit: false            # Let transaction manager handle commits
+      read-only: false
+
+  # ========== JPA/Hibernate Configuration ==========
+  jpa:
+    # CRITICAL: Use 'validate' with Flyway managing schema
+    hibernate:
+      ddl-auto: validate            # Never auto-create/update schema in production
+    
+    # Disable SQL logging in production (use external monitoring)
+    show-sql: false
+    
+    properties:
+      hibernate:
+        # Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
+        
+        # Performance Tuning
+        jdbc:
+          batch_size: 50            # Batch INSERT/UPDATE operations
+          fetch_size: 100           # JDBC fetchSize
+        order_inserts: true         # Order INSERTs for batching
+        order_updates: true         # Order UPDATEs for batching
+        
+        # Query Plan Cache
+        query:
+          plan_cache_max_size: 4096
+          plan_parameter_metadata_max_size: 256
+        
+        # Second-Level Cache (if needed)
+        # cache:
+        #   use_second_level_cache: true
+        #   region:
+        #     factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+        
+        # Statistics (disable in production, enable for debugging)
+        generate_statistics: false
+        
+        # Format SQL (disabled in production)
+        format_sql: false
+    
+    # Prevent OSIV anti-pattern
+    open-in-view: false
+
+  # ========== Flyway Database Migration ==========
+  flyway:
+    enabled: true
+    baseline-on-migrate: true       # Baseline existing database
+    baseline-version: 1             # Start from version 1
+    locations: classpath:db/migration
+    validate-on-migrate: true       # Validate migrations before applying
+    out-of-order: false             # Strict ordering
+    placeholder-replacement: false  # No placeholders in SQL
+    # Fail fast on migration errors
+    fail-on-missing-locations: true
+
+  # ========== Redis Configuration ==========
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      timeout: 60000                # 60 seconds
+      
+      # Lettuce Connection Pool (production)
+      lettuce:
+        pool:
+          max-active: 100           # Max connections
+          max-idle: 50              # Max idle connections
+          min-idle: 20              # Min idle connections
+          max-wait: 10000           # 10 seconds wait time
+          time-between-eviction-runs: 60000  # 1 minute
+      
+      # SSL (if using Redis with TLS)
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
+
+  # ========== Cache Configuration ==========
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000          # 10 minutes default
+      cache-null-values: false      # Don't cache null values
+      use-key-prefix: true          # Prefix cache keys
+      key-prefix: "ecommerce:"
+
+  # ========== Security Configuration ==========
+  security:
+    # CORS allowed origins (set via environment variable)
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://yourdomain.com}
+      allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
+
+# ========== Server Configuration ==========
+server:
+  port: ${SERVER_PORT:8080}
+  
+  # Compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024       # 1KB minimum
+  
+  # HTTP/2
+  http2:
+    enabled: true
+  
+  # Error handling
+  error:
+    include-message: on_param     # Only include error messages when param present
+    include-stacktrace: never     # Never expose stack traces
+    include-binding-errors: never
+  
+  # Tomcat thread pool (if using embedded Tomcat)
+  tomcat:
+    threads:
+      max: 400                    # Max worker threads (adjust based on load)
+      min-spare: 100              # Min spare threads
+    max-connections: 10000        # Max concurrent connections
+    accept-count: 200             # Queue size when all threads busy
+
+# ========== Actuator/Monitoring ==========
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  
+  endpoint:
+    health:
+      show-details: when-authorized  # Hide details from public
+      probes:
+        enabled: true                # Enable K8s liveness/readiness
+    
+    prometheus:
+      enabled: true
+  
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  
+  # Enable JVM and system metrics
+  metrics:
+    enable:
+      jvm: true
+      tomcat: true
+      system: true
+      process: true
+  
+  # Prometheus metrics export
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  
+  # Distributed Tracing
+  tracing:
+    sampling:
+      probability: 0.1              # Sample 10% of requests (adjust based on volume)
+  
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+# ========== Logging Configuration ==========
+logging:
+  level:
+    root: INFO
+    com.mustapha.ecommerce: INFO
+    
+    # Framework logging (reduce noise)
+    org.springframework: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN        # No SQL logging in production
+    
+    # Connection pool
+    com.zaxxer.hikari: INFO
+    
+    # Flyway
+    org.flywaydb: INFO
+  
+  # Structured JSON logging for production (requires logstash-logback-encoder)
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  
+  file:
+    name: ${LOG_FILE_PATH:/var/log/ecommerce/application.log}
+    max-size: 100MB
+    max-history: 30                # Keep 30 days of logs
+    total-size-cap: 10GB
+
+# ========== JWT Configuration ==========
+jwt:
+  secret: ${JWT_SECRET}            # REQUIRED: Set via environment variable
+  expiration: 86400000             # 24 hours in milliseconds
+  refresh-expiration: 604800000    # 7 days in milliseconds
+
+# ========== Rate Limiting ==========
+rate-limiting:
+  enabled: true
+  global-limit: 200                # 200 requests per minute per IP (prod: higher)
+  analytics-limit: 100             # 100 requests per minute for analytics
+  auth-limit: 10                   # 10 requests per minute for auth endpoints
+  window-seconds: 60
+
+# ========== Resilience4j Configuration ==========
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-size: 50
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+  
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 1000ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 100
+        max-wait-duration: 100ms
+
+# ========== Application-Specific Configuration ==========
+inventory:
+  low-stock-threshold: 10
+  reservation-timeout: 15m
+  cleanup-schedule: "0 */5 * * * *"  # Every 5 minutes
+
+# ========================================
+# ENVIRONMENT VARIABLES REQUIRED:
+# ========================================
+# - DB_HOST, DB_PORT, DB_NAME
+# - DB_USERNAME, DB_PASSWORD
+# - REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
+# - JWT_SECRET (min 256 bits)
+# - CORS_ALLOWED_ORIGINS
+# - LOG_FILE_PATH (optional)
+# - ZIPKIN_ENDPOINT (optional)
+# ========================================

@@ -1,6 +1,8 @@
 package com.mustapha.ecommerce.cart.application.usecase;
 
 import com.mustapha.ecommerce.cart.application.command.GetCartQuery;
+import com.mustapha.ecommerce.cart.application.port.DomainEventPublisher;
+import com.mustapha.ecommerce.cart.domain.event.CartCreatedEvent;
 import com.mustapha.ecommerce.cart.domain.model.Cart;
 import com.mustapha.ecommerce.cart.domain.model.CartStatus;
 import com.mustapha.ecommerce.cart.domain.model.valueobject.SessionId;
@@ -22,9 +24,11 @@ import java.util.Optional;
 public class GetOrCreateCartUseCase {
     
     private final CartRepository cartRepository;
+    private final DomainEventPublisher eventPublisher;
     
-    public GetOrCreateCartUseCase(CartRepository cartRepository) {
+    public GetOrCreateCartUseCase(CartRepository cartRepository, DomainEventPublisher eventPublisher) {
         this.cartRepository = cartRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     @Transactional
@@ -45,9 +49,17 @@ public class GetOrCreateCartUseCase {
             }
         }
         
-        // Create new cart using value objects
-        Cart newCart = new Cart(query.getUserId(), query.getSessionId());
+        // Create new cart using value objects and event publisher
+        Cart newCart = new Cart(query.getUserId(), query.getSessionId(), eventPublisher);
+        Cart savedCart = cartRepository.save(newCart);
         
-        return cartRepository.save(newCart);
+        // Publish cart created event for analytics
+        eventPublisher.publish(new CartCreatedEvent(
+            savedCart.getId(), 
+            savedCart.getUserId(), 
+            savedCart.getSessionId()
+        ));
+        
+        return savedCart;
     }
 }

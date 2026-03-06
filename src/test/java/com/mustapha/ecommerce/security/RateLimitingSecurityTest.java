@@ -57,7 +57,7 @@ class RateLimitingSecurityTest {
             LoginRequest request = new LoginRequest("test@example.com", "password");
 
             for (int i = 0; i < 3; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().is4xxClientError()); // Wrong credentials, but not rate limited
@@ -71,13 +71,13 @@ class RateLimitingSecurityTest {
 
             // Attempt login 6 times (assuming limit is 5)
             for (int i = 0; i < 6; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
 
             // 7th attempt should be rate limited
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isTooManyRequests());
@@ -90,7 +90,7 @@ class RateLimitingSecurityTest {
 
             // Fill up rate limit
             for (int i = 0; i < 5; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
@@ -99,7 +99,7 @@ class RateLimitingSecurityTest {
             Thread.sleep(31000);
 
             // Should be able to login again
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is4xxClientError()); // Not rate limited, just wrong credentials
@@ -112,7 +112,7 @@ class RateLimitingSecurityTest {
 
             // Simulate multiple failed attempts from same IP
             for (int i = 0; i < 21; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(req -> {
@@ -122,7 +122,7 @@ class RateLimitingSecurityTest {
             }
 
             // IP should be blocked after 20 attempts
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(req -> {
@@ -141,7 +141,7 @@ class RateLimitingSecurityTest {
 
             // Make some failed attempts
             for (int i = 0; i < 3; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(wrongRequest)));
             }
@@ -164,7 +164,7 @@ class RateLimitingSecurityTest {
             int rateLimitedCount = 0;
 
             for (int i = 0; i < 120; i++) {  // Exceed IP limit of 100
-                var result = mockMvc.perform(get("/api/products"))
+                var result = mockMvc.perform(get("/api/v1/products"))
                     .andReturn();
                 
                 requestCount++;
@@ -197,13 +197,13 @@ class RateLimitingSecurityTest {
 
             // Make multiple failed login attempts for same user
             for (int i = 0; i < 5; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
 
             // After rate limit exceeded, should get 429
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isTooManyRequests());
@@ -215,13 +215,13 @@ class RateLimitingSecurityTest {
             LoginRequest request = new LoginRequest("test@example.com", "wrongpassword");
 
             long firstAttemptTime = System.currentTimeMillis();
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)));
 
             // After 3 failed attempts, wait time should increase
             for (int i = 0; i < 3; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
@@ -250,7 +250,7 @@ class RateLimitingSecurityTest {
 
             // Simulate requests from "different instances" (using Redis as shared state)
             for (int i = 0; i < 3; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
@@ -280,7 +280,7 @@ class RateLimitingSecurityTest {
             for (int i = 0; i < totalRequests; i++) {
                 executor.submit(() -> {
                     try {
-                        var result = mockMvc.perform(post("/api/auth/login")
+                        var result = mockMvc.perform(post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                             .andReturn();
@@ -326,7 +326,7 @@ class RateLimitingSecurityTest {
             // Verifies password reset endpoint is accessible (functionality test)
             String requestJson = "{\"email\": \"test@example.com\"}";
 
-            mockMvc.perform(post("/api/auth/password-reset/request")
+            mockMvc.perform(post("/api/v1/auth/password-reset/request")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                 .andExpect(status().isNoContent());
@@ -358,13 +358,13 @@ class RateLimitingSecurityTest {
 
             // Exhaust rate limit
             for (int i = 0; i < 6; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)));
             }
 
             // Check for Retry-After header
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isTooManyRequests())
@@ -374,7 +374,7 @@ class RateLimitingSecurityTest {
         @Test
         @DisplayName("Should include X-RateLimit headers")
         void shouldIncludeRateLimitHeaders() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                 .andExpect(header().exists("X-RateLimit-Limit"))
                 .andExpect(header().exists("X-RateLimit-Remaining"))
                 .andExpect(header().exists("X-RateLimit-Reset"));

@@ -56,23 +56,26 @@ class AbandonedCartRecoverySchedulerTest {
         reset(emailService);
         
         // Create tables that don't exist as JPA entities (needed for AbandonedCartRecoveryScheduler SQL query)
+        // Drop and recreate users table to ensure correct schema for tests (simplified version)
+        jdbcTemplate.execute("DROP TABLE IF EXISTS users CASCADE");
         jdbcTemplate.execute(
-            "CREATE TABLE IF NOT EXISTS customers (" +
+            "CREATE TABLE users (" +
             "   id BIGINT PRIMARY KEY," +
-            "   email VARCHAR(255)," +
-            "   first_name VARCHAR(100)," +
-            "   last_name VARCHAR(100)," +
-            "   password VARCHAR(255)," +
-            "   created_at TIMESTAMP" +
+            "   username VARCHAR(30) NOT NULL," +
+            "   email VARCHAR(100)," +
+            "   hashed_password VARCHAR(100)," +
+            "   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
             ")"
         );
         
         jdbcTemplate.execute(
             "CREATE TABLE IF NOT EXISTS carts (" +
             "   id BIGINT PRIMARY KEY," +
-            "   customer_id BIGINT," +
+            "   user_id BIGINT," +
+            "   total_amount DECIMAL(10,2)," +
+            "   status VARCHAR(20)," +
             "   created_at TIMESTAMP," +
-            "   updated_at TIMESTAMP" +
+            "   last_updated_at TIMESTAMP" +
             ")"
         );
         
@@ -81,7 +84,9 @@ class AbandonedCartRecoverySchedulerTest {
             "   id BIGINT AUTO_INCREMENT PRIMARY KEY," +
             "   cart_id BIGINT," +
             "   product_id VARCHAR(255)," +
+            "   product_name VARCHAR(255)," +
             "   quantity INT," +
+            "   price DECIMAL(10,2)," +
             "   created_at TIMESTAMP," +
             "   updated_at TIMESTAMP" +
             ")"
@@ -101,17 +106,17 @@ class AbandonedCartRecoverySchedulerTest {
         
         // Clean up test data from previous tests
         jdbcTemplate.execute("DELETE FROM abandoned_cart_reminders WHERE customer_id >= 90000");
-        jdbcTemplate.execute("DELETE FROM cart_items WHERE cart_id IN (SELECT id FROM carts WHERE customer_id >= 90000)");
-        jdbcTemplate.execute("DELETE FROM carts WHERE customer_id >= 90000");
-        jdbcTemplate.execute("DELETE FROM customers WHERE id >= 90000");
+        jdbcTemplate.execute("DELETE FROM cart_items WHERE cart_id IN (SELECT id FROM carts WHERE user_id >= 90000)");
+        jdbcTemplate.execute("DELETE FROM carts WHERE user_id >= 90000");
+        jdbcTemplate.execute("DELETE FROM users WHERE id >= 90000");
         jdbcTemplate.execute("DELETE FROM products WHERE id >= '90000'");
     }
     
     // Helper method to create test customer
-    private void createTestCustomer(Long id, String email, String firstName) {
+    private void createTestCustomer(Long id, String email, String username) {
         jdbcTemplate.update(
-            "INSERT INTO customers (id, email, first_name, last_name, password, created_at) VALUES (?, ?, ?, 'Doe', 'password', NOW())",
-            id, email, firstName
+            "INSERT INTO users (id, username, email, hashed_password, created_at) VALUES (?, ?, ?, 'hashed_pass', NOW())",
+            id, username, email
         );
     }
     
@@ -126,18 +131,22 @@ class AbandonedCartRecoverySchedulerTest {
     // Helper method to create test cart
     private void createTestCart(Long customerId, Long cartId) {
         jdbcTemplate.update(
-            "INSERT INTO carts (id, customer_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
-            cartId, customerId
+            "INSERT INTO carts (id, user_id, total_amount, status, created_at, last_updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
+            cartId, customerId, 0.0, "ACTIVE"
         );
     }
     
     // Helper method to create cart item with specific timestamp
     private void createTestCartItem(Long cartId, String productId, int quantity, LocalDateTime updatedAt) {
         jdbcTemplate.update(
-            "INSERT INTO cart_items (cart_id, product_id, quantity, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            cartId, productId, quantity, 
-            java.sql.Timestamp.valueOf(updatedAt),
-            java.sql.Timestamp.valueOf(updatedAt)
+            "INSERT INTO cart_items (cart_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)",
+            cartId, productId, "Test Product", quantity, 50.00
+        );
+        
+        // Update cart's last_updated_at to match when item was added
+        jdbcTemplate.update(
+            "UPDATE carts SET last_updated_at = ? WHERE id = ?",
+            java.sql.Timestamp.valueOf(updatedAt), cartId
         );
     }
 
@@ -527,11 +536,11 @@ class AbandonedCartRecoverySchedulerTest {
         void shouldHandleInvalidCustomerIds() {
             // Given - Customer with ID 0 (edge case)
             jdbcTemplate.update(
-                "INSERT INTO customers (id, email, first_name, last_name, password, created_at) VALUES (0, 'zero@example.com', 'Zero', 'User', 'password', NOW())"
+                "INSERT INTO users (id, username, email, hashed_password, created_at) VALUES (0, 'zero_user', 'zero@example.com', 'hashed_pass', NOW())"
             );
             createTestProduct("90001", "Product", 50.00);
             jdbcTemplate.update(
-                "INSERT INTO carts (id, customer_id, created_at, updated_at) VALUES (90001, 0, NOW(), NOW())"
+                "INSERT INTO carts (id, user_id, total_amount, status, created_at, last_updated_at) VALUES (90001, 0, 0.0, 'ACTIVE', NOW(), NOW())"
             );
             createTestCartItem(90001L, "90001", 1, LocalDateTime.now().minusHours(2));
             

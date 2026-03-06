@@ -38,7 +38,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/owner/analytics")
+@RequestMapping("/api/v1/owner/analytics")
 @RequiredArgsConstructor
 @Tag(name = "Owner Analytics", description = "Business intelligence and reporting for store owners")
 @SecurityRequirement(name = "Bearer Authentication")

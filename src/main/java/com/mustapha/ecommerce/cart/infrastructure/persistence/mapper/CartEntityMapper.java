@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.cart.infrastructure.persistence.mapper;
 
+import com.mustapha.ecommerce.cart.application.port.DomainEventPublisher;
 import com.mustapha.ecommerce.cart.domain.model.Cart;
 import com.mustapha.ecommerce.cart.domain.model.CartItem;
 import com.mustapha.ecommerce.cart.domain.model.CartStatus;
@@ -24,6 +25,12 @@ import java.util.stream.Collectors;
  */
 @Component
 public class CartEntityMapper {
+    
+    private final DomainEventPublisher eventPublisher;
+    
+    public CartEntityMapper(DomainEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
     
     /**
      * Convert domain model to JPA entity
@@ -88,7 +95,8 @@ public class CartEntityMapper {
             entity.getCreatedAt(),
             entity.getLastUpdatedAt(),
             entity.getConvertedOrderId(),
-            entity.getVersion()
+            entity.getVersion(),
+            eventPublisher // Inject event publisher for loaded carts
         );
     }
     

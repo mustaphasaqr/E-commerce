@@ -124,23 +124,23 @@ public class SecurityConfig {
                 .requestMatchers("/webjars/**").permitAll()
                 
                 // Public endpoints - Authentication (login, register, refresh, password reset, email verification)
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/auth/refresh").permitAll()
-                .requestMatchers("/api/auth/password-reset/**").permitAll()
-                .requestMatchers("/api/auth/email-verification/**").permitAll()
+                .requestMatchers("/api/v1/auth/login").permitAll()
+                .requestMatchers("/api/v1/auth/refresh").permitAll()
+                .requestMatchers("/api/v1/auth/password-reset/**").permitAll()
+                .requestMatchers("/api/v1/auth/email-verification/**").permitAll()
                 
                 // Protected endpoints - Auth (logout requires authentication)
-                .requestMatchers("/api/auth/logout").authenticated()
-                .requestMatchers("/api/auth/logout-all").authenticated()
+                .requestMatchers("/api/v1/auth/logout").authenticated()
+                .requestMatchers("/api/v1/auth/logout-all").authenticated()
                 
                 // Public endpoints - User registration (POST only)
-                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                 
                 // Public endpoints - Product browsing (GET only)
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                 
                 // Public endpoints - Tax calculation preview (POST allowed for tax preview)
-                .requestMatchers(HttpMethod.POST, "/api/orders/calculate-tax").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/orders/calculate-tax").permitAll()
                 
                 // All other /api/** endpoints require authentication
                 .requestMatchers("/api/**").authenticated()

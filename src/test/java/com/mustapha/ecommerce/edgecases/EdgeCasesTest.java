@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
@@ -71,6 +72,7 @@ class EdgeCasesTest {
 
     @Nested
     @DisplayName("Decimal Precision Tests")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class DecimalPrecisionTests {
 
         @Test
@@ -78,7 +80,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "EMPLOYEE")
         void shouldHandleVerySmallDecimals() throws Exception {
             ProductRequest request = new ProductRequest(
-                "DECIMAL-SMALL-" + System.currentTimeMillis(),
+                "DEC-SMALL-" + System.currentTimeMillis(),
                 "Small Decimal Product",
                 "Testing small decimals",
                 new BigDecimal("0.01"), // 1 cent
@@ -86,7 +88,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -99,7 +101,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "EMPLOYEE")
         void shouldHandleLargeDecimals() throws Exception {
             ProductRequest request = new ProductRequest(
-                "DECIMAL-LARGE-" + System.currentTimeMillis(),
+                "DEC-LARGE-" + System.currentTimeMillis(),
                 "Large Decimal Product",
                 "Testing large decimals",
                 new BigDecimal("999999999.99"), // Nearly 1 billion
@@ -107,7 +109,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -120,7 +122,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "EMPLOYEE")
         void shouldRoundPricesToTwoDecimals() throws Exception {
             ProductRequest request = new ProductRequest(
-                "DECIMAL-ROUND-" + System.currentTimeMillis(),
+                "DEC-ROUND-" + System.currentTimeMillis(),
                 "Rounding Test Product",
                 "Testing decimal rounding",
                 new BigDecimal("99.999"), // 3 decimal places
@@ -128,7 +130,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -136,7 +138,6 @@ class EdgeCasesTest {
         }
 
         @Test
-        @Disabled("Validation rules differ")
         @DisplayName("Should handle recurring decimals")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldHandleRecurringDecimals() throws Exception {
@@ -144,7 +145,7 @@ class EdgeCasesTest {
             BigDecimal recurringPrice = new BigDecimal("33.33");
             
             ProductRequest request = new ProductRequest(
-                "DECIMAL-RECURRING-" + System.currentTimeMillis(),
+                "DEC-RECUR-" + System.currentTimeMillis(),
                 "Recurring Decimal Product",
                 "Testing recurring decimals",
                 recurringPrice,
@@ -152,7 +153,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -165,7 +166,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "EMPLOYEE")
         void shouldRejectNegativePrices() throws Exception {
             ProductRequest request = new ProductRequest(
-                "DECIMAL-NEG-" + System.currentTimeMillis(),
+                "DEC-NEG-" + System.currentTimeMillis(),
                 "Negative Price Product",
                 "Testing negative price",
                 new BigDecimal("-10.00"),
@@ -173,7 +174,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -198,7 +199,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -219,7 +220,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -240,7 +241,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -248,11 +249,10 @@ class EdgeCasesTest {
         }
 
         @Test
-        @Disabled("Name length limit is < 255")
         @DisplayName("Should handle very long product names")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldHandleLongProductNames() throws Exception {
-            String longName = "A".repeat(255);
+            String longName = "A".repeat(200); // Adjust to actual DB limit
             
             ProductRequest request = new ProductRequest(
                 "LONG-NAME-" + System.currentTimeMillis(),
@@ -263,7 +263,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -285,7 +285,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -301,7 +301,7 @@ class EdgeCasesTest {
         @DisplayName("Should handle page 0")
         @WithMockUser(roles = "OWNER")
         void shouldHandlePageZero() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "0")
                     .param("size", "20"))
                 .andExpect(status().isOk())
@@ -313,7 +313,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "OWNER")
         void shouldHandleNegativePage() throws Exception {
             // Spring Data handles negative pages as page 0
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "-1")
                     .param("size", "20"))
                 .andExpect(status().isOk());
@@ -323,7 +323,7 @@ class EdgeCasesTest {
         @DisplayName("Should handle page beyond available data")
         @WithMockUser(roles = "OWNER")
         void shouldHandlePageBeyondData() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "999999")
                     .param("size", "20"))
                 .andExpect(status().isOk())
@@ -334,7 +334,7 @@ class EdgeCasesTest {
         @DisplayName("Should handle very large page sizes")
         @WithMockUser(roles = "OWNER")
         void shouldHandleLargePageSize() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "0")
                     .param("size", "1000"))
                 .andExpect(status().isOk());
@@ -345,7 +345,7 @@ class EdgeCasesTest {
         @WithMockUser(roles = "OWNER")
         void shouldHandleZeroPageSize() throws Exception {
             // Should either default to minimum or return error
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "0")
                     .param("size", "0"))
                 .andExpect(status().isOk());
@@ -369,7 +369,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -390,7 +390,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -411,7 +411,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -432,7 +432,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -452,7 +452,7 @@ class EdgeCasesTest {
                 10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -478,7 +478,7 @@ class EdgeCasesTest {
                 0
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -499,7 +499,7 @@ class EdgeCasesTest {
                 1000000
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -520,7 +520,7 @@ class EdgeCasesTest {
                 -10
             );
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -530,6 +530,7 @@ class EdgeCasesTest {
 
     @Nested
     @DisplayName("Order Edge Cases")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class OrderEdgeCasesTests {
 
         @Test
@@ -540,7 +541,7 @@ class EdgeCasesTest {
             request.setCustomerId("customer-123");
             request.setItems(Collections.emptyList());
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -561,7 +562,7 @@ class EdgeCasesTest {
             item.setPrice(99.99);
             request.setItems(Collections.singletonList(item));
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
@@ -569,7 +570,6 @@ class EdgeCasesTest {
         }
 
         @Test
-        @Disabled("Order validation differs")
         @DisplayName("Should reject order exceeding available stock")
         @WithMockUser(roles = "CUSTOMER")
         void shouldRejectOrderExceedingStock() throws Exception {
@@ -583,11 +583,12 @@ class EdgeCasesTest {
             item.setPrice(99.99);
             request.setItems(Collections.singletonList(item));
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
                     .with(csrf()))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest()); // Returns 400 for invalid quantity
         }
     }
 }
+

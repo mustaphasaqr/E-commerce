@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,7 +125,7 @@ class DataMigrationCompatibilityTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -248,7 +249,7 @@ class DataMigrationCompatibilityTest {
             100
         );
 
-        MvcResult productResult = mockMvc.perform(post("/api/products")
+        MvcResult productResult = mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(productRequest)))
@@ -290,7 +291,7 @@ class DataMigrationCompatibilityTest {
             new OrderItemRequest(product.getId(), product.getName(), 3, 75.00)
         ));
 
-        MvcResult newOrderResult = mockMvc.perform(post("/api/orders")
+        MvcResult newOrderResult = mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newOrderRequest)))
@@ -312,7 +313,7 @@ class DataMigrationCompatibilityTest {
         
         // Verify product stock was only reduced by new order (3 units)
         MvcResult updatedProductResult = mockMvc.perform(
-                get("/api/products/" + product.getId()))
+                get("/api/v1/products/" + product.getId()))
             .andExpect(status().isOk())
             .andReturn();
 

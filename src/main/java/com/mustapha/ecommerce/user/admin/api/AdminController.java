@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  * Pattern: REST API with RBAC
  */
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/v1/admin/users")
 @PreAuthorize("hasRole('OWNER')")
 public class AdminController {
 

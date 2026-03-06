@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,7 +117,7 @@ class OrderProductChaosTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("testemployee@example.com", "Employee123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
@@ -149,7 +150,7 @@ class OrderProductChaosTest {
         ));
 
         // Act & Assert - Should fail with appropriate error
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
@@ -185,7 +186,7 @@ class OrderProductChaosTest {
         ));
 
         // Act - First 2 attempts should fail, could implement retry logic
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
@@ -200,7 +201,7 @@ class OrderProductChaosTest {
     @DisplayName("Chaos: Partial Product availability - Some products down, others working")
     void shouldHandlePartialProductAvailability() throws Exception {
         // Arrange - Create one product, but reference another that doesn't exist
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
@@ -223,7 +224,7 @@ class OrderProductChaosTest {
             new OrderItemRequest("PROD-CHAOS-004", "Unavailable Product", 1, 50.00)
         ));
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(failedOrderRequest)))
@@ -251,7 +252,7 @@ class OrderProductChaosTest {
         ));
 
         // Act & Assert - Should detect price mismatch and reject
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
@@ -282,7 +283,7 @@ class OrderProductChaosTest {
         ));
 
         // Act & Assert - Should fail with 500 error (transaction should rollback)
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
@@ -303,14 +304,14 @@ class OrderProductChaosTest {
         ));
 
         // Act - First attempt fails (product doesn't exist yet)
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)))
             .andExpect(status().is4xxClientError()); // Product not found
 
         // Simulate service recovery - create the product
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
@@ -333,7 +334,7 @@ class OrderProductChaosTest {
     @DisplayName("Chaos: Timeout simulation - Slow Product module response")
     void shouldHandleSlowProductResponses() throws Exception {
         // Arrange - Create product first
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/v1/products")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
@@ -357,7 +358,7 @@ class OrderProductChaosTest {
         // Act - Measure response time
         long startTime = System.currentTimeMillis();
         
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(orderRequest)));

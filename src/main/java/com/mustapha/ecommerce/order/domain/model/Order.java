@@ -3,8 +3,11 @@ package com.mustapha.ecommerce.order.domain.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.mustapha.ecommerce.order.domain.DomainEvent;
+import com.mustapha.ecommerce.order.domain.event.OrderCancelledEvent;
+import com.mustapha.ecommerce.order.domain.event.OrderItemDto;
 import com.mustapha.ecommerce.order.domain.event.OrderPlacedEvent;
 import com.mustapha.ecommerce.order.domain.exception.InvalidOrderItemException;
 import com.mustapha.ecommerce.order.domain.exception.InvalidOrderStateException;
@@ -241,6 +244,16 @@ public class Order {
         this.cancellationReason = reason;
         this.status = OrderStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
+        
+        // Raise domain event for Product context to release stock
+        List<OrderItemDto> itemDtos = this.items.stream()
+            .map(item -> new OrderItemDto(
+                item.getProductId().getValue(),
+                item.getQuantity()
+            ))
+            .collect(Collectors.toList());
+        
+        raiseEvent(new OrderCancelledEvent(this.id, itemDtos, reason));
     }
     
     // ========== Business Rules: Order Content ==========

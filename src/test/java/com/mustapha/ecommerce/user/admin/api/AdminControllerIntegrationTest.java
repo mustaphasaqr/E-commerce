@@ -11,7 +11,9 @@ import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 import com.mustapha.ecommerce.user.infrastructure.security.BCryptPasswordHasher;
 import com.mustapha.ecommerce.user.dto.RegisterUserRequest;
 import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -84,7 +86,7 @@ class AdminControllerIntegrationTest {
     void blockUser_AsOwner_Returns200() throws Exception {
         BlockUserRequest request = new BlockUserRequest(customerUserId, "Suspicious activity detected");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -102,7 +104,7 @@ class AdminControllerIntegrationTest {
     void blockUser_AsCustomer_Returns403() throws Exception {
         BlockUserRequest request = new BlockUserRequest(customerUserId, "Attempting unauthorized block");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -113,7 +115,7 @@ class AdminControllerIntegrationTest {
     void blockUser_WithoutAuthentication_Returns401() throws Exception {
         BlockUserRequest request = new BlockUserRequest(customerUserId, "No auth header");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized()); // 401 for missing authentication
@@ -123,7 +125,7 @@ class AdminControllerIntegrationTest {
     void unblockUser_AsOwner_Returns200() throws Exception {
         // First block the user
         BlockUserRequest blockRequest = new BlockUserRequest(customerUserId, "Test block");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(blockRequest)))
@@ -132,7 +134,7 @@ class AdminControllerIntegrationTest {
         // Then unblock
         UnblockUserRequest unblockRequest = new UnblockUserRequest("Issue resolved");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/unblock")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/unblock")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(unblockRequest)))
@@ -144,7 +146,7 @@ class AdminControllerIntegrationTest {
     void activateUser_AsOwner_Returns200() throws Exception {
         // First deactivate the user
         DeactivateUserRequest deactivateRequest = new DeactivateUserRequest("Test deactivation");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/deactivate")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/deactivate")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(deactivateRequest)))
@@ -153,7 +155,7 @@ class AdminControllerIntegrationTest {
         // Then activate
         ActivateUserRequest request = new ActivateUserRequest("Manually activated");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/activate")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/activate")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -165,7 +167,7 @@ class AdminControllerIntegrationTest {
     void deactivateUser_AsOwner_Returns200() throws Exception {
         DeactivateUserRequest request = new DeactivateUserRequest("Account inactive");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/deactivate")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/deactivate")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -177,7 +179,7 @@ class AdminControllerIntegrationTest {
     void deleteUser_AsOwner_Returns200() throws Exception {
         DeleteUserRequest request = new DeleteUserRequest(customerUserId, "GDPR deletion request");
 
-        mockMvc.perform(delete("/api/admin/users/" + customerUserId)
+        mockMvc.perform(delete("/api/v1/admin/users/" + customerUserId)
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -188,7 +190,7 @@ class AdminControllerIntegrationTest {
 
     @Test
     void getAllUsers_AsOwner_Returns200WithPagination() throws Exception {
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .param("page", "0")
                 .param("size", "20"))
@@ -202,7 +204,7 @@ class AdminControllerIntegrationTest {
 
     @Test
     void getAllUsers_AsCustomer_Returns403() throws Exception {
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                 .header("Authorization", "Bearer " + customerJwt)
                 .param("page", "0")
                 .param("size", "20"))
@@ -220,7 +222,7 @@ class AdminControllerIntegrationTest {
             20
         );
 
-        mockMvc.perform(post("/api/admin/users/search")
+        mockMvc.perform(post("/api/v1/admin/users/search")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -248,7 +250,7 @@ class AdminControllerIntegrationTest {
             20
         );
 
-        mockMvc.perform(post("/api/admin/users/search")
+        mockMvc.perform(post("/api/v1/admin/users/search")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -270,7 +272,7 @@ class AdminControllerIntegrationTest {
             20
         );
 
-        mockMvc.perform(post("/api/admin/users/search")
+        mockMvc.perform(post("/api/v1/admin/users/search")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -289,7 +291,7 @@ class AdminControllerIntegrationTest {
             20
         );
 
-        mockMvc.perform(post("/api/admin/users/search")
+        mockMvc.perform(post("/api/v1/admin/users/search")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -304,26 +306,26 @@ class AdminControllerIntegrationTest {
         BlockUserRequest blockRequest = new BlockUserRequest(customerUserId, "Test");
 
         // Block endpoint
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(blockRequest)))
             .andExpect(status().isForbidden());
 
         // Delete endpoint
-        mockMvc.perform(delete("/api/admin/users/" + customerUserId)
+        mockMvc.perform(delete("/api/v1/admin/users/" + customerUserId)
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new DeleteUserRequest(customerUserId, "Test"))))
             .andExpect(status().isForbidden());
 
         // List endpoint
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                 .header("Authorization", "Bearer " + customerJwt))
             .andExpect(status().isForbidden());
 
         // Search endpoint
-        mockMvc.perform(post("/api/admin/users/search")
+        mockMvc.perform(post("/api/v1/admin/users/search")
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new SearchUsersRequest(null, null, null, null, 0, 20))))
@@ -334,7 +336,7 @@ class AdminControllerIntegrationTest {
     void changeUserRole_CustomerToEmployee_Success() throws Exception {
         ChangeUserRoleRequest request = new ChangeUserRoleRequest(Role.EMPLOYEE, "Promotion to employee");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -348,7 +350,7 @@ class AdminControllerIntegrationTest {
     void changeUserRole_EmployeeToOwner_Success() throws Exception {
         // First change customer to employee
         ChangeUserRoleRequest toEmployeeRequest = new ChangeUserRoleRequest(Role.EMPLOYEE, "Promotion to employee");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(toEmployeeRequest)))
@@ -356,7 +358,7 @@ class AdminControllerIntegrationTest {
 
         // Then change employee to owner
         ChangeUserRoleRequest toOwnerRequest = new ChangeUserRoleRequest(Role.OWNER, "Promotion to owner");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(toOwnerRequest)))
@@ -368,7 +370,7 @@ class AdminControllerIntegrationTest {
     void changeUserRole_SameRole_Returns400() throws Exception {
         ChangeUserRoleRequest request = new ChangeUserRoleRequest(Role.CUSTOMER, "No change");
 
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -380,7 +382,7 @@ class AdminControllerIntegrationTest {
     void changeUserRole_BlockedUser_Returns400() throws Exception {
         // Block the user first
         BlockUserRequest blockRequest = new BlockUserRequest(customerUserId, "Security issue");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/block")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/block")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(blockRequest)))
@@ -388,7 +390,7 @@ class AdminControllerIntegrationTest {
 
         // Try to change role
         ChangeUserRoleRequest roleRequest = new ChangeUserRoleRequest(Role.EMPLOYEE, "Attempt");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + ownerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(roleRequest)))
@@ -417,11 +419,13 @@ class AdminControllerIntegrationTest {
         );
 
         ChangeUserRoleRequest request = new ChangeUserRoleRequest(Role.OWNER, "Unauthorized attempt");
-        mockMvc.perform(post("/api/admin/users/" + customerUserId + "/role")
+        mockMvc.perform(post("/api/v1/admin/users/" + customerUserId + "/role")
                 .header("Authorization", "Bearer " + employeeJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden());
     }
 }
+
+
 

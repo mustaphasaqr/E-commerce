@@ -85,7 +85,7 @@ class AuthControllerTest {
             when(authFacade.login(any(LoginRequest.class), anyString(), anyString()))
                 .thenReturn(mockLoginResponse);
 
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -111,7 +111,7 @@ class AuthControllerTest {
             when(authFacade.login(any(LoginRequest.class), anyString(), anyString()))
                 .thenThrow(new RuntimeException("Invalid credentials"));
 
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -129,7 +129,7 @@ class AuthControllerTest {
         void shouldLogoutUserSuccessfully() throws Exception {
             doNothing().when(authFacade).logout(any(), any(), any());
 
-            mockMvc.perform(post("/api/auth/logout")
+            mockMvc.perform(post("/api/v1/auth/logout")
                     .with(csrf())
                     .header("Authorization", "Bearer mock-jwt-token"))
                 .andExpect(status().isNoContent());
@@ -156,7 +156,7 @@ class AuthControllerTest {
             when(authFacade.refreshToken(any(RefreshTokenRequest.class), anyString(), anyString()))
                 .thenReturn(tokenResponse);
 
-            mockMvc.perform(post("/api/auth/refresh")
+            mockMvc.perform(post("/api/v1/auth/refresh")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -178,7 +178,7 @@ class AuthControllerTest {
         void shouldLogoutAllDevicesSuccessfully() throws Exception {
             doNothing().when(authFacade).logoutAllDevices(any(), any());
 
-            mockMvc.perform(post("/api/auth/logout-all")
+            mockMvc.perform(post("/api/v1/auth/logout-all")
                     .with(csrf()))
                 .andExpect(status().isNoContent());
 
@@ -198,7 +198,7 @@ class AuthControllerTest {
 
             doNothing().when(authFacade).requestPasswordReset(any(PasswordResetRequestRequest.class));
 
-            mockMvc.perform(post("/api/auth/password-reset/request")
+            mockMvc.perform(post("/api/v1/auth/password-reset/request")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -221,7 +221,7 @@ class AuthControllerTest {
 
             doNothing().when(authFacade).completePasswordReset(any(PasswordResetCompleteRequest.class));
 
-            mockMvc.perform(post("/api/auth/password-reset/complete")
+            mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -240,7 +240,7 @@ class AuthControllerTest {
             doThrow(new RuntimeException("Invalid or expired token"))
                 .when(authFacade).completePasswordReset(any(PasswordResetCompleteRequest.class));
 
-            mockMvc.perform(post("/api/auth/password-reset/complete")
+            mockMvc.perform(post("/api/v1/auth/password-reset/complete")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))

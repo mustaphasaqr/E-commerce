@@ -86,7 +86,7 @@ class UserControllerTest {
         void shouldGetUserSuccessfully() throws Exception {
             when(userFacade.getUserById("USER-123")).thenReturn(mockUserResponse);
 
-            mockMvc.perform(get("/api/users/{userId}", "USER-123")
+            mockMvc.perform(get("/api/v1/users/{userId}", "USER-123")
                     .with(authentication(createAuthentication("USER-123", "CUSTOMER")))
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -105,7 +105,7 @@ class UserControllerTest {
             when(userFacade.getUserById("USER-999"))
                 .thenThrow(new RuntimeException("User not found"));
 
-            mockMvc.perform(get("/api/users/{userId}", "USER-999")
+            mockMvc.perform(get("/api/v1/users/{userId}", "USER-999")
                     .with(authentication(createAuthentication("USER-999", "CUSTOMER")))
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
@@ -121,7 +121,7 @@ class UserControllerTest {
         void shouldGetUserByUsernameSuccessfully() throws Exception {
             when(userFacade.getUserByUsername("johndoe")).thenReturn(mockUserResponse);
 
-            mockMvc.perform(get("/api/users/username/{username}", "johndoe")
+            mockMvc.perform(get("/api/v1/users/username/{username}", "johndoe")
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("johndoe"))
@@ -136,7 +136,7 @@ class UserControllerTest {
             when(userFacade.getUserByUsername("unknown"))
                 .thenThrow(new RuntimeException("User not found"));
 
-            mockMvc.perform(get("/api/users/username/{username}", "unknown")
+            mockMvc.perform(get("/api/v1/users/username/{username}", "unknown")
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
         }
@@ -165,7 +165,7 @@ class UserControllerTest {
             when(userFacade.changeEmail(any(), any()))
                 .thenReturn(updatedResponse);
 
-            mockMvc.perform(put("/api/users/me/email")
+            mockMvc.perform(put("/api/v1/users/me/email")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(changeEmailRequest))
@@ -176,7 +176,7 @@ class UserControllerTest {
         @Test
         @DisplayName("Should return 400 when request is invalid")
         void shouldReturn400WhenRequestIsInvalid() throws Exception {
-            mockMvc.perform(put("/api/users/me/email")
+            mockMvc.perform(put("/api/v1/users/me/email")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{invalid json}"))
@@ -193,7 +193,7 @@ class UserControllerTest {
         void shouldDeactivateUserSuccessfully() throws Exception {
             when(userFacade.deactivateUser("USER-123")).thenReturn(mockUserResponse);
 
-            mockMvc.perform(post("/api/users/{id}/deactivate", "USER-123")
+            mockMvc.perform(post("/api/v1/users/{id}/deactivate", "USER-123")
                     .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("USER-123"));
@@ -207,7 +207,7 @@ class UserControllerTest {
             when(userFacade.deactivateUser("USER-999"))
                 .thenThrow(new RuntimeException("User not found"));
 
-            mockMvc.perform(post("/api/users/{id}/deactivate", "USER-999")
+            mockMvc.perform(post("/api/v1/users/{id}/deactivate", "USER-999")
                     .with(csrf()))
                 .andExpect(status().isNotFound());
         }

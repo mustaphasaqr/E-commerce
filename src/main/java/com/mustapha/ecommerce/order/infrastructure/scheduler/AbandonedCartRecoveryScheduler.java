@@ -68,23 +68,23 @@ public class AbandonedCartRecoveryScheduler {
     private List<AbandonedCartInfo> findAbandonedCarts() {
         String sql = """
             SELECT 
-                c.customer_id,
+                c.user_id,
                 cu.email,
-                cu.first_name,
+                cu.username,
                 COUNT(ci.id) as item_count,
                 SUM(ci.quantity * p.price) as cart_total,
-                MAX(ci.updated_at) as last_updated
+                c.last_updated_at as last_updated
             FROM carts c
             JOIN cart_items ci ON c.id = ci.cart_id
             JOIN products p ON ci.product_id = p.id
-            JOIN customers cu ON c.customer_id = cu.id
-            LEFT JOIN abandoned_cart_reminders acr ON c.customer_id = acr.customer_id 
+            JOIN users cu ON c.user_id = cu.id
+            LEFT JOIN abandoned_cart_reminders acr ON c.user_id = acr.customer_id 
                 AND acr.sent_at > DATEADD('DAY', -7, NOW())
-            WHERE ci.updated_at BETWEEN DATEADD('HOUR', -24, NOW()) 
-                                    AND DATEADD('HOUR', -1, NOW())
+            WHERE c.last_updated_at BETWEEN DATEADD('HOUR', -24, NOW()) 
+                                        AND DATEADD('HOUR', -1, NOW())
               AND acr.id IS NULL
               AND cu.email IS NOT NULL
-            GROUP BY c.customer_id, cu.email, cu.first_name
+            GROUP BY c.user_id, cu.email, cu.username, c.last_updated_at
             HAVING item_count > 0
             ORDER BY cart_total DESC
             LIMIT 100
@@ -97,7 +97,7 @@ public class AbandonedCartRecoveryScheduler {
             .map(row -> new AbandonedCartInfo(
                 ((Number) row[0]).longValue(),  // customerId
                 (String) row[1],                 // email
-                (String) row[2],                 // firstName
+                (String) row[2],                 // username (used as firstName)
                 ((Number) row[3]).intValue(),    // itemCount
                 ((Number) row[4]).doubleValue(), // cartTotal
                 ((java.sql.Timestamp) row[5]).toLocalDateTime() // lastUpdated

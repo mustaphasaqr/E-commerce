@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
 
-@RestControllerAdvice(basePackages = "com.mustapha.ecommerce.user.admin")
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class AdminGlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminGlobalExceptionHandler.class);

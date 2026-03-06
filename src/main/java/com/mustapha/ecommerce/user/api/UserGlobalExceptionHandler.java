@@ -2,6 +2,8 @@ package com.mustapha.ecommerce.user.api;
 
 import java.time.LocalDateTime;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,10 +15,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.mustapha.ecommerce.user.domain.exception.InvalidPasswordException;
 import com.mustapha.ecommerce.user.domain.exception.InvalidUserStateException;
 
-@RestControllerAdvice(basePackages = {
-    "com.mustapha.ecommerce.user.api",
-    "com.mustapha.ecommerce.user.admin"
-})
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class UserGlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)

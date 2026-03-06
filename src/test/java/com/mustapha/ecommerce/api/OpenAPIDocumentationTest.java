@@ -192,13 +192,13 @@ class OpenAPIDocumentationTest {
             JsonNode paths = spec.get("paths");
 
             // Check for presence of all controller paths
-            assertThat(paths.toString()).contains("/api/auth");
-            assertThat(paths.toString()).contains("/api/products");
-            assertThat(paths.toString()).contains("/api/orders");
-            assertThat(paths.toString()).contains("/api/cart");
-            assertThat(paths.toString()).contains("/api/users");
-            assertThat(paths.toString()).contains("/api/admin");
-            assertThat(paths.toString()).contains("/api/owner/analytics");
+            assertThat(paths.toString()).contains("/api/v1/auth");
+            assertThat(paths.toString()).contains("/api/v1/products");
+            assertThat(paths.toString()).contains("/api/v1/orders");
+            assertThat(paths.toString()).contains("/api/v1/cart");
+            assertThat(paths.toString()).contains("/api/v1/users");
+            assertThat(paths.toString()).contains("/api/v1/admin");
+            assertThat(paths.toString()).contains("/api/v1/owner/analytics");
         }
 
         @Test
@@ -209,10 +209,10 @@ class OpenAPIDocumentationTest {
 
             JsonNode paths = objectMapper.readTree(result.getResponse().getContentAsString()).get("paths");
 
-            assertThat(paths.has("/api/auth/login")).isTrue();
-            assertThat(paths.has("/api/auth/logout")).isTrue();
-            assertThat(paths.has("/api/auth/refresh")).isTrue();
-            assertThat(paths.has("/api/auth/password-reset/request")).isTrue();
+            assertThat(paths.has("/api/v1/auth/login")).isTrue();
+            assertThat(paths.has("/api/v1/auth/logout")).isTrue();
+            assertThat(paths.has("/api/v1/auth/refresh")).isTrue();
+            assertThat(paths.has("/api/v1/auth/password-reset/request")).isTrue();
         }
 
         @Test
@@ -223,9 +223,9 @@ class OpenAPIDocumentationTest {
 
             JsonNode paths = objectMapper.readTree(result.getResponse().getContentAsString()).get("paths");
 
-            assertThat(paths.has("/api/products")).isTrue();
-            assertThat(paths.has("/api/products/{id}")).isTrue();
-            assertThat(paths.has("/api/products/search")).isTrue();
+            assertThat(paths.has("/api/v1/products")).isTrue();
+            assertThat(paths.has("/api/v1/products/{id}")).isTrue();
+            assertThat(paths.has("/api/v1/products/search")).isTrue();
         }
 
         @Test
@@ -236,7 +236,7 @@ class OpenAPIDocumentationTest {
 
             JsonNode paths = objectMapper.readTree(result.getResponse().getContentAsString()).get("paths");
 
-            assertThat(paths.toString()).contains("/api/owner/analytics");
+            assertThat(paths.toString()).contains("/api/v1/owner/analytics");
         }
     }
 
@@ -390,7 +390,7 @@ class OpenAPIDocumentationTest {
                 .andReturn();
 
             JsonNode spec = objectMapper.readTree(result.getResponse().getContentAsString());
-            JsonNode loginOperation = spec.get("paths").get("/api/auth/login").get("post");
+            JsonNode loginOperation = spec.get("paths").get("/api/v1/auth/login").get("post");
 
             assertThat(loginOperation).isNotNull();
             assertThat(loginOperation.has("summary") || loginOperation.has("description")).isTrue();
@@ -480,9 +480,9 @@ class OpenAPIDocumentationTest {
             JsonNode paths = objectMapper.readTree(result.getResponse().getContentAsString()).get("paths");
 
             // Public endpoints
-            assertThat(paths.has("/api/auth/login")).isTrue();
-            assertThat(paths.has("/api/auth/refresh")).isTrue();
-            assertThat(paths.has("/api/products")).isTrue();
+            assertThat(paths.has("/api/v1/auth/login")).isTrue();
+            assertThat(paths.has("/api/v1/auth/refresh")).isTrue();
+            assertThat(paths.has("/api/v1/products")).isTrue();
         }
 
         @Test
@@ -492,7 +492,7 @@ class OpenAPIDocumentationTest {
                 .andReturn();
 
             JsonNode spec = objectMapper.readTree(result.getResponse().getContentAsString());
-            JsonNode logoutEndpoint = spec.get("paths").get("/api/auth/logout");
+            JsonNode logoutEndpoint = spec.get("paths").get("/api/v1/auth/logout");
 
             if (logoutEndpoint != null && logoutEndpoint.has("post")) {
                 JsonNode postOperation = logoutEndpoint.get("post");
@@ -510,7 +510,7 @@ class OpenAPIDocumentationTest {
             String content = result.getResponse().getContentAsString();
 
             // All 20 analytics endpoints should be present
-            assertThat(content).contains("/api/owner/analytics");
+            assertThat(content).contains("/api/v1/owner/analytics");
         }
 
         @Test

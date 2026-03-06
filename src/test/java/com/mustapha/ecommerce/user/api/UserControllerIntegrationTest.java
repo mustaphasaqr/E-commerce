@@ -12,7 +12,9 @@ import com.mustapha.ecommerce.user.dto.RegisterUserRequest;
 import com.mustapha.ecommerce.user.dto.ChangeEmailRequest;
 import com.mustapha.ecommerce.user.dto.ChangePasswordRequest;
 import com.mustapha.ecommerce.shared.security.JwtTokenGenerator;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -75,7 +77,7 @@ class UserControllerIntegrationTest {
             true
         );
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -101,7 +103,7 @@ class UserControllerIntegrationTest {
             true
         );
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -116,7 +118,7 @@ class UserControllerIntegrationTest {
             true
         );
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -131,7 +133,7 @@ class UserControllerIntegrationTest {
             true
         );
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -139,7 +141,7 @@ class UserControllerIntegrationTest {
 
     @Test
     void getCurrentUser_WithValidJwt_Returns200() throws Exception {
-        mockMvc.perform(get("/api/users/me")
+        mockMvc.perform(get("/api/v1/users/me")
                 .header("Authorization", "Bearer " + jwtToken))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -156,13 +158,13 @@ class UserControllerIntegrationTest {
 
     @Test
     void getCurrentUser_WithoutJwt_Returns403() throws Exception {
-        mockMvc.perform(get("/api/users/me"))
+        mockMvc.perform(get("/api/v1/users/me"))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
     void getCurrentUser_WithInvalidJwt_Returns403() throws Exception {
-        mockMvc.perform(get("/api/users/me")
+        mockMvc.perform(get("/api/v1/users/me")
                 .header("Authorization", "Bearer invalid-token"))
             .andExpect(status().isUnauthorized());
     }
@@ -173,7 +175,7 @@ class UserControllerIntegrationTest {
             "newemail@example.com"
         );
 
-        mockMvc.perform(put("/api/users/me/email")
+        mockMvc.perform(put("/api/v1/users/me/email")
                 .header("Authorization", "Bearer " + jwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -193,7 +195,7 @@ class UserControllerIntegrationTest {
             "another@example.com"
         );
 
-        mockMvc.perform(put("/api/users/me/email")
+        mockMvc.perform(put("/api/v1/users/me/email")
                 .header("Authorization", "Bearer " + jwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -209,7 +211,7 @@ class UserControllerIntegrationTest {
             "VeryUniqueNewP@ssw0rd2026!"  // New password
         );
 
-        mockMvc.perform(put("/api/users/me/password")
+        mockMvc.perform(put("/api/v1/users/me/password")
                 .header("Authorization", "Bearer " + jwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -223,7 +225,7 @@ class UserControllerIntegrationTest {
             "NewPassword123!"
         );
 
-        mockMvc.perform(put("/api/users/me/password")
+        mockMvc.perform(put("/api/v1/users/me/password")
                 .header("Authorization", "Bearer " + jwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -237,7 +239,7 @@ class UserControllerIntegrationTest {
             "weak"  // Too weak
         );
 
-        mockMvc.perform(put("/api/users/me/password")
+        mockMvc.perform(put("/api/v1/users/me/password")
                 .header("Authorization", "Bearer " + jwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -248,7 +250,7 @@ class UserControllerIntegrationTest {
     void verifyEmail_ValidToken_Returns200() throws Exception {
         // Note: This test requires email verification token generation
         // For now, testing the endpoint structure
-        mockMvc.perform(post("/api/users/me/email/verify")
+        mockMvc.perform(post("/api/v1/users/me/email/verify")
                 .header("Authorization", "Bearer " + jwtToken)
                 .param("token", "dummy-token"))
             .andExpect(status().is(anyOf(is(200), is(400))));  // May fail if token invalid
@@ -256,7 +258,7 @@ class UserControllerIntegrationTest {
 
     @Test
     void grantMarketingConsent_ValidRequest_Returns200() throws Exception {
-        mockMvc.perform(post("/api/users/me/marketing/grant")
+        mockMvc.perform(post("/api/v1/users/me/marketing/grant")
                 .header("Authorization", "Bearer " + jwtToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.marketingConsent").value(true));
@@ -265,14 +267,16 @@ class UserControllerIntegrationTest {
     @Test
     void revokeMarketingConsent_ValidRequest_Returns200() throws Exception {
         // First grant consent
-        mockMvc.perform(post("/api/users/me/marketing/grant")
+        mockMvc.perform(post("/api/v1/users/me/marketing/grant")
                 .header("Authorization", "Bearer " + jwtToken))
             .andExpect(status().isOk());
 
         // Then revoke
-        mockMvc.perform(delete("/api/users/me/marketing")
+        mockMvc.perform(delete("/api/v1/users/me/marketing")
                 .header("Authorization", "Bearer " + jwtToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.marketingConsent").value(false));
     }
 }
+
+

@@ -127,7 +127,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/best-selling - Should return products from database")
         @WithMockUser(roles = "OWNER")
         void shouldGetBestSellingProductsFromDatabase() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -139,7 +139,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/top-revenue - Should calculate revenue correctly")
         @WithMockUser(roles = "OWNER")
         void shouldCalculateRevenueCorrectly() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/top-revenue")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/top-revenue")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -151,7 +151,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/worst-selling - Should identify slow-moving products")
         @WithMockUser(roles = "OWNER")
         void shouldIdentifySlowMovingProducts() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/worst-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/worst-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -168,7 +168,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/daily-sales - Should aggregate sales by day")
         @WithMockUser(roles = "OWNER")
         void shouldAggregateSalesByDay() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -180,7 +180,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/hourly-sales - Should aggregate sales by hour")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldAggregateSalesByHour() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/by-hour")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/by-hour")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -191,7 +191,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/day-of-week-sales - Should group sales by weekday")
         @WithMockUser(roles = "OWNER")
         void shouldGroupSalesByWeekday() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/by-day-of-week")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/by-day-of-week")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -202,7 +202,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("Daily sales should span entire date range")
         @WithMockUser(roles = "OWNER")
         void dailySalesShouldSpanEntireDateRange() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", LocalDate.now().minusDays(30).toString())
                     .param("endDate", LocalDate.now().toString()))
                 .andExpect(status().isOk())
@@ -218,7 +218,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/top-customers - Should rank customers by spending")
         @WithMockUser(roles = "OWNER")
         void shouldRankCustomersBySpending() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/customers/top-buyers")
+            mockMvc.perform(get("/api/v1/owner/analytics/customers/top-buyers")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "20"))
@@ -230,7 +230,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/cart-abandonment - Should calculate abandonment rate")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldCalculateAbandonmentRate() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/carts/abandonment")
+            mockMvc.perform(get("/api/v1/owner/analytics/carts/abandonment")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -247,7 +247,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/low-stock - Should identify low inventory")
         @WithMockUser(roles = "OWNER")
         void shouldIdentifyLowInventory() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/inventory/low-stock")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/low-stock")
                     .param("threshold", "50")
                     .param("limit", "50"))
                 .andExpect(status().isOk())
@@ -258,7 +258,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/out-of-stock - Should list unavailable products")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldListUnavailableProducts() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/inventory/out-of-stock"))
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/out-of-stock"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
         }
@@ -267,7 +267,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/inventory-turnover - Should calculate turnover ratio")
         @WithMockUser(roles = "OWNER")
         void shouldCalculateTurnoverRatio() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/inventory/turnover")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/turnover")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -279,7 +279,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/dead-stock - Should identify stagnant inventory")
         @WithMockUser(roles = "OWNER")
         void shouldIdentifyStagnantInventory() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/inventory/dead-stock")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/dead-stock")
                     .param("daysWithoutSales", "90")
                     .param("limit", "50"))
                 .andExpect(status().isOk())
@@ -295,7 +295,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/revenue-by-category - Should group revenue by category")
         @WithMockUser(roles = "OWNER")
         void shouldGroupRevenueByCategory() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/revenue/by-category")
+            mockMvc.perform(get("/api/v1/owner/analytics/revenue/by-category")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -306,7 +306,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/revenue-forecast - Should predict future revenue")
         @WithMockUser(roles = "OWNER")
         void shouldPredictFutureRevenue() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/revenue/forecast")
+            mockMvc.perform(get("/api/v1/owner/analytics/revenue/forecast")
                     .param("historicalStartDate", startDate.toString())
                     .param("historicalEndDate", endDate.toString())
                     .param("forecastDays", "30"))
@@ -318,7 +318,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/profit-margins - Should calculate margins")
         @WithMockUser(roles = "OWNER")
         void shouldCalculateMargins() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/profit/margins")
+            mockMvc.perform(get("/api/v1/owner/analytics/profit/margins")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -335,7 +335,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/payment-stats - Should aggregate by payment method")
         @WithMockUser(roles = "OWNER")
         void shouldAggregateByPaymentMethod() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/payments/method-stats")
+            mockMvc.perform(get("/api/v1/owner/analytics/payments/method-stats")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -346,7 +346,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/refund-stats - Should calculate refund metrics")
         @WithMockUser(roles = "OWNER")
         void shouldCalculateRefundMetrics() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/refunds/stats")
+            mockMvc.perform(get("/api/v1/owner/analytics/refunds/stats")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -363,7 +363,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/sales-by-location - Should group by geography")
         @WithMockUser(roles = "OWNER")
         void shouldGroupByGeography() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/geographic/sales")
+            mockMvc.perform(get("/api/v1/owner/analytics/geographic/sales")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -375,7 +375,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/shipping-performance - Should calculate delivery metrics")
         @WithMockUser(roles = "EMPLOYEE")
         void shouldCalculateDeliveryMetrics() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/shipping/performance")
+            mockMvc.perform(get("/api/v1/owner/analytics/shipping/performance")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -391,7 +391,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("GET /api/analytics/marketing-attribution - Should track campaign performance")
         @WithMockUser(roles = "OWNER")
         void shouldTrackCampaignPerformance() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/marketing/attribution")
+            mockMvc.perform(get("/api/v1/owner/analytics/marketing/attribution")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -409,7 +409,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         void queriesShouldMeetPerformanceSLA() throws Exception {
             long startTime = System.currentTimeMillis();
             
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk());
@@ -425,7 +425,7 @@ class OwnerAnalyticsControllerIntegrationTest {
         void repeatedQueriesShouldBenefitFromCaching() throws Exception {
             // First request - cache miss
             long firstRequest = System.currentTimeMillis();
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -434,7 +434,7 @@ class OwnerAnalyticsControllerIntegrationTest {
 
             // Second request - should be faster (cached)
             long secondRequest = System.currentTimeMillis();
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -454,13 +454,13 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("Revenue totals should match across different analytics views")
         @WithMockUser(roles = "OWNER")
         void revenueTotalsShouldMatchAcrossViews() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
 
-            mockMvc.perform(get("/api/owner/analytics/revenue/by-category")
+            mockMvc.perform(get("/api/v1/owner/analytics/revenue/by-category")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -471,13 +471,13 @@ class OwnerAnalyticsControllerIntegrationTest {
         @DisplayName("Product quantities should match across analytics")
         @WithMockUser(roles = "OWNER")
         void productQuantitiesShouldMatchAcrossAnalytics() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
                 .andExpect(status().isOk());
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/turnover")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/turnover")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -485,3 +485,4 @@ class OwnerAnalyticsControllerIntegrationTest {
         }
     }
 }
+

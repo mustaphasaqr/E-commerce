@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
 
-@RestControllerAdvice(basePackages = "com.mustapha.ecommerce.user.auth")
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class AuthGlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthGlobalExceptionHandler.class);

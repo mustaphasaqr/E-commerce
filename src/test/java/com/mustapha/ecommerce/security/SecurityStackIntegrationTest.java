@@ -75,7 +75,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should include all security headers in response")
         void includeAllSecurityHeaders() throws Exception {
-            mockMvc.perform(get("/api/products").secure(true))
+            mockMvc.perform(get("/api/v1/products").secure(true))
                    .andExpect(header().exists("Content-Security-Policy"))
                    .andExpect(header().exists("X-Frame-Options"))
                    .andExpect(header().exists("X-Content-Type-Options"))
@@ -87,7 +87,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should include CSP header with proper directives")
         void includeCspWithProperDirectives() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                    .andExpect(header().string("Content-Security-Policy", 
                              matchesPattern(".*default-src 'self'.*")));
         }
@@ -95,7 +95,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should include HSTS header")
         void includeHstsHeader() throws Exception {
-            mockMvc.perform(get("/api/products").secure(true))
+            mockMvc.perform(get("/api/v1/products").secure(true))
                    .andExpect(header().exists("Strict-Transport-Security"))
                    .andExpect(header().string("Strict-Transport-Security", 
                              matchesPattern(".*max-age=.*")));
@@ -109,7 +109,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should generate and include X-Request-ID header")
         void generateAndIncludeRequestId() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                    .andExpect(header().exists("X-Request-ID"))
                    .andExpect(header().string("X-Request-ID", 
                              matchesPattern("[0-9a-f-]{36}")));
@@ -120,7 +120,7 @@ class SecurityStackIntegrationTest {
         void preserveCustomRequestId() throws Exception {
             String customId = "custom-integration-test-id";
 
-            mockMvc.perform(get("/api/products")
+            mockMvc.perform(get("/api/v1/products")
                            .header("X-Request-ID", customId))
                    .andExpect(header().string("X-Request-ID", customId));
         }
@@ -128,7 +128,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should include request ID in error responses")
         void includeRequestIdInErrors() throws Exception {
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                            .contentType(MediaType.APPLICATION_JSON)
                            .content("{\"identifier\":\"wrong\",\"password\":\"wrong\"}"))
                    .andExpect(header().exists("X-Request-ID"));
@@ -142,7 +142,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should authenticate valid JWT token")
         void authenticateValidToken() throws Exception {
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                            .header("Authorization", "Bearer " + validToken))
                    .andExpect(status().isOk());
         }
@@ -150,7 +150,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should reject invalid JWT token")
         void rejectInvalidToken() throws Exception {
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                            .header("Authorization", "Bearer invalid-token"))
                    .andExpect(status().isUnauthorized());
         }
@@ -158,14 +158,14 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should reject missing authorization header")
         void rejectMissingAuth() throws Exception {
-            mockMvc.perform(get("/api/users/me"))
+            mockMvc.perform(get("/api/v1/users/me"))
                    .andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("Should include proper error code for auth failures")
         void includeErrorCodeForAuthFailures() throws Exception {
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                            .header("Authorization", "Bearer invalid"))
                    .andExpect(status().isUnauthorized())
                    .andExpect(jsonPath("$.errorCode").exists());
@@ -180,7 +180,7 @@ class SecurityStackIntegrationTest {
         @DisplayName("Should allow requests under rate limit")
         void allowRequestsUnderLimit() throws Exception {
             for (int i = 0; i < 10; i++) {
-                mockMvc.perform(get("/api/products"))
+                mockMvc.perform(get("/api/v1/products"))
                        .andExpect(status().isOk());
             }
         }
@@ -188,7 +188,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should track requests per IP")
         void trackRequestsPerIp() throws Exception {
-            mockMvc.perform(get("/api/products")
+            mockMvc.perform(get("/api/v1/products")
                            .header("X-Forwarded-For", "192.168.1.100"))
                    .andExpect(status().isOk())
                    .andExpect(header().exists("X-Request-ID"));
@@ -202,7 +202,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should return standardized error response")
         void returnStandardizedError() throws Exception {
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                            .contentType(MediaType.APPLICATION_JSON)
                            .content("{\"identifier\":\"wrong\",\"password\":\"wrong\"}"))
                    .andExpect(jsonPath("$.timestamp").exists())
@@ -214,7 +214,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should not leak sensitive information in errors")
         void notLeakSensitiveInfo() throws Exception {
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                            .contentType(MediaType.APPLICATION_JSON)
                            .content("{\"identifier\":\"test@example.com\",\"password\":\"wrong\"}"))
                    .andExpect(jsonPath("$.message").value(
@@ -244,7 +244,7 @@ class SecurityStackIntegrationTest {
         void processAuthenticatedRequestComplete() throws Exception {
             String customRequestId = "flow-test-request-id";
 
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                            .header("Authorization", "Bearer " + validToken)
                            .header("X-Request-ID", customRequestId))
                    .andExpect(status().isOk())
@@ -257,7 +257,7 @@ class SecurityStackIntegrationTest {
         @Test
         @DisplayName("Should handle unauthenticated request with security headers")
         void handleUnauthenticatedWithSecurity() throws Exception {
-            mockMvc.perform(get("/api/products"))
+            mockMvc.perform(get("/api/v1/products"))
                    .andExpect(status().isOk())
                    .andExpect(header().exists("X-Request-ID"))
                    .andExpect(header().exists("Content-Security-Policy"));
@@ -270,7 +270,7 @@ class SecurityStackIntegrationTest {
                 new LoginRequest("testuser@example.com", "Password123!@#")
             );
 
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                            .contentType(MediaType.APPLICATION_JSON)
                            .content(loginJson))
                    .andExpect(header().exists("X-Request-ID"))
@@ -287,7 +287,7 @@ class SecurityStackIntegrationTest {
         void loginWithCorrectCredentials() throws Exception {
             String loginJson = "{\"email\":\"testuser@example.com\",\"password\":\"SecurePass123!@#\"}";
 
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                            .contentType(MediaType.APPLICATION_JSON)
                            .content(loginJson))
                    .andDo(result -> {
@@ -304,7 +304,7 @@ class SecurityStackIntegrationTest {
             String loginJson = "{\"email\":\"testuser@example.com\",\"password\":\"WrongPassword\"}";
 
             // Wrong credentials should return 401 UNAUTHORIZED with appropriate error code
-            mockMvc.perform(post("/api/auth/login")
+            mockMvc.perform(post("/api/v1/auth/login")
                                .contentType(MediaType.APPLICATION_JSON)
                            .content(loginJson))
                    .andExpect(status().isUnauthorized())
@@ -326,7 +326,7 @@ class SecurityStackIntegrationTest {
             String loginJson = "{\"email\":\"lockout@example.com\",\"password\":\"WrongPassword\"}";
 
             for (int i = 0; i < 5; i++) {
-                mockMvc.perform(post("/api/auth/login")
+                mockMvc.perform(post("/api/v1/auth/login")
                                .contentType(MediaType.APPLICATION_JSON)
                                .content(loginJson))
                        .andExpect(header().exists("X-Request-ID"));

@@ -1,5 +1,7 @@
 package com.mustapha.ecommerce.cart.domain.model;
 
+import com.mustapha.ecommerce.cart.application.port.DomainEventPublisher;
+import com.mustapha.ecommerce.cart.domain.event.*;
 import com.mustapha.ecommerce.cart.domain.model.valueobject.CartId;
 import com.mustapha.ecommerce.cart.domain.model.valueobject.Money;
 import com.mustapha.ecommerce.cart.domain.model.valueobject.ProductId;
@@ -28,6 +30,8 @@ import java.util.Optional;
  */
 public class Cart {
     
+    private final DomainEventPublisher eventPublisher; // For publishing cart domain events
+    
     private CartId id;
     private UserId userId; // For authenticated users (can be null)
     private SessionId sessionId; // For anonymous users (can be null)
@@ -43,9 +47,14 @@ public class Cart {
      * Constructor for new carts
      * At least one of userId or sessionId must be provided
      */
-    public Cart(UserId userId, SessionId sessionId) {
+    public Cart(UserId userId, SessionId sessionId, DomainEventPublisher eventPublisher) {
         validateCartOwnership(userId, sessionId);
         
+        if (eventPublisher == null) {
+            throw new IllegalArgumentException("Event publisher cannot be null");
+        }
+        
+        this.eventPublisher = eventPublisher;
         this.userId = userId;
         this.sessionId = sessionId;
         this.items = new ArrayList<>();
@@ -61,9 +70,15 @@ public class Cart {
      */
     public Cart(CartId id, UserId userId, SessionId sessionId, List<CartItem> items, 
                 Money totalAmount, CartStatus status, LocalDateTime createdAt, 
-                LocalDateTime lastUpdatedAt, Long convertedOrderId, Long version) {
+                LocalDateTime lastUpdatedAt, Long convertedOrderId, Long version,
+                DomainEventPublisher eventPublisher) {
         validateCartOwnership(userId, sessionId);
         
+        if (eventPublisher == null) {
+            throw new IllegalArgumentException("Event publisher cannot be null");
+        }
+        
+        this.eventPublisher = eventPublisher;
         this.id = id;
         this.userId = userId;
         this.sessionId = sessionId;
@@ -97,6 +112,9 @@ public class Cart {
         
         recalculateTotal();
         this.lastUpdatedAt = LocalDateTime.now();
+        
+        // Publish event for analytics and recommendations
+        eventPublisher.publish(new CartItemAddedEvent(id, productId, productName, quantity, price));
     }
     
     /**
@@ -127,9 +145,16 @@ public class Cart {
             throw new IllegalArgumentException("Product ID cannot be null");
         }
         
+        // Find item before removal to capture product name for event
+        CartItem removed = findItem(productId)
+            .orElseThrow(() -> new IllegalArgumentException("Product not in cart: " + productId));
+        
         items.removeIf(item -> item.getProductId().equals(productId));
         recalculateTotal();
         this.lastUpdatedAt = LocalDateTime.now();
+        
+        // Publish event for analytics (abandonment tracking)
+        eventPublisher.publish(new CartItemRemovedEvent(id, productId, removed.getProductName()));
     }
     
     /**
@@ -156,6 +181,9 @@ public class Cart {
         this.status = CartStatus.CONVERTED;
         this.convertedOrderId = orderId;
         this.lastUpdatedAt = LocalDateTime.now();
+        
+        // Publish event for analytics (conversion tracking)
+        eventPublisher.publish(new CartConvertedEvent(id, orderId, totalAmount, getTotalItems()));
     }
     
     /**
@@ -165,6 +193,9 @@ public class Cart {
         if (this.status == CartStatus.ACTIVE) {
             this.status = CartStatus.ABANDONED;
             this.lastUpdatedAt = LocalDateTime.now();
+            
+            // Publish event for recovery emails and analytics
+            eventPublisher.publish(new CartAbandonedEvent(id, totalAmount, getTotalItems(), userId));
         }
     }
     

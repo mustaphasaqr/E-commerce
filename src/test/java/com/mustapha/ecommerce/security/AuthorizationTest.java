@@ -140,7 +140,7 @@ class AuthorizationTest {
             );
             productRepository.save(product);
             
-            mockMvc.perform(get("/api/products/{id}", product.getId().getValue().toString())
+            mockMvc.perform(get("/api/v1/products/{id}", product.getId().getValue().toString())
                     .with(csrf()))
                 .andExpect(status().isOk());
         }
@@ -149,7 +149,7 @@ class AuthorizationTest {
         @DisplayName("CUSTOMER cannot access admin endpoints")
         @WithMockUser(username = "testcustomer", roles = "CUSTOMER")
         void customerCannotAccessAdminEndpoints() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .with(csrf()))
                 .andExpect(status().isForbidden());
         }
@@ -169,7 +169,7 @@ class AuthorizationTest {
                 }
                 """;
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productJson)
                     .with(csrf()))
@@ -191,7 +191,7 @@ class AuthorizationTest {
                 }
                 """;
 
-            mockMvc.perform(post("/api/products")
+            mockMvc.perform(post("/api/v1/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(productJson)
                     .with(csrf()))
@@ -204,7 +204,7 @@ class AuthorizationTest {
         void employeeCannotAccessOwnerEndpoints() throws Exception {
             String roleJson = "{\"newRole\":\"EMPLOYEE\",\"reason\":\"Test\"}";
 
-            mockMvc.perform(post("/api/admin/users/{id}/role", customerUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/role", customerUser.getId().toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(roleJson)
                     .with(csrf()))
@@ -215,7 +215,7 @@ class AuthorizationTest {
         @DisplayName("OWNER can access all admin endpoints")
         @WithMockUser(username = "testowner", roles = "OWNER")
         void ownerCanAccessAllAdminEndpoints() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .with(csrf()))
                 .andExpect(status().isOk());
         }
@@ -226,7 +226,7 @@ class AuthorizationTest {
         void ownerCanChangeUserRoles() throws Exception {
             String roleJson = "{\"newRole\":\"EMPLOYEE\",\"reason\":\"Promotion\"}";
 
-            mockMvc.perform(post("/api/admin/users/{id}/role", customerUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/role", customerUser.getId().toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(roleJson)
                     .with(csrf()))
@@ -242,7 +242,7 @@ class AuthorizationTest {
         @Test
         @DisplayName("User can access their own profile")
         void userCanAccessOwnProfile() throws Exception {
-            mockMvc.perform(get("/api/users/{id}", customerUser.getId().toString())
+            mockMvc.perform(get("/api/v1/users/{id}", customerUser.getId().toString())
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .with(csrf()))
                 .andExpect(status().isOk());
@@ -251,7 +251,7 @@ class AuthorizationTest {
         @Test
         @DisplayName("User cannot access another user's profile")
         void userCannotAccessOtherProfile() throws Exception {
-            mockMvc.perform(get("/api/users/{id}", employeeUser.getId().toString())
+            mockMvc.perform(get("/api/v1/users/{id}", employeeUser.getId().toString())
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .with(csrf()))
                 .andExpect(status().isForbidden());
@@ -266,7 +266,7 @@ class AuthorizationTest {
                 }
                 """;
 
-            mockMvc.perform(put("/api/users/me/email")
+            mockMvc.perform(put("/api/v1/users/me/email")
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
@@ -283,7 +283,7 @@ class AuthorizationTest {
                 }
                 """;
 
-            mockMvc.perform(put("/api/users/me/email")
+            mockMvc.perform(put("/api/v1/users/me/email")
                     .with(authentication(createAuthentication(employeeUser.getId().toString(), "CUSTOMER")))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
@@ -295,7 +295,7 @@ class AuthorizationTest {
         @DisplayName("User can only view their own orders")
         void userCanOnlyViewOwnOrders() throws Exception {
             // Use the general list endpoint - in a real app this would filter by user
-            mockMvc.perform(get("/api/orders")
+            mockMvc.perform(get("/api/v1/orders")
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .with(csrf()))
                 .andExpect(status().isOk());
@@ -307,7 +307,7 @@ class AuthorizationTest {
             // Test that trying to cancel a non-existent order returns 404
             // The order doesn't exist, so we get NOT_FOUND before ownership checks
             String nonExistentOrderId = UUID.randomUUID().toString();
-            mockMvc.perform(post("/api/orders/{id}/cancel", nonExistentOrderId)
+            mockMvc.perform(post("/api/v1/orders/{id}/cancel", nonExistentOrderId)
                     .with(authentication(createAuthentication(customerUser.getId().toString(), "CUSTOMER")))
                     .param("reason", "Test reason")
                     .with(csrf()))
@@ -323,42 +323,42 @@ class AuthorizationTest {
         @DisplayName("Permission matrix for user management endpoints")
         void testUserManagementPermissions() throws Exception {
             // GET /api/users/{id}
-            testEndpoint("GET", "/api/users/" + customerUser.getId(), "CUSTOMER", 200);
-            testEndpoint("GET", "/api/users/" + employeeUser.getId(), "CUSTOMER", 403);
-            testEndpoint("GET", "/api/users/" + customerUser.getId(), "EMPLOYEE", 200);
-            testEndpoint("GET", "/api/users/" + customerUser.getId(), "OWNER", 200);
+            testEndpoint("GET", "/api/v1/users/" + customerUser.getId(), "CUSTOMER", 200);
+            testEndpoint("GET", "/api/v1/users/" + employeeUser.getId(), "CUSTOMER", 403);
+            testEndpoint("GET", "/api/v1/users/" + customerUser.getId(), "EMPLOYEE", 200);
+            testEndpoint("GET", "/api/v1/users/" + customerUser.getId(), "OWNER", 200);
 
             // POST /api/users/{id}/deactivate
-            testEndpoint("POST", "/api/users/" + customerUser.getId() + "/deactivate", "CUSTOMER", 200);
-            testEndpoint("POST", "/api/users/" + employeeUser.getId() + "/deactivate", "CUSTOMER", 403);
-            testEndpoint("POST", "/api/users/" + customerUser.getId() + "/deactivate", "OWNER", 200);
+            testEndpoint("POST", "/api/v1/users/" + customerUser.getId() + "/deactivate", "CUSTOMER", 200);
+            testEndpoint("POST", "/api/v1/users/" + employeeUser.getId() + "/deactivate", "CUSTOMER", 403);
+            testEndpoint("POST", "/api/v1/users/" + customerUser.getId() + "/deactivate", "OWNER", 200);
         }
 
         @Test
         @DisplayName("Permission matrix for product endpoints")
         void testProductPermissions() throws Exception {
             // GET /api/products - all roles
-            testEndpoint("GET", "/api/products", "CUSTOMER", 200);
-            testEndpoint("GET", "/api/products", "EMPLOYEE", 200);
-            testEndpoint("GET", "/api/products", "OWNER", 200);
+            testEndpoint("GET", "/api/v1/products", "CUSTOMER", 200);
+            testEndpoint("GET", "/api/v1/products", "EMPLOYEE", 200);
+            testEndpoint("GET", "/api/v1/products", "OWNER", 200);
 
             // POST /api/products - EMPLOYEE and above
-            testEndpoint("POST", "/api/products", "CUSTOMER", 403);
-            testEndpoint("POST", "/api/products", "EMPLOYEE", 201, createProductJson());
-            testEndpoint("POST", "/api/products", "OWNER", 201, createProductJson());
+            testEndpoint("POST", "/api/v1/products", "CUSTOMER", 403);
+            testEndpoint("POST", "/api/v1/products", "EMPLOYEE", 201, createProductJson());
+            testEndpoint("POST", "/api/v1/products", "OWNER", 201, createProductJson());
         }
 
         @Test
         @DisplayName("Permission matrix for admin endpoints")
         void testAdminPermissions() throws Exception {
             // GET /api/admin/users - OWNER only
-            testEndpoint("GET", "/api/admin/users", "CUSTOMER", 403);
-            testEndpoint("GET", "/api/admin/users", "EMPLOYEE", 403);
-            testEndpoint("GET", "/api/admin/users", "OWNER", 200);
+            testEndpoint("GET", "/api/v1/admin/users", "CUSTOMER", 403);
+            testEndpoint("GET", "/api/v1/admin/users", "EMPLOYEE", 403);
+            testEndpoint("GET", "/api/v1/admin/users", "OWNER", 200);
 
             // POST /api/admin/users/{id}/block - OWNER only
-            testEndpoint("POST", "/api/admin/users/" + customerUser.getId() + "/block", "CUSTOMER", 403);
-            testEndpoint("POST", "/api/admin/users/" + customerUser.getId() + "/block", "EMPLOYEE", 403);
+            testEndpoint("POST", "/api/v1/admin/users/" + customerUser.getId() + "/block", "CUSTOMER", 403);
+            testEndpoint("POST", "/api/v1/admin/users/" + customerUser.getId() + "/block", "EMPLOYEE", 403);
         }
 
         private void testEndpoint(String method, String url, String role, int expectedStatus) throws Exception {
@@ -414,7 +414,7 @@ class AuthorizationTest {
                     .signWith(Keys.hmacShaKeyFor("test-secret-key-minimum-256-bits-for-hmac-sha256-algorithm-testing-only-not-for-production".getBytes(StandardCharsets.UTF_8)))
                     .compact();
 
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                     .header("Authorization", "Bearer " + expiredToken)
                     .with(csrf()))
                 .andExpect(status().isUnauthorized()); // 401 for expired/invalid tokens
@@ -424,7 +424,7 @@ class AuthorizationTest {
         @DisplayName("Should reject malformed JWT tokens")
         void shouldRejectMalformedTokens() throws Exception {
             // Use a completely malformed token that's not valid JWT format
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                     .header("Authorization", "Bearer not-a-valid-jwt-format-at-all")
                     .with(csrf()))
                 .andExpect(status().isUnauthorized()); // 401 for malformed tokens
@@ -442,7 +442,7 @@ class AuthorizationTest {
                     .signWith(Keys.hmacShaKeyFor("wrong-secret-key-256-bits-minimum-for-hmac-sha256-algorithm-different-from-actual".getBytes(StandardCharsets.UTF_8)))
                     .compact();
             
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                     .header("Authorization", "Bearer " + invalidToken)
                     .with(csrf()))
                 .andExpect(status().isUnauthorized()); // 401 for invalid signature
@@ -452,7 +452,7 @@ class AuthorizationTest {
         @DisplayName("Should extract correct role claims from JWT")
         @WithMockUser(username = "testowner", roles = "OWNER")
         void shouldExtractRoleClaimsFromJwt() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .with(csrf()))
                 .andExpect(status().isOk());
         }
@@ -471,7 +471,7 @@ class AuthorizationTest {
                     .signWith(Keys.hmacShaKeyFor("test-secret-key-minimum-256-bits-for-hmac-sha256-algorithm-testing-only-not-for-production".getBytes(StandardCharsets.UTF_8)))
                     .compact();
             
-            mockMvc.perform(get("/api/users/me")
+            mockMvc.perform(get("/api/v1/users/me")
                     .header("Authorization", "Bearer " + futureToken)
                     .with(csrf()))
                 .andExpect(status().isUnauthorized()); // 401 for tokens not yet valid
@@ -490,7 +490,7 @@ class AuthorizationTest {
             // Attempting to call admin-only service method should fail
             String roleJson = "{\"newRole\":\"OWNER\"}";
 
-            mockMvc.perform(post("/api/admin/users/{id}/role", customerUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/role", customerUser.getId().toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(roleJson)
                     .with(csrf()))
@@ -503,7 +503,7 @@ class AuthorizationTest {
         void shouldAllowWithCorrectRole() throws Exception {
             String roleJson = "{\"newRole\":\"EMPLOYEE\"}";
 
-            mockMvc.perform(post("/api/admin/users/{id}/role", customerUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/role", customerUser.getId().toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(roleJson)
                     .with(csrf()))
@@ -511,3 +511,4 @@ class AuthorizationTest {
         }
     }
 }
+

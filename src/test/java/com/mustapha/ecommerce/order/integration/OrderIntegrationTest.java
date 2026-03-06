@@ -114,7 +114,7 @@ class OrderIntegrationTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest("ordercustomer@example.com", "Customer123!@#");
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
@@ -203,7 +203,7 @@ class OrderIntegrationTest {
             ));
 
             // Act - Create order via HTTP POST
-            MvcResult result = mockMvc.perform(post("/api/orders")
+            MvcResult result = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -257,7 +257,7 @@ class OrderIntegrationTest {
                 new OrderItemRequest("PROD-003", "Keyboard", 1, 79.99)
             ));
 
-            MvcResult createResult = mockMvc.perform(post("/api/orders")
+            MvcResult createResult = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -269,7 +269,7 @@ class OrderIntegrationTest {
             String orderId = createResponse.getOrderId();
 
             // Act - Retrieve order via HTTP GET
-            mockMvc.perform(get("/api/orders/{id}", orderId)
+            mockMvc.perform(get("/api/v1/orders/{id}", orderId)
                     .header("Authorization", "Bearer " + customerJwt)
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -296,7 +296,7 @@ class OrderIntegrationTest {
                 new OrderItemRequest("PROD-LIFE-001", "Lifecycle Product", 1, 100.0)
             ));
 
-            MvcResult createResult = mockMvc.perform(post("/api/orders")
+            MvcResult createResult = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(createRequest)))
@@ -310,7 +310,7 @@ class OrderIntegrationTest {
             ).getOrderId();
 
             // Step 2: Pay Order
-            mockMvc.perform(post("/api/orders/{id}/pay", orderId)
+            mockMvc.perform(post("/api/v1/orders/{id}/pay", orderId)
                     .header("Authorization", "Bearer " + customerJwt)
                     .param("paymentMethod", "credit_card")
                     .param("paymentToken", "tok_lifecycle_test")
@@ -319,7 +319,7 @@ class OrderIntegrationTest {
                 .andExpect(jsonPath("$.status").value("PAID"));
 
             // Step 3: Ship Order (auto-transitions PAID → PROCESSING → SHIPPED)
-            mockMvc.perform(post("/api/orders/{id}/ship", orderId)
+            mockMvc.perform(post("/api/v1/orders/{id}/ship", orderId)
                     .header("Authorization", "Bearer " + customerJwt)
                     .param("trackingNumber", "TRACK-LIFECYCLE-123")
                     .param("carrier", "FedEx"))
@@ -330,7 +330,7 @@ class OrderIntegrationTest {
                 .andExpect(jsonPath("$.carrier").value("FedEx"));
 
             // Step 4: Deliver Order
-            mockMvc.perform(post("/api/orders/{id}/deliver", orderId)
+            mockMvc.perform(post("/api/v1/orders/{id}/deliver", orderId)
                     .header("Authorization", "Bearer " + customerJwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DELIVERED"))
@@ -359,7 +359,7 @@ class OrderIntegrationTest {
             String nonExistentId = "550e8400-e29b-41d4-a716-446655440000";
             
             // Act & Assert
-            mockMvc.perform(get("/api/orders/{id}", nonExistentId)
+            mockMvc.perform(get("/api/v1/orders/{id}", nonExistentId)
                     .header("Authorization", "Bearer " + customerJwt)
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -378,7 +378,7 @@ class OrderIntegrationTest {
             ));
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(invalidRequest)))
@@ -396,7 +396,7 @@ class OrderIntegrationTest {
             emptyItemsRequest.setItems(Arrays.asList()); // Empty items
 
             // Act & Assert
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(emptyItemsRequest)))
@@ -418,7 +418,7 @@ class OrderIntegrationTest {
                 new OrderItemRequest("PROD-001", "Product", 1, 999.99)
             ));
 
-            MvcResult createResult = mockMvc.perform(post("/api/orders")
+            MvcResult createResult = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -431,7 +431,7 @@ class OrderIntegrationTest {
             ).getOrderId();
 
             // Act & Assert - Try to ship without paying (should fail with domain exception)
-            mockMvc.perform(post("/api/orders/{id}/ship", orderId)
+            mockMvc.perform(post("/api/v1/orders/{id}/ship", orderId)
                     .header("Authorization", "Bearer " + customerJwt)
                     .param("trackingNumber", "TRACK-123")
                     .param("carrier", "FedEx"))
@@ -455,7 +455,7 @@ class OrderIntegrationTest {
             // Expected total: (3 * 19.99) + (2 * 25.50) + (1 * 99.99) = 59.97 + 51.00 + 99.99 = 210.96
 
             // Act
-            MvcResult result = mockMvc.perform(post("/api/orders")
+            MvcResult result = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -518,13 +518,13 @@ class OrderIntegrationTest {
             ));
 
             // Act - Create both orders
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request1)))
                 .andExpect(status().isCreated());
 
-            mockMvc.perform(post("/api/orders")
+            mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request2)))
@@ -565,7 +565,7 @@ class OrderIntegrationTest {
             ));
 
             // Act
-            MvcResult result = mockMvc.perform(post("/api/orders")
+            MvcResult result = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -607,7 +607,7 @@ class OrderIntegrationTest {
             // Expected: 33.33 + (3 * 19.99) = 33.33 + 59.97 = 93.30
 
             // Act
-            MvcResult result = mockMvc.perform(post("/api/orders")
+            MvcResult result = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
@@ -654,14 +654,14 @@ class OrderIntegrationTest {
             ));
 
             // Act - Create orders
-            MvcResult result1 = mockMvc.perform(post("/api/orders")
+            MvcResult result1 = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request1)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
-            MvcResult result2 = mockMvc.perform(post("/api/orders")
+            MvcResult result2 = mockMvc.perform(post("/api/v1/orders")
                     .header("Authorization", "Bearer " + customerJwt)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request2)))

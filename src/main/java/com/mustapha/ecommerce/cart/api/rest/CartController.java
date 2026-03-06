@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
  * SOLID: SRP (HTTP only), DIP (depends on facade interface)
  */
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/api/v1/cart")
 @Tag(name = "Shopping Cart", description = "Shopping cart management for authenticated users and anonymous sessions. Supports cart persistence, abandonment tracking, and seamless conversion from anonymous to authenticated carts.")
 public class CartController {
     

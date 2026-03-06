@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.order.infrastructure.persistence.entity;
 
+import com.mustapha.ecommerce.shared.domain.AuditedEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Check;
 import java.math.BigDecimal;
@@ -13,6 +14,10 @@ import com.mustapha.ecommerce.order.domain.model.OrderStatus;
  * Order JPA Entity
  * Responsibility: Database mapping for Order aggregate
  * Optimistic locking with @Version to prevent race conditions
+ * 
+ * Audit Support:
+ * - Extends AuditedEntity for created_by, created_at, updated_by, updated_at
+ * - Critical for fraud prevention and customer disputes
  */
 @Entity
 @Table(name = "orders", indexes = {
@@ -21,7 +26,7 @@ import com.mustapha.ecommerce.order.domain.model.OrderStatus;
     @Index(name = "idx_order_created", columnList = "created_at")
 })
 @Check(name = "chk_order_total_positive", constraints = "total_amount >= 0")
-public class OrderJpaEntity {
+public class OrderJpaEntity extends AuditedEntity {
 
     @Id
     private String id;
@@ -39,12 +44,6 @@ public class OrderJpaEntity {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     // Shipping information - populated when order is shipped
     @Column(name = "tracking_number")
@@ -162,22 +161,6 @@ public class OrderJpaEntity {
 
     public void setStatus(OrderStatus status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public String getTrackingNumber() {

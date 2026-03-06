@@ -2,6 +2,8 @@ package com.mustapha.ecommerce.order.api;
 
 import java.time.LocalDateTime;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -22,7 +24,8 @@ import com.mustapha.ecommerce.order.infrastructure.exception.OrderNotFoundExcept
  * Pattern: Exception Translation (Domain → HTTP)
  * SOLID: SRP (HTTP error handling only)
  */
-@RestControllerAdvice("com.mustapha.ecommerce.order")
+@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class OrderGlobalExceptionHandler {
 
     @ExceptionHandler(OrderNotFoundException.class)

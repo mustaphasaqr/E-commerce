@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.order.domain.event;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.mustapha.ecommerce.order.domain.DomainEvent;
@@ -16,14 +17,12 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
  * 
  * Domain Rules:
  * - orderId must not be null (every event must reference a valid order)
+ * - items must not be null/empty (need to release stock)
  * - reason can be optional (sometimes we don't know why)
  * - occurredAt timestamp is required (when did cancellation happen?)
  * 
- * NOTE: This is a STRUCTURE-ONLY event per reviewer's advice.
- * DO NOT raise this event in Order.cancel() yet - wait until we have a listener.
- * 
- * Potential Listeners (future):
- * - Inventory Service (release reserved stock)
+ * Listeners:
+ * - Product Service (release reserved stock for all items)
  * - Payment Service (process refund if already paid)
  * - Email Service (send cancellation notification)
  * - Analytics Service (track cancellation rate)
@@ -31,6 +30,7 @@ import com.mustapha.ecommerce.order.domain.model.valueobject.OrderId;
 public record OrderCancelledEvent(
     String eventId,
     OrderId orderId,
+    List<OrderItemDto> items,  // Products to release stock for
     String reason,  // Optional - can be null
     LocalDateTime occurredAt
 ) implements DomainEvent {
@@ -45,6 +45,9 @@ public record OrderCancelledEvent(
         if (orderId == null) {
             throw new IllegalArgumentException("Order ID cannot be null in OrderCancelledEvent");
         }
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Items list cannot be null or empty in OrderCancelledEvent");
+        }
         if (occurredAt == null) {
             throw new IllegalArgumentException("Occurred at cannot be null in OrderCancelledEvent");
         }
@@ -54,8 +57,8 @@ public record OrderCancelledEvent(
     /**
      * Convenience constructor for creating new events (generates ID and timestamp)
      */
-    public OrderCancelledEvent(OrderId orderId, String reason) {
-        this(UUID.randomUUID().toString(), orderId, reason, LocalDateTime.now());
+    public OrderCancelledEvent(OrderId orderId, List<OrderItemDto> items, String reason) {
+        this(UUID.randomUUID().toString(), orderId, items, reason, LocalDateTime.now());
     }
     
     @Override

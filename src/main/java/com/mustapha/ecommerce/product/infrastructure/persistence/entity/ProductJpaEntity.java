@@ -1,5 +1,6 @@
 package com.mustapha.ecommerce.product.infrastructure.persistence.entity;
 
+import com.mustapha.ecommerce.shared.domain.AuditedEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Check;
 
@@ -17,6 +18,10 @@ import java.util.Map;
  * Persistence model for Product aggregate
  * Optimistic locking with @Version
  * 
+ * Audit Support:
+ * - Extends AuditedEntity for created_by, created_at, updated_by, updated_at
+ * - Automatically tracked via JPA Auditing (@CreatedBy, @CreatedDate, @LastModifiedBy, @LastModifiedDate)
+ * 
  * Performance Optimization:
  * - Indexes on active, discontinued for filtering queries
  * - Unique index on SKU for fast lookups
@@ -31,7 +36,7 @@ import java.util.Map;
 })
 @Check(name = "chk_product_price_positive", constraints = "price >= 0")
 @Check(name = "chk_product_stock_positive", constraints = "total_stock >= 0 AND available_stock >= 0 AND reserved_stock >= 0")
-public class ProductJpaEntity {
+public class ProductJpaEntity extends AuditedEntity {
 
     @Id
     private String id;
@@ -89,12 +94,6 @@ public class ProductJpaEntity {
 
     @Column(nullable = false)
     private boolean discontinued;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     /**
      * Stock reservations (orderId -> quantity)
@@ -238,22 +237,6 @@ public class ProductJpaEntity {
 
     public void setDiscontinued(boolean discontinued) {
         this.discontinued = discontinued;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public Map<String, Integer> getReservations() {

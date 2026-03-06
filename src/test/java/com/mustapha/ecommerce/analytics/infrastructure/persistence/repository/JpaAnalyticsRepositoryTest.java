@@ -11,10 +11,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import com.mustapha.ecommerce.order.domain.model.OrderStatus;
 import java.math.BigDecimal;
@@ -29,20 +33,23 @@ import static org.assertj.core.api.Assertions.within;
  * JpaAnalyticsRepository Integration Tests
  * Tests complex JPQL queries with real database
  * 
- * Pattern: DataJpaTest for repository layer testing
+ * Pattern: SpringBootTest for integration testing custom repositories
  * Uses in-memory H2 database for fast, isolated tests
+ * 
+ * Data Isolation: @DirtiesContext recreates Spring context after each test
  */
-@DataJpaTest
-@Import(JpaAnalyticsRepository.class)
+@SpringBootTest
+@AutoConfigureTestDatabase
 @ActiveProfiles("test")
-@DisplayName("JpaAnalyticsRepository Integration Tests")
+@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class JpaAnalyticsRepositoryTest {
 
     @Autowired
     private JpaAnalyticsRepository analyticsRepository;
 
-    @Autowired
-    private TestEntityManager entityManager;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private LocalDate startDate;
     private LocalDate endDate;
@@ -51,6 +58,8 @@ class JpaAnalyticsRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        // @DirtiesContext recreates database, no cleanup needed
+        
         startDate = LocalDate.of(2026, 3, 1);
         endDate = LocalDate.of(2026, 3, 31);
         
@@ -65,16 +74,17 @@ class JpaAnalyticsRepositoryTest {
     @Test
     @DisplayName("getBestSellingProducts - Should return products ordered by quantity sold DESC")
     void testGetBestSellingProducts() {
+        // Given: Create user first
+        createUser("1", "test_user", "test@example.com");
+        
         // Given: Orders with different quantities
         OrderJpaEntity order1 = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         addOrderItem(order1, product1.getId(), "Laptop", 5, new BigDecimal("1000.00"));
         addOrderItem(order1, product2.getId(), "Mouse", 20, new BigDecimal("25.00"));
-        entityManager.persist(order1);
 
         OrderJpaEntity order2 = createCompletedOrder("ORD-002", startDate.plusDays(10).atTime(14, 30));
         addOrderItem(order2, product1.getId(), "Laptop", 3, new BigDecimal("1000.00"));
         addOrderItem(order2, product2.getId(), "Mouse", 15, new BigDecimal("25.00"));
-        entityManager.persist(order2);
 
         entityManager.flush();
         entityManager.clear();
@@ -93,18 +103,18 @@ class JpaAnalyticsRepositoryTest {
     @Test
     @DisplayName("getDailySales - Should aggregate sales by date")
     void testGetDailySales() {
+        // Given: Create user first
+        createUser("1", "test_user", "test@example.com");
+        
         // Given: Orders on different dates
         OrderJpaEntity order1 = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         order1.setTotalAmount(new BigDecimal("1500.00"));
-        entityManager.persist(order1);
 
         OrderJpaEntity order2 = createCompletedOrder("ORD-002", startDate.plusDays(5).atTime(16, 30));
         order2.setTotalAmount(new BigDecimal("2500.00"));
-        entityManager.persist(order2);
 
         OrderJpaEntity order3 = createCompletedOrder("ORD-003", startDate.plusDays(10).atTime(12, 0));
         order3.setTotalAmount(new BigDecimal("3000.00"));
-        entityManager.persist(order3);
 
         entityManager.flush();
         entityManager.clear();
@@ -136,15 +146,12 @@ class JpaAnalyticsRepositoryTest {
         // Given: Orders with different revenue amounts
         OrderJpaEntity order1 = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         order1.setTotalAmount(new BigDecimal("1000.00"));
-        entityManager.persist(order1);
 
         OrderJpaEntity order2 = createCompletedOrder("ORD-002", startDate.plusDays(10).atTime(14, 0));
         order2.setTotalAmount(new BigDecimal("5000.00")); // Peak day
-        entityManager.persist(order2);
 
         OrderJpaEntity order3 = createCompletedOrder("ORD-003", startDate.plusDays(15).atTime(12, 0));
         order3.setTotalAmount(new BigDecimal("2000.00"));
-        entityManager.persist(order3);
 
         entityManager.flush();
         entityManager.clear();
@@ -164,19 +171,15 @@ class JpaAnalyticsRepositoryTest {
         // Given: Orders with different statuses
         OrderJpaEntity completed1 = createOrderWithStatus("ORD-001", "DELIVERED", startDate.plusDays(5).atTime(10, 0));
         completed1.setTotalAmount(new BigDecimal("1000.00"));
-        entityManager.persist(completed1);
 
         OrderJpaEntity completed2 = createOrderWithStatus("ORD-002", "DELIVERED", startDate.plusDays(10).atTime(14, 0));
         completed2.setTotalAmount(new BigDecimal("2000.00"));
-        entityManager.persist(completed2);
 
         OrderJpaEntity cancelled = createOrderWithStatus("ORD-003", "CANCELLED", startDate.plusDays(15).atTime(12, 0));
         cancelled.setTotalAmount(new BigDecimal("500.00"));
-        entityManager.persist(cancelled);
 
         OrderJpaEntity pending = createOrderWithStatus("ORD-004", "PENDING", startDate.plusDays(20).atTime(9, 0));
         pending.setTotalAmount(new BigDecimal("750.00"));
-        entityManager.persist(pending);
 
         entityManager.flush();
         entityManager.clear();
@@ -203,17 +206,14 @@ class JpaAnalyticsRepositoryTest {
         OrderJpaEntity order1 = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         order1.setCustomerId("1");
         order1.setTotalAmount(new BigDecimal("5000.00"));
-        entityManager.persist(order1);
 
         OrderJpaEntity order2 = createCompletedOrder("ORD-002", startDate.plusDays(10).atTime(14, 0));
         order2.setCustomerId("1");
         order2.setTotalAmount(new BigDecimal("3000.00"));
-        entityManager.persist(order2);
 
         OrderJpaEntity order3 = createCompletedOrder("ORD-003", startDate.plusDays(15).atTime(12, 0));
         order3.setCustomerId("2");
         order3.setTotalAmount(new BigDecimal("4000.00"));
-        entityManager.persist(order3);
 
         entityManager.flush();
         entityManager.clear();
@@ -241,25 +241,20 @@ class JpaAnalyticsRepositoryTest {
         // Customer 1: Ordered before AND during (returning)
         OrderJpaEntity oldOrder1 = createCompletedOrder("ORD-OLD-001", beforePeriod.atTime(10, 0));
         oldOrder1.setCustomerId("1");
-        entityManager.persist(oldOrder1);
         
         OrderJpaEntity newOrder1 = createCompletedOrder("ORD-NEW-001", startDate.plusDays(5).atTime(10, 0));
         newOrder1.setCustomerId("1");
-        entityManager.persist(newOrder1);
 
         // Customer 2: Ordered before AND during (returning)
         OrderJpaEntity oldOrder2 = createCompletedOrder("ORD-OLD-002", beforePeriod.atTime(14, 0));
         oldOrder2.setCustomerId("2");
-        entityManager.persist(oldOrder2);
         
         OrderJpaEntity newOrder2 = createCompletedOrder("ORD-NEW-002", startDate.plusDays(10).atTime(14, 0));
         newOrder2.setCustomerId("2");
-        entityManager.persist(newOrder2);
 
         // Customer 3: Only ordered during (new)
         OrderJpaEntity newOrder3 = createCompletedOrder("ORD-NEW-003", startDate.plusDays(15).atTime(12, 0));
         newOrder3.setCustomerId("3");
-        entityManager.persist(newOrder3);
 
         entityManager.flush();
         entityManager.clear();
@@ -288,7 +283,6 @@ class JpaAnalyticsRepositoryTest {
         OrderJpaEntity order = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         addOrderItem(order, product1.getId(), "Laptop", 10, new BigDecimal("1000.00"));
         addOrderItem(order, product2.getId(), "Mouse", 25, new BigDecimal("25.00"));
-        entityManager.persist(order);
 
         entityManager.flush();
         entityManager.clear();
@@ -320,7 +314,6 @@ class JpaAnalyticsRepositoryTest {
         // Given: One product with sales, one without
         OrderJpaEntity order = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         addOrderItem(order, product1.getId(), "Laptop", 5, new BigDecimal("1000.00"));
-        entityManager.persist(order);
         
         // product2 has no orders
         entityManager.flush();
@@ -342,22 +335,18 @@ class JpaAnalyticsRepositoryTest {
         OrderJpaEntity creditCard1 = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         creditCard1.setPaymentMethod("CREDIT_CARD");
         creditCard1.setTotalAmount(new BigDecimal("1000.00"));
-        entityManager.persist(creditCard1);
 
         OrderJpaEntity creditCard2 = createCompletedOrder("ORD-002", startDate.plusDays(10).atTime(14, 0));
         creditCard2.setPaymentMethod("CREDIT_CARD");
         creditCard2.setTotalAmount(new BigDecimal("2000.00"));
-        entityManager.persist(creditCard2);
 
         OrderJpaEntity paypal = createCompletedOrder("ORD-003", startDate.plusDays(15).atTime(12, 0));
         paypal.setPaymentMethod("PAYPAL");
         paypal.setTotalAmount(new BigDecimal("1500.00"));
-        entityManager.persist(paypal);
 
         OrderJpaEntity cancelled = createOrderWithStatus("ORD-004", "CANCELLED", startDate.plusDays(20).atTime(9, 0));
         cancelled.setPaymentMethod("CREDIT_CARD");
         cancelled.setTotalAmount(new BigDecimal("500.00"));
-        entityManager.persist(cancelled);
 
         entityManager.flush();
         entityManager.clear();
@@ -384,15 +373,12 @@ class JpaAnalyticsRepositoryTest {
         // Given: Orders at different hours
         OrderJpaEntity morning = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(9, 30));
         morning.setTotalAmount(new BigDecimal("1000.00"));
-        entityManager.persist(morning);
 
         OrderJpaEntity afternoon1 = createCompletedOrder("ORD-002", startDate.plusDays(5).atTime(14, 15));
         afternoon1.setTotalAmount(new BigDecimal("2000.00"));
-        entityManager.persist(afternoon1);
 
         OrderJpaEntity afternoon2 = createCompletedOrder("ORD-003", startDate.plusDays(10).atTime(14, 45));
         afternoon2.setTotalAmount(new BigDecimal("1500.00"));
-        entityManager.persist(afternoon2);
 
         entityManager.flush();
         entityManager.clear();
@@ -425,7 +411,6 @@ class JpaAnalyticsRepositoryTest {
         OrderJpaEntity order = createCompletedOrder("ORD-001", startDate.plusDays(5).atTime(10, 0));
         addOrderItem(order, product1.getId(), "Laptop", 5, new BigDecimal("1000.00"));
         addOrderItem(order, product2.getId(), "Mouse", 20, new BigDecimal("25.00"));
-        entityManager.persist(order);
 
         entityManager.flush();
         entityManager.clear();
@@ -489,15 +474,12 @@ class JpaAnalyticsRepositoryTest {
         // Given: Orders before, during, and after the analysis period
         OrderJpaEntity beforePeriod = createCompletedOrder("ORD-BEFORE", startDate.minusDays(5).atTime(10, 0));
         beforePeriod.setTotalAmount(new BigDecimal("1000.00"));
-        entityManager.persist(beforePeriod);
 
         OrderJpaEntity duringPeriod = createCompletedOrder("ORD-DURING", startDate.plusDays(5).atTime(10, 0));
         duringPeriod.setTotalAmount(new BigDecimal("2000.00"));
-        entityManager.persist(duringPeriod);
 
         OrderJpaEntity afterPeriod = createCompletedOrder("ORD-AFTER", endDate.plusDays(5).atTime(10, 0));
         afterPeriod.setTotalAmount(new BigDecimal("3000.00"));
-        entityManager.persist(afterPeriod);
 
         entityManager.flush();
         entityManager.clear();
@@ -550,7 +532,8 @@ class JpaAnalyticsRepositoryTest {
         product.setDiscontinued(false);
         product.setCreatedAt(LocalDateTime.now());
         product.setUpdatedAt(LocalDateTime.now());
-        return entityManager.persist(product);
+        entityManager.persist(product);
+        return product;
     }
 
     private OrderJpaEntity createCompletedOrder(String orderId, LocalDateTime createdAt) {
@@ -558,12 +541,27 @@ class JpaAnalyticsRepositoryTest {
     }
 
     private OrderJpaEntity createOrderWithStatus(String orderId, String status, LocalDateTime createdAt) {
+        // Ensure default user exists for analytics queries
+        if (entityManager.find(UserJpaEntity.class, "1") == null) {
+            createUser("1", "default_test_user", "default@test.com");
+        }
+        
         OrderJpaEntity order = new OrderJpaEntity();
         order.setId(orderId);
         order.setStatus(OrderStatus.valueOf(status));
         order.setCreatedAt(createdAt);
         order.setTotalAmount(BigDecimal.ZERO);
         order.setCustomerId("1");
+        entityManager.persist(order);
+        entityManager.flush();
+        
+        // CRITICAL: Overwrite JPA Auditing timestamp using native SQL (bypasses @CreatedDate)
+        entityManager.createNativeQuery(
+            "UPDATE orders SET created_at = :timestamp WHERE id = :id"
+        ).setParameter("timestamp", createdAt)
+         .setParameter("id", orderId)
+         .executeUpdate();
+        
         return order;
     }
 
@@ -585,6 +583,13 @@ class JpaAnalyticsRepositoryTest {
         cart.setLastUpdatedAt(createdAt);
         cart.setTotalAmount(totalAmount);
         entityManager.persist(cart);
+        entityManager.flush();
+        
+        // CRITICAL: Overwrite JPA Auditing timestamp using native SQL
+        entityManager.createNativeQuery(
+            "UPDATE carts SET created_at = :timestamp WHERE id = (SELECT MAX(id) FROM carts)"
+        ).setParameter("timestamp", createdAt)
+         .executeUpdate();
     }
 
     private UserJpaEntity createUser(String id, String username, String email) {
@@ -604,3 +609,5 @@ class JpaAnalyticsRepositoryTest {
         return user;
     }
 }
+
+

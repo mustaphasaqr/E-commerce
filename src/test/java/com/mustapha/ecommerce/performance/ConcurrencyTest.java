@@ -221,7 +221,7 @@ class ConcurrencyTest {
                 executor.submit(() -> {
                     try {
                         String updateJson = String.format("{\"newPrice\": %s}", price);
-                        mockMvc.perform(put("/api/products/{id}/price", testProduct.getId())
+                        mockMvc.perform(put("/api/v1/products/{id}/price", testProduct.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(updateJson)
                                 .with(csrf()));
@@ -493,7 +493,7 @@ class ConcurrencyTest {
             // Submit same order twice with same idempotency key
             String orderJson = objectMapper.writeValueAsString(orderRequest);
 
-            var response1 = mockMvc.perform(post("/api/orders")
+            var response1 = mockMvc.perform(post("/api/v1/orders")
                     .header("Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(orderJson)
@@ -501,7 +501,7 @@ class ConcurrencyTest {
                 .andExpect(status().is2xxSuccessful())
                 .andReturn();
 
-            var response2 = mockMvc.perform(post("/api/orders")
+            var response2 = mockMvc.perform(post("/api/v1/orders")
                     .header("Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(orderJson)
@@ -526,7 +526,7 @@ class ConcurrencyTest {
             
             // Simulate duplicate payment button clicks
             for (int i = 0; i < 3; i++) {
-                mockMvc.perform(post("/api/orders/{id}/pay", "order-123")
+                mockMvc.perform(post("/api/v1/orders/{id}/pay", "order-123")
                         .header("Idempotency-Key", paymentIdempotencyKey)
                         .with(csrf()));
             }

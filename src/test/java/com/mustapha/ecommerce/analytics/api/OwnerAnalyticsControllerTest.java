@@ -74,7 +74,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getBestSellingProducts(anyInt(), any(), any()))
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -100,7 +100,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getWorstSellingProducts(anyInt(), any(), any()))
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/products/worst-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/worst-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -124,7 +124,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getTopRevenueProducts(anyInt(), any(), any()))
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/products/top-revenue")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/top-revenue")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -150,7 +150,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getDailySales(any(), any()))
                 .thenReturn(List.of(sales));
 
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -170,7 +170,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getSalesByHour(any(), any()))
                 .thenReturn(List.of(sales));
 
-            mockMvc.perform(get("/api/owner/analytics/sales/by-hour")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/by-hour")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -191,7 +191,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getSalesByDayOfWeek(any(), any()))
                 .thenReturn(List.of(sales));
 
-            mockMvc.perform(get("/api/owner/analytics/sales/by-day-of-week")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/by-day-of-week")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -219,7 +219,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getTopCustomers(anyInt(), any(), any()))
                 .thenReturn(List.of(customer));
 
-            mockMvc.perform(get("/api/owner/analytics/customers/top-buyers")
+            mockMvc.perform(get("/api/v1/owner/analytics/customers/top-buyers")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "20"))
@@ -248,7 +248,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getCartAbandonmentStats(any(), any()))
                 .thenReturn(stats);
 
-            mockMvc.perform(get("/api/owner/analytics/carts/abandonment")
+            mockMvc.perform(get("/api/v1/owner/analytics/carts/abandonment")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -277,7 +277,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getLowStockProducts(anyInt()))
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/low-stock")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/low-stock")
                     .param("threshold", "10")
                     .param("limit", "50"))
                 .andExpect(status().isOk())
@@ -300,7 +300,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getOutOfStockProducts())
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/out-of-stock"))
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/out-of-stock"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].currentStock").value(0));
         }
@@ -320,7 +320,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getInventoryTurnover(any(), any()))
                 .thenReturn(List.of(turnover));
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/turnover")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/turnover")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -343,7 +343,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getDeadStockProducts())
                 .thenReturn(List.of(product));
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/dead-stock")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/dead-stock")
                     .param("daysWithoutSales", "90")
                     .param("limit", "50"))
                 .andExpect(status().isOk())
@@ -369,7 +369,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getRevenueByCategory(any(), any()))
                 .thenReturn(List.of(revenue));
 
-            mockMvc.perform(get("/api/owner/analytics/revenue/by-category")
+            mockMvc.perform(get("/api/v1/owner/analytics/revenue/by-category")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -398,7 +398,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getRevenueForecast(any(), any(), anyInt()))
                 .thenReturn(forecast);
 
-            mockMvc.perform(get("/api/owner/analytics/revenue/forecast")
+            mockMvc.perform(get("/api/v1/owner/analytics/revenue/forecast")
                     .param("historicalStartDate", startDate.toString())
                     .param("historicalEndDate", endDate.toString())
                     .param("forecastDays", "30"))
@@ -423,7 +423,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getProfitMargins(anyInt(), any(), any(), anyBoolean()))
                 .thenReturn(List.of(margin));
 
-            mockMvc.perform(get("/api/owner/analytics/profit/margins")
+            mockMvc.perform(get("/api/v1/owner/analytics/profit/margins")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -452,7 +452,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getPaymentMethodStats(any(), any()))
                 .thenReturn(List.of(stats));
 
-            mockMvc.perform(get("/api/owner/analytics/payments/method-stats")
+            mockMvc.perform(get("/api/v1/owner/analytics/payments/method-stats")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -478,7 +478,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getRefundStats(any(), any()))
                 .thenReturn(stats);
 
-            mockMvc.perform(get("/api/owner/analytics/refunds/stats")
+            mockMvc.perform(get("/api/v1/owner/analytics/refunds/stats")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -508,7 +508,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getSalesByLocation(any(), any(), anyBoolean()))
                 .thenReturn(List.of(sales));
 
-            mockMvc.perform(get("/api/owner/analytics/geographic/sales")
+            mockMvc.perform(get("/api/v1/owner/analytics/geographic/sales")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "50"))
@@ -533,7 +533,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getShippingPerformance(any(), any()))
                 .thenReturn(List.of(performance));
 
-            mockMvc.perform(get("/api/owner/analytics/shipping/performance")
+            mockMvc.perform(get("/api/v1/owner/analytics/shipping/performance")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -563,7 +563,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getMarketingAttribution(any(), any()))
                 .thenReturn(List.of(attribution));
 
-            mockMvc.perform(get("/api/owner/analytics/marketing/attribution")
+            mockMvc.perform(get("/api/v1/owner/analytics/marketing/attribution")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -579,7 +579,7 @@ class OwnerAnalyticsControllerTest {
         @Test
         @DisplayName("Should deny access without authentication")
         void shouldDenyAccessWithoutAuth() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isUnauthorized());
@@ -589,7 +589,7 @@ class OwnerAnalyticsControllerTest {
         @DisplayName("Should deny access for CUSTOMER role")
         @WithMockUser(roles = "CUSTOMER")
         void shouldDenyAccessForCustomer() throws Exception {
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isForbidden());
@@ -602,7 +602,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getBestSellingProducts(anyInt(), any(), any()))
                 .thenReturn(List.of());
 
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -616,7 +616,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getBestSellingProducts(anyInt(), any(), any()))
                 .thenReturn(List.of());
 
-            mockMvc.perform(get("/api/owner/analytics/products/best-selling")
+            mockMvc.perform(get("/api/v1/owner/analytics/products/best-selling")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "10"))
@@ -635,7 +635,7 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getDailySales(any(), any()))
                 .thenReturn(List.of());
 
-            mockMvc.perform(get("/api/owner/analytics/sales/daily")
+            mockMvc.perform(get("/api/v1/owner/analytics/sales/daily")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString()))
                 .andExpect(status().isOk())
@@ -650,16 +650,17 @@ class OwnerAnalyticsControllerTest {
             when(analyticsFacade.getTopCustomers(anyInt(), any(), any())).thenReturn(List.of());
             when(analyticsFacade.getLowStockProducts(anyInt())).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/owner/analytics/customers/top-buyers")
+            mockMvc.perform(get("/api/v1/owner/analytics/customers/top-buyers")
                     .param("startDate", startDate.toString())
                     .param("endDate", endDate.toString())
                     .param("limit", "20"))
                 .andExpect(status().isOk());
 
-            mockMvc.perform(get("/api/owner/analytics/inventory/low-stock")
+            mockMvc.perform(get("/api/v1/owner/analytics/inventory/low-stock")
                     .param("threshold", "10")
                     .param("limit", "50"))
                 .andExpect(status().isOk());
         }
     }
 }
+

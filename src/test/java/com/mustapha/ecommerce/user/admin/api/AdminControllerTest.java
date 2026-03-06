@@ -87,7 +87,7 @@ class AdminControllerTest {
             Page<User> userPage = new PageImpl<>(Arrays.asList(mockUser, user2), PageRequest.of(0, 20), 2);
             when(adminFacade.getAllUsers(any(PageRequest.class))).thenReturn(userPage);
 
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                     .param("page", "0")
                     .param("size", "20")
                     .accept(MediaType.APPLICATION_JSON))
@@ -117,7 +117,7 @@ class AdminControllerTest {
             when(adminFacade.changeUserRole(anyString(), any(Role.class), anyString()))
                 .thenReturn(mockUser);
 
-            mockMvc.perform(post("/api/admin/users/{id}/role", mockUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/role", mockUser.getId().toString())
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -144,7 +144,7 @@ class AdminControllerTest {
 
             when(adminFacade.blockUser(anyString(), anyString())).thenReturn(mockUser);
 
-            mockMvc.perform(post("/api/admin/users/{id}/block", mockUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/block", mockUser.getId().toString())
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -166,7 +166,7 @@ class AdminControllerTest {
             when(adminFacade.blockUser(anyString(), anyString()))
                 .thenThrow(new RuntimeException("User not found"));
 
-            mockMvc.perform(post("/api/admin/users/{id}/block", "USER-999")
+            mockMvc.perform(post("/api/v1/admin/users/{id}/block", "USER-999")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -189,7 +189,7 @@ class AdminControllerTest {
 
             when(adminFacade.unblockUser(anyString(), anyString())).thenReturn(mockUser);
 
-            mockMvc.perform(post("/api/admin/users/{id}/unblock", mockUser.getId().toString())
+            mockMvc.perform(post("/api/v1/admin/users/{id}/unblock", mockUser.getId().toString())
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -215,7 +215,7 @@ class AdminControllerTest {
 
             when(adminFacade.deleteUser(anyString(), anyString())).thenReturn(mockUser);
 
-            mockMvc.perform(delete("/api/admin/users/{id}", mockUser.getId().toString())
+            mockMvc.perform(delete("/api/v1/admin/users/{id}", mockUser.getId().toString())
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -237,7 +237,7 @@ class AdminControllerTest {
             when(adminFacade.deleteUser(anyString(), anyString()))
                 .thenThrow(new RuntimeException("User not found"));
 
-            mockMvc.perform(delete("/api/admin/users/{id}", "USER-999")
+            mockMvc.perform(delete("/api/v1/admin/users/{id}", "USER-999")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
@@ -267,7 +267,7 @@ class AdminControllerTest {
             when(adminFacade.searchUsers(any(), any(), any(), any(), any(PageRequest.class)))
                 .thenReturn(searchResults);
 
-            mockMvc.perform(post("/api/admin/users/search")
+            mockMvc.perform(post("/api/v1/admin/users/search")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
