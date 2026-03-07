@@ -10,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 /**
@@ -41,10 +43,12 @@ class ProductReviewAdapterTest {
     @Autowired
     private ProductReviewRepository reviewRepository;
 
+    // Use fixed UUIDs for testing instead of simple integers
     private static final Long TEST_PRODUCT_ID = 999L;
     private static final Long TEST_CUSTOMER_ID = 100L;
     private static final String TEST_CUSTOMER_NAME = "John Doe";
     private static final Long TEST_ORDER_ID = 12345L;
+    private static final Long TEST_NONEXISTENT_PRODUCT_ID = 999999L; // This product doesn't exist in DB
 
     @BeforeEach
     void setUp() {

@@ -1,0 +1,142 @@
+# Staging Environment Configuration
+# Similar to production but with relaxed settings for testing
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ecommerce-staging-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-staging_root}
+      MYSQL_DATABASE: ecommerce_staging
+      MYSQL_USER: ${DB_USERNAME:-ecommerce_stage_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ecommerce_stage_pass}
+    ports:
+      - "3307:3306"  # Different port from production
+    volumes:
+      - mysql-staging-data:/var/lib/mysql
+    networks:
+      - ecommerce-staging-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: ecommerce-staging-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-ecommerce_staging_redis_pass}
+    ports:
+      - "6380:6379"  # Different port from production
+    volumes:
+      - redis-staging-data:/data
+    networks:
+      - ecommerce-staging-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ecommerce-staging-prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"  # Different port from production
+    volumes:
+      - ./monitoring/prometheus/prometheus-staging.yml:/etc/prometheus/prometheus.yml
+      - prometheus-staging-data:/prometheus
+    networks:
+      - ecommerce-staging-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ecommerce-staging-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"  # Different port from production
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=staging_admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-staging-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - ecommerce-staging-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: ecommerce-staging-zipkin
+    restart: unless-stopped
+    ports:
+      - "9412:9411"  # Different port from production
+    environment:
+      - STORAGE_TYPE=mem
+    networks:
+      - ecommerce-staging-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9411/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ghcr.io/mustaphasaqr/e-commerce/ecommerce-app:latest
+    container_name: ecommerce-staging-app
+    restart: unless-stopped
+    ports:
+      - "8081:8080"  # Different port from production (8080 is prod)
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_USERNAME=${DB_USERNAME:-ecommerce_stage_user}
+      - DB_PASSWORD=${DB_PASSWORD:-ecommerce_stage_pass}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-ecommerce_staging_redis_pass}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - LOG_LEVEL=DEBUG  # More verbose logging for staging
+    networks:
+      - ecommerce-staging-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  mysql-staging-data:
+    driver: local
+  redis-staging-data:
+    driver: local
+  prometheus-staging-data:
+    driver: local
+  grafana-staging-data:
+    driver: local
+
+networks:
+  ecommerce-staging-network:
+    driver: bridge

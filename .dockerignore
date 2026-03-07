@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Maven
+# .mvn/  # Keep for Docker build
+# mvnw    # Keep for Docker build
+# mvnw.cmd
+target/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+HELP.md
+DOCKER_PRODUCTION_SETUP.md
+IMPLEMENTATION_SUMMARY.md
+ARCHITECTURE-EXPLANATION.md
+MONOLITH-ARCHITECTURE.md
+PRODUCTION-READY-MIND-MAP.md
+SENIOR-ENGINEER-PRODUCTION-CHECKLIST.md
+
+# Scripts
+*.ps1
+*.sh
+*.bat
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+app-output.log
+app.pid
+
+# Test results
+test-*.txt
+test-results*.txt
+test-results*.log
+surefire-reports/
+
+# Environment files
+.env
+.env.example
+
+# Monitoring (will be mounted as volumes)
+monitoring/
+
+# Uploads directory
+uploads/
+
+# OS specific
+.DS_Store
+Thumbs.db
