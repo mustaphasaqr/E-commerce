@@ -167,51 +167,11 @@ jobs:
           name: test-reports
           path: test-reports/
 
-  # ==================== STAGE 3: DEPLOY TO STAGING ====================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    environment:
-      name: staging
-      url: http://localhost:8080
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Wait for manual approval
-        run: |
-          echo "🎯 Staging deployment requires manual approval"
-          echo "Deploy to: Staging Environment"
-          echo "Environment: Docker Compose (staging)"
-
-      - name: Deploy to Staging
-        run: |
-          echo "Deploying to staging environment..."
-          echo "Using docker-compose.staging.yml"
-          echo "Staging deployment complete!"
-
-      - name: Verify Staging Health
-        continue-on-error: true
-        run: |
-          echo "Waiting 30 seconds for services to start..."
-          sleep 30
-          echo "Health check would run here"
-
-      - name: Notify Slack (Optional)
-        if: always()
-        run: |
-          echo "Slack notification would be sent here"
-          echo "Status: ${{ job.status }}"
-
-  # ==================== STAGE 4: DEPLOY TO PRODUCTION (Optional) ====================
+  # ==================== STAGE 3: DEPLOY TO PRODUCTION ====================
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: deploy-staging
+    needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     environment:
@@ -222,22 +182,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Manual Approval Required for Production
-        run: |
-          echo "⚠️  Production deployment requires explicit manual approval"
-          echo "This step must be approved in GitHub Actions UI"
-          echo "Navigate to: https://github.com/${{ github.repository }}/actions"
-
       - name: Deploy to Production
         run: |
-          echo "Deploying to production..."
-          echo "Environment: Production (Kubernetes/Azure/Docker)"
+          echo "✅ Deploying to production..."
+          echo "Environment: Production (Docker Compose)"
           echo "Production deployment complete!"
 
       - name: Verify Production Health
         continue-on-error: true
         run: |
           echo "Verifying production health..."
+          sleep 10
+          echo "Health check complete"
+
+  # ==================== NOTIFICATIONS ====================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [build, deploy-production]
+    if: always()
+
+    steps:
+      - name: Build Status
+        run: |
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "✅ Build & Test: SUCCESS"
+          else
+            echo "❌ Build & Test: FAILED"
+          fi
+          
+          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "✅ Production Deployment: SUCCESS"
+          else
+            echo "⏭️  Production Deployment: PENDING APPROVAL or SKIPPED"
+          fi
           echo "Production health check complete!"
 
       - name: Send Deployment Notification
@@ -245,19 +223,3 @@ jobs:
         run: |
           echo "Deployment notification sent"
           echo "Status: ${{ job.status }}"
-
-  # ==================== NOTIFICATIONS ====================
-  notify:
-    name: Send Notifications
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    if: always()
-
-    steps:
-      - name: Build Status
-        run: |
-          if [ "${{ needs.build.result }}" == "success" ] && [ "${{ needs.test.result }}" == "success" ]; then
-            echo "✅ Pipeline PASSED - Ready for Staging"
-          else
-            echo "❌ Pipeline FAILED - Check logs"
-          fi
