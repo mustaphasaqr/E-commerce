@@ -23,6 +23,44 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      redis:
+        image: redis:7.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ecommerce_test
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+    env:
+      SPRING_PROFILES_ACTIVE: integration-test
+      JWT_SECRET: test-secret-key-for-testing-purposes-only-12345
+      JWT_EXPIRATION: 86400000
+      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/ecommerce_test?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_REDIS_HOST: localhost
+      SPRING_REDIS_PORT: 6379
+      SENDGRID_API_KEY: test-key-12345
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,8 +72,21 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h localhost -uroot -proot 2>/dev/null; then
+              echo "MySQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+          echo "MySQL failed to start"
+          exit 1
+
       - name: Run Maven tests
-        run: mvn clean test -B
+        run: mvn clean test -B -Dspring.profiles.active=integration-test
 
       - name: Build Maven project
         run: mvn clean package -DskipTests -B
