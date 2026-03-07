@@ -89,7 +89,9 @@ class LoggingValidationTest {
         @DisplayName("Failed operations should log at ERROR level")
         @WithMockUser(roles = "CUSTOMER")
         void failedOperationsShouldLogError() throws Exception {
-            mockMvc.perform(get("/api/v1/products/{id}", 999999))
+            // Use valid UUID format for non-existent product
+            String nonExistentProductId = "00000000-0000-0000-0000-000000000001";
+            mockMvc.perform(get("/api/v1/products/{id}", nonExistentProductId))
                 .andExpect(status().is4xxClientError());
 
             // Check if error was logged
