@@ -40,8 +40,8 @@ COPY --from=builder /app/target/*.jar app.jar
 # Set default Spring Boot environment variables (can be overridden at runtime)
 ENV SPRING_DATASOURCE_URL=jdbc:mysql://trolley.proxy.rlwy.net:26847/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 ENV SPRING_DATASOURCE_USERNAME=root
-ENV SPRING_DATASOURCE_PASSWORD=KGtdAXkNDFXmqvwhCobXj1lMqwubfzvxb
-ENV SPRING_DATA_REDIS_URL=redis://default:nfjvYjCrnrYjMqLGhYMZSYXmA1sXwu1A@switchyard.proxy.rlwy.net:42742
+ENV SPRING_DATASOURCE_PASSWORD=KGTdAXkNDFxmqvwhCobXjlMqWubfzvxb
+ENV SPRING_DATA_REDIS_URL=redis://default:nfjyYjCrnrYjWqLGhYMZSYXmAlsXwulA@switchyard.proxy.rlwy.net:42742
 
 # Expose port
 EXPOSE 8080
