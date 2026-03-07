@@ -154,25 +154,20 @@ jobs:
       - name: Check for security vulnerabilities
         run: mvn org.owasp:dependency-check-maven:check -B || true
 
-      - name: Generate test report
-        if: always()
-        run: |
-          mkdir -p test-reports
-          cp target/site/jacoco/index.html test-reports/ || true
-
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: test-reports/
+          path: target/surefire-reports/
+          if-no-files-found: ignore
 
   # ==================== STAGE 3: MANUAL APPROVAL ====================
   approval:
     name: Manual Approval
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push'
     
     environment:
       name: production
@@ -190,7 +185,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: approval
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout code
