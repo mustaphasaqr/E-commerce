@@ -4,7 +4,12 @@ on:
   push:
     branches:
       - main
-      - feat/production-ready-docker-deployment
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run pipeline on'
+        required: false
+        default: 'feat/production-ready-docker-deployment'
   pull_request:
     branches:
       - main
