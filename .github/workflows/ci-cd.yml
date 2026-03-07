@@ -43,6 +43,8 @@ jobs:
       SENDGRID_API_KEY: test-key-12345
       SPRING_REDIS_HOST: localhost
       SPRING_REDIS_PORT: 6379
+      # Allow test data seeding and security config override
+      TEST_MODE: "true"
 
     steps:
       - name: Checkout code
@@ -56,7 +58,38 @@ jobs:
           cache: maven
 
       - name: Run Maven tests
-        run: mvn clean test -B
+        run: |
+          mvn clean test \
+            -B \
+            -Dspring.profiles.active=test \
+            -DargLine="-Xmx1g -XX:+UseG1GC" \
+            --fail-at-end \
+            -q 2>&1 | tee test-output.log
+        continue-on-error: false
+        timeout-minutes: 20
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            target/surefire-reports/
+            test-output.log
+          retention-days: 30
+
+      - name: Check test results
+        if: always()
+        run: |
+          if [ -f target/surefire-reports/TEST-*.xml ]; then
+            FAILED=$(grep -m1 'failures=' target/surefire-reports/TEST-*.xml | grep -oP 'failures="\K[0-9]+' || echo 0)
+            ERRORS=$(grep -m1 'errors=' target/surefire-reports/TEST-*.xml | grep -oP 'errors="\K[0-9]+' || echo 0)
+            if [ "$FAILED" != "0" ] || [ "$ERRORS" != "0" ]; then
+              echo "❌ Tests failed: $FAILED failures, $ERRORS errors"
+              exit 1
+            fi
+            echo "✅ All tests passed"
+          fi
 
       - name: Build Maven project
         run: mvn clean package -DskipTests -B
