@@ -56,13 +56,12 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - DB_USERNAME=ecommerce_user
-      - DB_PASSWORD=ecommerce_pass
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=ecommerce_redis_pass
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ecommerce?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=ecommerce_user
+      - SPRING_DATASOURCE_PASSWORD=ecommerce_pass
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=ecommerce_redis_pass
     networks:
       - ecommerce-network
     depends_on:
