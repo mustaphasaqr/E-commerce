@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to run pipeline on'
+        description: 'Branch to run pipeline on (leave empty for default branch)'
         required: false
-        default: 'feat/production-ready-docker-deployment'
+        default: ''
   pull_request:
     branches:
       - main
