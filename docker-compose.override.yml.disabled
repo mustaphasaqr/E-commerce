@@ -1,0 +1,36 @@
+# Development overrides for docker-compose.yml
+# This file is automatically merged with docker-compose.yml when running docker-compose
+
+version: '3.8'
+
+services:
+  app:
+    # Mount source code for hot reload during development
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+    # Override entrypoint for development
+    entrypoint: ["./mvnw", "spring-boot:run"]
+    command: ["-Dspring-boot.run.profiles=docker"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_USERNAME=ecommerce_user
+      - DB_PASSWORD=ecommerce_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=ecommerce_redis_pass
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+    # Disable health check for development (faster startup)
+    healthcheck:
+      disable: true
+
+  mysql:
+    # Expose MySQL port for direct access during development
+    ports:
+      - "3306:3306"
+
+  redis:
+    # Expose Redis port for direct access during development
+    ports:
+      - "6379:6379"
