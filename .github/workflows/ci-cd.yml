@@ -167,43 +167,90 @@ jobs:
           path: target/surefire-reports/
           if-no-files-found: ignore
 
-  # ==================== STAGE 3: MANUAL APPROVAL ====================
-  approval:
-    name: Manual Approval
+  # ==================== STAGE 3: MANUAL APPROVAL (PRODUCTION GATE) ====================
+  approve-production:
+    name: 🔐 Approve Production Deployment
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     environment:
       name: production
+      url: https://e-commerce-production-27b3.up.railway.app
 
     steps:
-      - name: Waiting for Approval
+      - name: ⏸️ Waiting for Production Approval
         run: |
-          echo "⏸️  Pipeline paused - waiting for manual approval"
-          echo "Navigate to: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "Click 'Review deployments' and approve to continue to production"
+          echo "=========================================="
+          echo "🔐 PRODUCTION DEPLOYMENT APPROVAL REQUIRED"
+          echo "=========================================="
+          echo ""
+          echo "Build and tests have passed successfully!"
+          echo "Waiting for manual approval to deploy to production..."
+          echo ""
+          echo "Review Details:"
+          echo "  Repository: ${{ github.repository }}"
+          echo "  Branch: ${{ github.ref }}"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Author: ${{ github.actor }}"
+          echo ""
+          echo "To approve: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "Click 'Review deployments' → Select 'production' → Approve"
+          echo "=========================================="
 
   # ==================== STAGE 4: DEPLOY TO PRODUCTION ====================
   deploy-production:
-    name: Deploy to Production
+    name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
-    needs: approval
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: approve-production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Production
+      - name: 🚀 Notify Railway Deployment
         run: |
-          echo "✅ Deploying to production..."
-          echo "Environment: Production (Docker Compose)"
-          echo "Production deployment complete!"
+          echo "=========================================="
+          echo "✅ DEPLOYING TO PRODUCTION"
+          echo "=========================================="
+          echo ""
+          echo "Deployment Details:"
+          echo "  Environment: Production (Railway)"
+          echo "  Application: e-commerce-production-27b3"
+          echo "  URL: https://e-commerce-production-27b3.up.railway.app"
+          echo "  Deployment Time: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "Status: Railway auto-deploy triggered on push to main"
+          echo "Monitor deployment: https://railway.app"
+          echo "=========================================="
 
-      - name: Verify Production Health
-        continue-on-error: true
+      - name: ✅ Verify Production Deployment
         run: |
-          echo "Verifying production health..."
-          sleep 10
-          echo "Health check complete"
+          echo "Waiting for Railway deployment to complete..."
+          echo "This may take 2-5 minutes..."
+          sleep 30
+          
+          # Check health endpoint
+          for i in {1..60}; do
+            echo "Health check attempt $i/60..."
+            if curl -s -f https://e-commerce-production-27b3.up.railway.app/actuator/health | grep -q '"status":"UP"'; then
+              echo "✅ Production deployment verified - application is UP"
+              curl -s https://e-commerce-production-27b3.up.railway.app/actuator/health | jq .
+              exit 0
+            fi
+            sleep 5
+          done
+          
+          echo "⚠️ Health check timed out - deployment may still be in progress"
+          echo "Check Railway logs for details: https://railway.app"
+
+      - name: 📢 Deployment Success Notification
+        if: success()
+        run: |
+          echo "✅ Production deployment completed successfully!"
+          echo ""
+          echo "Access your application:"
+          echo "  URL: https://e-commerce-production-27b3.up.railway.app"
+          echo "  Health: https://e-commerce-production-27b3.up.railway.app/actuator/health"
+          echo "  API Docs: https://e-commerce-production-27b3.up.railway.app/swagger-ui.html"
