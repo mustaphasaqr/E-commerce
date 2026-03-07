@@ -23,12 +23,26 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      redis:
+        image: redis:7.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     env:
       SPRING_PROFILES_ACTIVE: test
       JWT_SECRET: test-secret-key-minimum-256-bits-for-hmac-sha256-algorithm-testing-only-not-for-production
       JWT_EXPIRATION_MS: 3600000
       JWT_REFRESH_EXPIRATION_MS: 2592000000
+      JWT_ENABLED: "true"
       SENDGRID_API_KEY: test-key-12345
+      SPRING_REDIS_HOST: localhost
+      SPRING_REDIS_PORT: 6379
 
     steps:
       - name: Checkout code
