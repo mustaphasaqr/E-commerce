@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - appmod/java-upgrade-20251219153529
+      - feat/production-ready-docker-deployment
   pull_request:
     branches:
       - main
