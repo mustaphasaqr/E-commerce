@@ -38,12 +38,10 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
 # Set default Spring Boot environment variables (can be overridden at runtime)
-ENV SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ecommerce?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-ENV SPRING_DATASOURCE_USERNAME=ecommerce_user
-ENV SPRING_DATASOURCE_PASSWORD=ecommerce_pass
-ENV SPRING_DATA_REDIS_HOST=redis
-ENV SPRING_DATA_REDIS_PORT=6379
-ENV SPRING_DATA_REDIS_PASSWORD=ecommerce_redis_pass
+ENV SPRING_DATASOURCE_URL=jdbc:mysql://trolley.proxy.rlwy.net:26847/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+ENV SPRING_DATASOURCE_USERNAME=root
+ENV SPRING_DATASOURCE_PASSWORD=KGtdAXkNDFXmqvwhCobXj1lMqwubfzvxb
+ENV SPRING_DATA_REDIS_URL=redis://default:nfjvYjCrnrYjMqLGhYMZSYXmA1sXwu1A@switchyard.proxy.rlwy.net:42742
 
 # Expose port
 EXPOSE 8080
