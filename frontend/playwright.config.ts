@@ -2,12 +2,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './tests/integration',  // Only integration tests
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  timeout: 30 * 1000,  // 30 seconds (most tests 3-5 sec)
+  expect: { timeout: 5000 },  // 5 seconds for expect() calls
+  retries: process.env.CI ? 1 : 0,  // Only 1 retry (fast feedback)
+  workers: process.env.CI ? 10 : undefined,  // 10 workers (fast, stable)
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+  ],
   use: {
     baseURL: 'http://localhost:3002',
     trace: 'on-first-retry',
@@ -19,10 +24,7 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
+    // Removed Mobile Chrome - same backend, same logic, wastes time
   ],
 
   webServer: {

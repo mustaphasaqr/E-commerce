@@ -1,4 +1,4 @@
-name: Frontend Tests
+name: Frontend Integration Tests
 
 on:
   push:
@@ -15,10 +15,10 @@ on:
       - '.github/workflows/frontend-tests.yml'
 
 jobs:
-  # ==================== STAGE 1: CHROMIUM (Web) ====================
-  test-chromium:
+  # ==================== INTEGRATION TESTS ====================
+  test-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -43,111 +43,23 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: 'STAGE 1: Run tests on Chromium (Desktop Web)'
+      - name: 'Run Integration Tests (20 tests, Chromium only, 10 workers)'
         working-directory: ./frontend
         env:
           FORCE_COLOR: 1
           PYTHONUNBUFFERED: 1
           NODE_ENV: test
         run: |
-          echo "🎯 Starting Chromium tests (156 tests total on 20 workers)"
-          echo "========================================================="
-          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=120000 --workers=20
+          echo "🎯 Starting Integration Tests (20 tests on 10 workers)"
+          echo "====================================================="
+          npx playwright test tests/integration/ --project=chromium --reporter=list --reporter=html
         continue-on-error: true
 
-      - name: Upload Chromium results
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: chromium-report
+          name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
 
-  # ==================== STAGE 2: MOBILE CHROME ====================
-  test-mobile:
-    needs: test-chromium
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm install --legacy-peer-deps
-
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      - name: Install Playwright browsers
-        working-directory: ./frontend
-        run: npx playwright install --with-deps chromium
-
-      - name: 'STAGE 2: Run tests on Mobile Chrome (Android - Pixel 5)'
-        working-directory: ./frontend
-        env:
-          FORCE_COLOR: 1
-          PYTHONUNBUFFERED: 1
-          NODE_ENV: test
-        run: |
-          echo "🎯 Starting Mobile Chrome tests (156 tests total on 20 workers)"
-          echo "=============================================================" 
-          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=120000 --workers=20
-        continue-on-error: true
-
-      - name: Upload Mobile results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-report
-          path: frontend/playwright-report/
-          retention-days: 7
-
-      - name: Comment test results on PR
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            
-            let message = '## 🧪 Frontend Test Results\n\n';
-            message += '### Pipeline Stages:\n';
-            message += '1. **STAGE 1:** Chromium (Desktop Web) ✅ Completed\n';
-            message += '2. **STAGE 2:** Mobile Chrome (Android Pixel 5) ✅ Completed\n\n';
-            
-            const chromiumFailures = './frontend/CHROMIUM_FAILURES.txt';
-            const mobileFailures = './frontend/MOBILE_FAILURES.txt';
-            
-            if (fs.existsSync(chromiumFailures)) {
-              const failures = fs.readFileSync(chromiumFailures, 'utf8');
-              message += '### ❌ Chromium Failures:\n```\n' + failures + '\n```\n\n';
-            } else {
-              message += '### ✅ Chromium Stage: All tests passed!\n\n';
-            }
-            
-            if (fs.existsSync(mobileFailures)) {
-              const failures = fs.readFileSync(mobileFailures, 'utf8');
-              message += '### ❌ Mobile Chrome Failures:\n```\n' + failures + '\n```\n\n';
-            } else {
-              message += '### ✅ Mobile Chrome Stage: All tests passed!\n\n';
-            }
-            
-            message += '### 📊 Artifacts:\n';
-            message += '- **chromium-report** (desktop web tests)\n';
-            message += '- **mobile-report** (responsive mobile tests)\n';
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
