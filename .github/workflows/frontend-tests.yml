@@ -15,9 +15,10 @@ on:
       - '.github/workflows/frontend-tests.yml'
 
 jobs:
-  test:
+  # ==================== STAGE 1: CHROMIUM (Web) ====================
+  test-chromium:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -50,15 +51,10 @@ jobs:
       - name: Check Chromium results
         working-directory: ./frontend
         run: |
-          echo "✅ Chromium tests completed. Checking results..."
+          echo "✅ Chromium tests completed"
           if [ -f "playwright-report/index.html" ]; then
             echo "📊 HTML report generated"
           fi
-
-      - name: 'STAGE 2: Run tests on Mobile Chrome (Android - Pixel 5)'
-        working-directory: ./frontend
-        run: npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000
-        continue-on-error: true
 
       - name: Extract failed tests with reasons
         if: always()
@@ -68,8 +64,6 @@ jobs:
           const fs = require('fs');
           const path = require('path');
 
-          // Try to find test results
-          let results = [];
           const reportPaths = [
             'json-report/results.json',
             'test-results/results.json'
@@ -80,8 +74,8 @@ jobs:
               try {
                 const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
                 
-                let output = '🎯 FAILED TESTS REPORT\n';
-                output += '=====================\n\n';
+                let output = '🎯 CHROMIUM TEST FAILURES REPORT\n';
+                output += '================================\n\n';
                 
                 let failedCount = 0;
                 let passedCount = 0;
@@ -115,7 +109,7 @@ jobs:
                 output += `✅ Passed: ${passedCount}\n`;
                 output += `❌ Failed: ${failedCount}\n`;
                 
-                fs.writeFileSync('TEST_FAILURES.txt', output);
+                fs.writeFileSync('CHROMIUM_FAILURES.txt', output);
                 console.log(output);
                 break;
               } catch (err) {
@@ -123,44 +117,157 @@ jobs:
               }
             }
           }
+          EOF
+          
+          node extract_failures.js
 
-          if (!fs.existsSync('TEST_FAILURES.txt')) {
-            console.log('⚠️ Could not find test results. Tests may have passed or report path differs.');
+      - name: Display Chromium failures
+        if: always()
+        working-directory: ./frontend
+        run: |
+          if [ -f "CHROMIUM_FAILURES.txt" ]; then
+            echo "📄 Chromium Test Failures:"
+            cat CHROMIUM_FAILURES.txt
+          else
+            echo "✅ All Chromium tests passed"
+          fi
+
+      - name: Upload Chromium results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-report
+          path: |
+            frontend/playwright-report/
+            frontend/CHROMIUM_FAILURES.txt
+          retention-days: 7
+
+  # ==================== STAGE 2: MOBILE CHROME ====================
+  test-mobile:
+    needs: test-chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: 'STAGE 2: Run tests on Mobile Chrome (Android - Pixel 5)'
+        working-directory: ./frontend
+        run: npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000
+        continue-on-error: true
+
+      - name: Check Mobile results
+        working-directory: ./frontend
+        run: |
+          echo "✅ Mobile Chrome tests completed"
+          if [ -f "playwright-report/index.html" ]; then
+            echo "📊 HTML report generated"
+          fi
+
+      - name: Extract failed tests with reasons
+        if: always()
+        working-directory: ./frontend
+        run: |
+          cat > extract_failures.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          const reportPaths = [
+            'json-report/results.json',
+            'test-results/results.json'
+          ];
+
+          for (const reportPath of reportPaths) {
+            if (fs.existsSync(reportPath)) {
+              try {
+                const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                
+                let output = '🎯 MOBILE CHROME TEST FAILURES REPORT\n';
+                output += '=====================================\n\n';
+                
+                let failedCount = 0;
+                let passedCount = 0;
+                
+                data.suites?.forEach(suite => {
+                  suite.suites?.forEach(subSuite => {
+                    subSuite.tests?.forEach(test => {
+                      if (test.status === 'failed') {
+                        failedCount++;
+                        output += `❌ ${test.title}\n`;
+                        output += `   File: ${test.file}\n`;
+                        output += `   Location: Line ${test.line}\n`;
+                        
+                        if (test.results?.[0]?.error?.message) {
+                          output += `   Error: ${test.results[0].error.message}\n`;
+                        }
+                        if (test.results?.[0]?.error?.stack) {
+                          const stack = test.results[0].error.stack.split('\n').slice(0, 3).join('\n');
+                          output += `   Stack: ${stack}\n`;
+                        }
+                        output += '\n';
+                      } else if (test.status === 'passed') {
+                        passedCount++;
+                      }
+                    });
+                  });
+                });
+                
+                output += `\n📊 SUMMARY\n`;
+                output += `==========\n`;
+                output += `✅ Passed: ${passedCount}\n`;
+                output += `❌ Failed: ${failedCount}\n`;
+                
+                fs.writeFileSync('MOBILE_FAILURES.txt', output);
+                console.log(output);
+                break;
+              } catch (err) {
+                console.error('Error parsing results:', err.message);
+              }
+            }
           }
           EOF
           
           node extract_failures.js
 
-      - name: Display failures
+      - name: Display Mobile failures
         if: always()
         working-directory: ./frontend
         run: |
-          if [ -f "TEST_FAILURES.txt" ]; then
-            echo "📄 Failed Tests Summary:"
-            cat TEST_FAILURES.txt
+          if [ -f "MOBILE_FAILURES.txt" ]; then
+            echo "📄 Mobile Chrome Test Failures:"
+            cat MOBILE_FAILURES.txt
           else
-            echo "✅ All tests passed or no failures to report"
+            echo "✅ All Mobile Chrome tests passed"
           fi
 
-      - name: Generate test summary
-        if: always()
-        working-directory: ./frontend
-        run: |
-          echo "🎯 TEST EXECUTION SUMMARY"
-          echo "========================"
-          echo "Stage 1: Chromium (Desktop Web) - ✅ Completed"
-          echo "Stage 2: Mobile Chrome (Android) - ✅ Completed"
-          echo ""
-          echo "📊 Detailed HTML reports available in artifacts"
-
-      - name: Upload test results
+      - name: Upload Mobile results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: mobile-report
           path: |
             frontend/playwright-report/
-            frontend/TEST_FAILURES.txt
+            frontend/MOBILE_FAILURES.txt
           retention-days: 7
 
       - name: Comment test results on PR
@@ -169,28 +276,32 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const testResultPath = './frontend/playwright-report/index.html';
-            const failuresPath = './frontend/TEST_FAILURES.txt';
             
             let message = '## 🧪 Frontend Test Results\n\n';
-            message += '### Test Execution:\n';
-            message += '- **Stage 1:** Chromium (Desktop Web) - Completed ✅\n';
-            message += '- **Stage 2:** Mobile Chrome (Android Pixel 5) - Completed ✅\n\n';
+            message += '### Pipeline Stages:\n';
+            message += '1. **STAGE 1:** Chromium (Desktop Web) ✅ Completed\n';
+            message += '2. **STAGE 2:** Mobile Chrome (Android Pixel 5) ✅ Completed\n\n';
             
-            if (fs.existsSync(failuresPath)) {
-              const failures = fs.readFileSync(failuresPath, 'utf8');
-              message += '### ❌ Failed Tests:\n```\n' + failures + '\n```\n\n';
-            }
+            const chromiumFailures = './frontend/CHROMIUM_FAILURES.txt';
+            const mobileFailures = './frontend/MOBILE_FAILURES.txt';
             
-            if (fs.existsSync(testResultPath)) {
-              message += '### 📊 Full Report:\n';
-              message += '[View detailed HTML report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n';
-              message += '**Artifacts available:**\n';
-              message += '- playwright-report (interactive HTML)\n';
-              message += '- TEST_FAILURES.txt (plain text summary)\n';
+            if (fs.existsSync(chromiumFailures)) {
+              const failures = fs.readFileSync(chromiumFailures, 'utf8');
+              message += '### ❌ Chromium Failures:\n```\n' + failures + '\n```\n\n';
             } else {
-              message += '⚠️ Test report not found. Check the "Run frontend tests" step for details.';
+              message += '### ✅ Chromium Stage: All tests passed!\n\n';
             }
+            
+            if (fs.existsSync(mobileFailures)) {
+              const failures = fs.readFileSync(mobileFailures, 'utf8');
+              message += '### ❌ Mobile Chrome Failures:\n```\n' + failures + '\n```\n\n';
+            } else {
+              message += '### ✅ Mobile Chrome Stage: All tests passed!\n\n';
+            }
+            
+            message += '### 📊 Artifacts:\n';
+            message += '- **chromium-report** (desktop web tests)\n';
+            message += '- **mobile-report** (responsive mobile tests)\n';
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
