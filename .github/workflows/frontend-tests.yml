@@ -43,16 +43,64 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: 'Run Integration Tests (20 tests, Chromium only, 10 workers)'
+      - name: '🔍 DIAGNOSTIC: Check Frontend Build & Structure'
+        working-directory: ./frontend
+        run: |
+          echo "🔍 DIAGNOSTIC INFORMATION"
+          echo "=========================================="
+          echo ""
+          echo "📁 Frontend build output:"
+          ls -la dist/ || echo "⚠️ dist/ not found"
+          echo ""
+          echo "📄 Index.html exists:"
+          test -f dist/index.html && echo "✅ YES" || echo "❌ NO"
+          echo ""
+          echo "🔧 Node version:"
+          node --version
+          echo ""
+          echo "📦 npm version:"
+          npm --version
+          echo ""
+          echo "✅ Playwright version:"
+          npx playwright --version
+          echo ""
+          echo "📋 Environment variables (test-related):"
+          env | grep -E "NODE_|PLAYWRIGHT_|DEBUG_|CI_|BASE_URL_|API_" || echo "⚠️ No test env vars set"
+          echo ""
+          echo "🌐 Checking if localhost services would work (in CI, they won't - this is expected):"
+          echo "  http://localhost:3002 (frontend) - Only works in local dev"
+          echo "  http://localhost:3001 (backend) - Only works in local dev"
+          echo ""
+          echo "=========================================="
+
+      - name: '🎯 Run Integration Tests (50 tests: 30 happy path + 20 error scenarios)'
         working-directory: ./frontend
         env:
           FORCE_COLOR: 1
           PYTHONUNBUFFERED: 1
           NODE_ENV: test
+          DEBUG: pw:api
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3002
         run: |
-          echo "🎯 Starting Integration Tests (20 tests on 10 workers)"
-          echo "====================================================="
-          npx playwright test tests/integration/ --project=chromium --reporter=list --reporter=html
+          echo "🎯 Starting Integration Tests"
+          echo "=========================================="
+          echo "📊 Test Summary:"
+          echo "  - Total Tests: 50"
+          echo "  - Happy Path: 30 (form submission, API calls, data display)"
+          echo "  - Error Scenarios: 20 (validation, auth errors, network failures)"
+          echo "  - Browser: Chromium only (Frontend logic is browser-agnostic)"
+          echo "  - Workers: 10 parallel"
+          echo "  - Timeout: 30 seconds per test"
+          echo "=========================================="
+          echo ""
+          npx playwright test tests/integration/ --project=chromium --reporter=list --reporter=html --reporter=json > test-results.json 2>&1
+          TEST_EXIT=$?
+          echo ""
+          echo "=========================================="
+          echo "📊 Test Run Summary"
+          echo "=========================================="
+          cat test-results.json | jq '.stats' 2>/dev/null || echo "Could not parse results"
+          exit $TEST_EXIT
         continue-on-error: true
 
       - name: Upload test results

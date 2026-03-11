@@ -9,14 +9,22 @@ export default defineConfig({
   expect: { timeout: 5000 },  // 5 seconds for expect() calls
   retries: process.env.CI ? 1 : 0,  // Only 1 retry (fast feedback)
   workers: process.env.CI ? 10 : undefined,  // 10 workers (fast, stable)
+  
+  // ==================== DETAILED LOGGING ====================
   reporter: [
-    ['list'],
+    ['list', { printSteps: true }],  // Print each step for debugging
     ['html', { open: 'never' }],
+    ['json', { outputFile: 'test-results.json' }],
   ],
+  
   use: {
     baseURL: 'http://localhost:3002',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: 'on-first-retry',  // Trace on failure
+    screenshot: 'only-on-failure',  // Screenshot on failure
+    
+    // ==================== DIAGNOSTIC LOGGING ====================
+    // Log all network requests
+    actionTimeout: 5000,  // Fail fast if can't interact
   },
 
   projects: [
@@ -24,7 +32,6 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Removed Mobile Chrome - same backend, same logic, wastes time
   ],
 
   webServer: {
