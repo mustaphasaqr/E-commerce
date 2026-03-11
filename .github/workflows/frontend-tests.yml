@@ -45,24 +45,47 @@ jobs:
 
       - name: 'STAGE 1: Run tests on Chromium (Desktop Web)'
         working-directory: ./frontend
-        run: npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000
+        env:
+          FORCE_COLOR: 1
+          PYTHONUNBUFFERED: 1
+          NODE_ENV: test
+        run: |
+          echo "🎯 Starting Chromium tests (156 tests total on 10 workers)"
+          echo "========================================================="
+          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --max-workers=10 -v
         continue-on-error: true
 
-      - name: Check Chromium results
+      - name: Display Chromium test progress
+        if: always()
         working-directory: ./frontend
         run: |
-          echo "✅ Chromium tests completed"
-          if [ -f "playwright-report/index.html" ]; then
-            echo "📊 HTML report generated"
+          echo "🎯 CHROMIUM TEST EXECUTION SUMMARY"
+          echo "=================================="
+          echo ""
+          echo "Total tests planned: 156"
+          echo "Browser: Chromium (Desktop Web)"
+          echo "Timeout per test: 15 seconds"
+          echo ""
+          echo "📊 Test Results Breakdown:"
+          if [ -f "test-results/results.json" ]; then
+            PASSED=$(grep -o '"status":"passed"' test-results/results.json | wc -l || echo 0)
+            FAILED=$(grep -o '"status":"failed"' test-results/results.json | wc -l || echo 0)
+            SKIPPED=$(grep -o '"status":"skipped"' test-results/results.json | wc -l || echo 0)
+            echo "  ✅ Passed: $PASSED"
+            echo "  ❌ Failed: $FAILED"
+            echo "  ⏭️  Skipped: $SKIPPED"
+          else
+            echo "  (Results processing...)"
           fi
+          echo ""
 
       - name: Extract failed tests with reasons
         if: always()
         working-directory: ./frontend
         run: |
-          cat > extract_failures.js << 'EOF'
-          const fs = require('fs');
-          const path = require('path');
+          cat > extract_failures.mjs << 'EOF'
+          import fs from 'fs';
+          import path from 'path';
 
           const reportPaths = [
             'json-report/results.json',
@@ -119,7 +142,7 @@ jobs:
           }
           EOF
           
-          node extract_failures.js
+          node extract_failures.mjs
 
       - name: Display Chromium failures
         if: always()
@@ -173,24 +196,47 @@ jobs:
 
       - name: 'STAGE 2: Run tests on Mobile Chrome (Android - Pixel 5)'
         working-directory: ./frontend
-        run: npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000
+        env:
+          FORCE_COLOR: 1
+          PYTHONUNBUFFERED: 1
+          NODE_ENV: test
+        run: |
+          echo "🎯 Starting Mobile Chrome tests (156 tests total on 10 workers)"
+          echo "==============================================================" 
+          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --max-workers=10 -v
         continue-on-error: true
 
-      - name: Check Mobile results
+      - name: Display Mobile test progress
+        if: always()
         working-directory: ./frontend
         run: |
-          echo "✅ Mobile Chrome tests completed"
-          if [ -f "playwright-report/index.html" ]; then
-            echo "📊 HTML report generated"
+          echo "🎯 MOBILE CHROME TEST EXECUTION SUMMARY"
+          echo "========================================"
+          echo ""
+          echo "Total tests planned: 156"
+          echo "Browser: Mobile Chrome (Android Pixel 5)"
+          echo "Timeout per test: 15 seconds"
+          echo ""
+          echo "📊 Test Results Breakdown:"
+          if [ -f "test-results/results.json" ]; then
+            PASSED=$(grep -o '"status":"passed"' test-results/results.json | wc -l || echo 0)
+            FAILED=$(grep -o '"status":"failed"' test-results/results.json | wc -l || echo 0)
+            SKIPPED=$(grep -o '"status":"skipped"' test-results/results.json | wc -l || echo 0)
+            echo "  ✅ Passed: $PASSED"
+            echo "  ❌ Failed: $FAILED"
+            echo "  ⏭️  Skipped: $SKIPPED"
+          else
+            echo "  (Results processing...)"
           fi
+          echo ""
 
       - name: Extract failed tests with reasons
         if: always()
         working-directory: ./frontend
         run: |
-          cat > extract_failures.js << 'EOF'
-          const fs = require('fs');
-          const path = require('path');
+          cat > extract_failures.mjs << 'EOF'
+          import fs from 'fs';
+          import path from 'path';
 
           const reportPaths = [
             'json-report/results.json',
@@ -247,7 +293,7 @@ jobs:
           }
           EOF
           
-          node extract_failures.js
+          node extract_failures.mjs
 
       - name: Display Mobile failures
         if: always()
