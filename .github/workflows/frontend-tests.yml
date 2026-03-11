@@ -84,22 +84,73 @@ jobs:
         run: |
           echo "🎯 Starting Integration Tests"
           echo "=========================================="
-          echo "📊 Test Summary:"
+          echo "📊 Test Configuration:"
           echo "  - Total Tests: 50"
           echo "  - Happy Path: 30 (form submission, API calls, data display)"
           echo "  - Error Scenarios: 20 (validation, auth errors, network failures)"
-          echo "  - Browser: Chromium only (Frontend logic is browser-agnostic)"
+          echo "  - Browser: Chromium only"
           echo "  - Workers: 10 parallel"
           echo "  - Timeout: 30 seconds per test"
           echo "=========================================="
           echo ""
-          npx playwright test tests/integration/ --project=chromium --reporter=list --reporter=html --reporter=json > test-results.json 2>&1
+          echo "🚀 Running tests with detailed output..."
+          echo ""
+          
+          # Run tests with verbose output AND save to JSON
+          npx playwright test tests/integration/ \
+            --project=chromium \
+            --reporter=list \
+            --reporter=html \
+            --reporter=json \
+            --reporter=junit \
+            2>&1 | tee test-output.log
+          
           TEST_EXIT=$?
+          
           echo ""
           echo "=========================================="
-          echo "📊 Test Run Summary"
+          echo "📊 TEST RESULTS SUMMARY"
           echo "=========================================="
-          cat test-results.json | jq '.stats' 2>/dev/null || echo "Could not parse results"
+          
+          # Show test results file if it exists
+          if [ -f "test-results.json" ]; then
+            echo "✅ Test results saved to: test-results.json"
+            cat test-results.json | jq '.stats // empty' 2>/dev/null && echo "" || true
+          fi
+          
+          # Count pass/fail from output
+          echo ""
+          echo "📋 Test Execution Details:"
+          PASSED=$(grep -c "✓" test-output.log || echo "0")
+          FAILED=$(grep -c "×" test-output.log || echo "0")
+          SKIPPED=$(grep -c "⊘" test-output.log || echo "0")
+          
+          echo "  ✅ Passed: $PASSED"
+          echo "  ❌ Failed: $FAILED"
+          echo "  ⊘ Skipped: $SKIPPED"
+          echo ""
+          
+          # Show first 20 lines of test output
+          echo "📝 Test Output (first 30 lines):"
+          echo "---"
+          head -n 30 test-output.log
+          echo "---"
+          echo ""
+          
+          # Show failed tests if any
+          if [ $FAILED -gt 0 ]; then
+            echo "❌ FAILED TESTS DETAILS:"
+            echo "---"
+            grep -A 5 "×" test-output.log | head -n 50 || echo "Could not extract failure details"
+            echo "---"
+            echo ""
+            echo "📌 Full output saved to: test-output.log"
+            echo "📌 HTML report available at: playwright-report/index.html"
+          fi
+          
+          echo "=========================================="
+          echo ""
+          
           exit $TEST_EXIT
         continue-on-error: true
 
@@ -108,6 +159,28 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: |
+            frontend/playwright-report/
+            frontend/test-output.log
+            frontend/test-results.json
+            frontend/junit.xml
           retention-days: 7
+
+      - name: '📊 Display Test Summary'
+        if: always()
+        working-directory: ./frontend
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "✅ TEST ARTIFACTS SAVED"
+          echo "=========================================="
+          echo ""
+          echo "📌 Available artifacts:"
+          echo "  - playwright-report/ (interactive HTML report)"
+          echo "  - test-output.log (full test output)"
+          echo "  - test-results.json (JSON format results)"
+          echo "  - junit.xml (JUnit format for CI integration)"
+          echo ""
+          echo "Download artifacts from GitHub Actions tab"
+          echo "=========================================="
 

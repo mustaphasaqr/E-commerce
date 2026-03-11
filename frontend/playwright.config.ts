@@ -13,8 +13,9 @@ export default defineConfig({
   // ==================== DETAILED LOGGING ====================
   reporter: [
     ['list', { printSteps: true }],  // Print each step for debugging
-    ['html', { open: 'never' }],
-    ['json', { outputFile: 'test-results.json' }],
+    ['html', { open: 'never' }],     // Interactive report
+    ['json', { outputFile: 'test-results.json' }],  // JSON results
+    ['junit', { outputFile: 'junit.xml' }],  // JUnit for CI systems
   ],
   
   use: {
