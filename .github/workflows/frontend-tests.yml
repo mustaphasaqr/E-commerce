@@ -52,7 +52,7 @@ jobs:
         run: |
           echo "🎯 Starting Chromium tests (156 tests total on 10 workers)"
           echo "========================================================="
-          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10 -v
+          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10
         continue-on-error: true
 
       - name: Display Chromium test progress
@@ -212,7 +212,7 @@ jobs:
         run: |
           echo "🎯 Starting Mobile Chrome tests (156 tests total on 10 workers)"
           echo "==============================================================" 
-          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10 -v
+          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10
         continue-on-error: true
 
       - name: Display Mobile test progress
