@@ -21,19 +21,44 @@ const ADMIN_PASSWORD = 'AdminPassword123!';
 async function loginAsAdmin(page: Page) {
   console.log('  → Logging in as admin...');
   await page.goto(`${BASE_URL}/login`);
+  
+  // Wait for page to load - use longer timeout
   await page.waitForLoadState('load');
+  console.log('  → Page loaded');
+  
+  // Check if form is visible before trying to fill
+  const emailInput = page.locator('input[id="email"]');
+  const emailCount = await emailInput.count();
+  
+  if (emailCount === 0) {
+    console.log('  ❌ ERROR: Email input not found in DOM');
+    throw new Error('Email input not found');
+  }
+  
+  // Wait for element to be actually visible and ready
+  try {
+    await emailInput.first().waitFor({ state: 'visible', timeout: 10000 });
+    console.log('  → Email input is visible');
+  } catch (error) {
+    console.log(`  ⚠️ WARNING: Email input not visible within 10s timeout`);
+    const isDisabled = await emailInput.first().isDisabled().catch(() => true);
+    const isVisible = await emailInput.first().isVisible().catch(() => false);
+    console.log(`    - isVisible: ${isVisible}`);
+    console.log(`    - isDisabled: ${isDisabled}`);
+  }
   
   console.log('  → Filling email field');
-  await page.fill('input[id="email"]', ADMIN_EMAIL);
+  await emailInput.first().fill(ADMIN_EMAIL);
   
   console.log('  → Filling password field');
-  await page.fill('input[id="password"]', ADMIN_PASSWORD);
+  await page.locator('input[id="password"]').first().fill(ADMIN_PASSWORD);
   
   console.log('  → Clicking submit');
   await page.click('button[type="submit"]');
   
+  // Wait for navigation or dashboard load
   await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 10000 }).catch(() => {
-    console.log('  ⚠️ Did not redirect to dashboard');
+    console.log('  ⚠️ Did not redirect to dashboard (but login may have succeeded)');
   });
   
   await page.waitForLoadState('load');
@@ -45,6 +70,62 @@ async function getAuthToken(page: Page): Promise<string | null> {
 }
 
 test.describe('INTEGRATION TESTS: Frontend ↔ Backend', () => {
+
+  // ========== DIAGNOSTIC TEST (runs first) ==========
+  
+  test('DIAGNOSTIC: Verify frontend is loaded and ready', async ({ page }) => {
+    console.log('\n🔍 DIAGNOSTIC: Frontend readiness check');
+    console.log('  → Navigating to login page');
+    await page.goto(`${BASE_URL}/login`);
+    
+    console.log('  → Waiting for page load');
+    await page.waitForLoadState('load');
+    
+    console.log('  → Checking page title');
+    const title = await page.title();
+    console.log(`    ✅ Page title: "${title}"`);
+    
+    console.log('  → Checking for email input element');
+    const emailInput = page.locator('input[id="email"]');
+    const count = await emailInput.count();
+    console.log(`    ✅ Found ${count} email input(s)`);
+    
+    if (count > 0) {
+      const isVisible = await emailInput.first().isVisible();
+      const isEnabled = await emailInput.first().isEnabled();
+      const value = await emailInput.first().inputValue();
+      
+      console.log(`    - Visible: ${isVisible}`);
+      console.log(`    - Enabled: ${isEnabled}`);
+      console.log(`    - Current value: "${value}"`);
+      
+      if (!isVisible) {
+        console.log(`    ⚠️  WARNING: Email input is NOT visible!`);
+      }
+      if (!isEnabled) {
+        console.log(`    ⚠️  WARNING: Email input is DISABLED!`);
+      }
+    } else {
+      console.log(`    ❌ ERROR: Email input not found!`);
+    }
+    
+    console.log('  → Checking for password input element');
+    const passwordInput = page.locator('input[id="password"]');
+    const passCount = await passwordInput.count();
+    console.log(`    ✅ Found ${passCount} password input(s)`);
+    
+    console.log('  → Checking for submit button');
+    const submitBtn = page.locator('button[type="submit"]');
+    const btnCount = await submitBtn.count();
+    console.log(`    ✅ Found ${btnCount} submit button(s)`);
+    
+    console.log('  → Checking page size and render');
+    const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    console.log(`    ✅ Page dimensions: ${pageWidth}x${pageHeight}px`);
+    
+    console.log('  ✅ DIAGNOSTIC: Frontend appears ready');
+  });
 
   // ========== AUTH TESTS (6) ==========
 

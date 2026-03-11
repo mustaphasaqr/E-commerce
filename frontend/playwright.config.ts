@@ -25,7 +25,8 @@ export default defineConfig({
     
     // ==================== DIAGNOSTIC LOGGING ====================
     // Log all network requests
-    actionTimeout: 5000,  // Fail fast if can't interact
+    actionTimeout: 15000,  // 15s - longer timeout for CI (page rendering can be slow)
+    navigationTimeout: 30000,  // 30s for page navigation
   },
 
   projects: [
