@@ -1,31 +1,32 @@
 /**
  * Authentication Types
  * Models for auth domain (/api/v1/auth/*)
+ * Matches backend LoginResponse, RegisterResponse DTOs
  */
 
 export interface User {
   id: string;
   username: string;
   email: string;
-  role: UserRole;
-  status: UserStatus;
+  role: 'CUSTOMER' | 'ADMIN' | 'MODERATOR' | 'SUPPORT';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED';
   emailVerified: boolean;
+  marketingConsent?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export type UserRole = 'CUSTOMER' | 'EMPLOYEE' | 'OWNER' | 'ADMIN';
-export type UserStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
-
 export interface LoginRequest {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface LoginResponse {
   user: User;
-  token: string;
+  accessToken: string;
   refreshToken: string;
+  sessionId: string;
   expiresIn: number;
 }
 
@@ -34,6 +35,14 @@ export interface RegisterRequest {
   email: string;
   password: string;
   termsAccepted: boolean;
+}
+
+export interface RegisterResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  sessionId: string;
+  expiresIn: number;
 }
 
 export interface RefreshTokenRequest {
@@ -53,11 +62,10 @@ export interface PasswordResetConfirmRequest {
   newPassword: string;
 }
 
-export interface MFASetupRequest {
-  userId: string;
+export interface EmailVerificationRequest {
+  email: string;
 }
 
-export interface MFAVerifyRequest {
-  code: string;
+export interface EmailVerificationVerifyRequest {
   token: string;
 }

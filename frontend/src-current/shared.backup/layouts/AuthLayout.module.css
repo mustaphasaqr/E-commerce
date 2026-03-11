@@ -1,0 +1,79 @@
+/**
+ * AuthLayout Styles
+ * Curved wave design with welcome panel + form card
+ */
+
+.layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: white;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.layout::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100vh;
+  background: linear-gradient(135deg, #26c281 0%, #25b574 100%);
+  border-radius: 0 200px 200px 0;
+  z-index: 0;
+}
+
+.layout::after {
+  content: 'Welcome';
+  position: fixed;
+  left: 0;
+  top: 50%;
+  width: 50%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -1px;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .layout::before {
+    width: 100%;
+    height: 40%;
+    border-radius: 0 0 200px 200px;
+  }
+
+  .layout::after {
+    width: 100%;
+    height: 40%;
+    font-size: 36px;
+  }
+
+  .container {
+    flex-direction: column;
+    justify-content: center;
+    height: auto;
+    min-height: 100vh;
+    padding: 80px 20px 40px;
+  }
+}

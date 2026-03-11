@@ -1,0 +1,247 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Flowy Cart" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "All" [ref=e9] [cursor=pointer]:
+              - /url: /catalog/All
+          - listitem [ref=e10]:
+            - link "Men" [ref=e11] [cursor=pointer]:
+              - /url: /catalog/Men
+          - listitem [ref=e12]:
+            - link "Women" [ref=e13] [cursor=pointer]:
+              - /url: /catalog/Women
+          - listitem [ref=e14]:
+            - link "Electronics" [ref=e15] [cursor=pointer]:
+              - /url: /catalog/Electronics
+          - listitem [ref=e16]:
+            - link "Jewelery" [ref=e17] [cursor=pointer]:
+              - /url: /catalog/Jewelery
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link [ref=e20] [cursor=pointer]:
+              - /url: /
+              - img [ref=e21]
+          - listitem [ref=e23]:
+            - img [ref=e26]
+          - listitem [ref=e28]:
+            - link [ref=e29] [cursor=pointer]:
+              - /url: /login
+              - img [ref=e30]
+  - main [ref=e32]:
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - heading "unleash your Style" [level=1] [ref=e37]
+        - heading "find your Flow." [level=1] [ref=e38]
+      - link "Shop Now" [ref=e40] [cursor=pointer]:
+        - /url: /catalog/All
+      - generic [ref=e42]:
+        - img [ref=e44]
+        - img [ref=e46]
+        - img [ref=e48]
+        - img [ref=e50]
+    - generic [ref=e57]:
+      - paragraph [ref=e58]: Quick View
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - radio "All" [ref=e62]
+            - generic [ref=e63] [cursor=pointer]: All
+          - generic [ref=e64]:
+            - radio "Men" [ref=e65]
+            - generic [ref=e66] [cursor=pointer]: Men
+          - generic [ref=e67]:
+            - radio "Women" [ref=e68]
+            - generic [ref=e69] [cursor=pointer]: Women
+          - generic [ref=e70]:
+            - radio "Electronics" [ref=e71]
+            - generic [ref=e72] [cursor=pointer]: Electronics
+          - generic [ref=e73]:
+            - radio "Jewelery" [ref=e74]
+            - generic [ref=e75] [cursor=pointer]: Jewelery
+        - link "View More" [ref=e76] [cursor=pointer]:
+          - /url: /catalog/All
+          - generic [ref=e77]: View More
+          - img [ref=e78]
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - link "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops" [ref=e85] [cursor=pointer]:
+            - /url: /products/1
+            - img "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops" [ref=e86]
+          - generic [ref=e87]:
+            - link "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops 109.95$" [ref=e88] [cursor=pointer]:
+              - /url: /products/1
+              - generic [ref=e89]:
+                - generic [ref=e91]: Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops
+                - generic [ref=e92]: 109.95$
+            - button [ref=e94]:
+              - img [ref=e95]
+        - generic [ref=e97]:
+          - link "Mens Casual Premium Slim Fit T-Shirts" [ref=e100] [cursor=pointer]:
+            - /url: /products/2
+            - img "Mens Casual Premium Slim Fit T-Shirts" [ref=e101]
+          - generic [ref=e102]:
+            - link "Mens Casual Premium Slim Fit T-Shirts 22.3$" [ref=e103] [cursor=pointer]:
+              - /url: /products/2
+              - generic [ref=e104]:
+                - generic [ref=e106]: Mens Casual Premium Slim Fit T-Shirts
+                - generic [ref=e107]: 22.3$
+            - button [ref=e109]:
+              - img [ref=e110]
+        - generic [ref=e112]:
+          - link "Mens Cotton Jacket" [ref=e115] [cursor=pointer]:
+            - /url: /products/3
+            - img "Mens Cotton Jacket" [ref=e116]
+          - generic [ref=e117]:
+            - link "Mens Cotton Jacket 55.99$" [ref=e118] [cursor=pointer]:
+              - /url: /products/3
+              - generic [ref=e119]:
+                - generic [ref=e121]: Mens Cotton Jacket
+                - generic [ref=e122]: 55.99$
+            - button [ref=e124]:
+              - img [ref=e125]
+        - generic [ref=e127]:
+          - link "Mens Casual Slim Fit" [ref=e130] [cursor=pointer]:
+            - /url: /products/4
+            - img "Mens Casual Slim Fit" [ref=e131]
+          - generic [ref=e132]:
+            - link "Mens Casual Slim Fit 15.99$" [ref=e133] [cursor=pointer]:
+              - /url: /products/4
+              - generic [ref=e134]:
+                - generic [ref=e136]: Mens Casual Slim Fit
+                - generic [ref=e137]: 15.99$
+            - button [ref=e139]:
+              - img [ref=e140]
+        - generic [ref=e142]:
+          - link "John Hardy Women's Legends Naga Gold & Silver Dragon Station Chain Bracelet" [ref=e145] [cursor=pointer]:
+            - /url: /products/5
+            - img "John Hardy Women's Legends Naga Gold & Silver Dragon Station Chain Bracelet" [ref=e146]
+          - generic [ref=e147]:
+            - link "John Hardy Women's Legends Naga Gold & Silver Dragon Station Chain Bracelet 695$" [ref=e148] [cursor=pointer]:
+              - /url: /products/5
+              - generic [ref=e149]:
+                - generic [ref=e151]: John Hardy Women's Legends Naga Gold & Silver Dragon Station Chain Bracelet
+                - generic [ref=e152]: 695$
+            - button [ref=e154]:
+              - img [ref=e155]
+        - generic [ref=e157]:
+          - link "Solid Gold Petite Micropave" [ref=e160] [cursor=pointer]:
+            - /url: /products/6
+            - img "Solid Gold Petite Micropave" [ref=e161]
+          - generic [ref=e162]:
+            - link "Solid Gold Petite Micropave 168$" [ref=e163] [cursor=pointer]:
+              - /url: /products/6
+              - generic [ref=e164]:
+                - generic [ref=e166]: Solid Gold Petite Micropave
+                - generic [ref=e167]: 168$
+            - button [ref=e169]:
+              - img [ref=e170]
+        - generic [ref=e172]:
+          - link "White Gold Plated Princess" [ref=e175] [cursor=pointer]:
+            - /url: /products/7
+            - img "White Gold Plated Princess" [ref=e176]
+          - generic [ref=e177]:
+            - link "White Gold Plated Princess 9.99$" [ref=e178] [cursor=pointer]:
+              - /url: /products/7
+              - generic [ref=e179]:
+                - generic [ref=e181]: White Gold Plated Princess
+                - generic [ref=e182]: 9.99$
+            - button [ref=e184]:
+              - img [ref=e185]
+        - generic [ref=e187]:
+          - link "Pierced Owl Rose Gold Plated Stainless Steel Double" [ref=e190] [cursor=pointer]:
+            - /url: /products/8
+            - img "Pierced Owl Rose Gold Plated Stainless Steel Double" [ref=e191]
+          - generic [ref=e192]:
+            - link "Pierced Owl Rose Gold Plated Stainless Steel Double 10.99$" [ref=e193] [cursor=pointer]:
+              - /url: /products/8
+              - generic [ref=e194]:
+                - generic [ref=e196]: Pierced Owl Rose Gold Plated Stainless Steel Double
+                - generic [ref=e197]: 10.99$
+            - button [ref=e199]:
+              - img [ref=e200]
+    - generic [ref=e203]:
+      - paragraph [ref=e204]: Collections
+      - generic [ref=e206]:
+        - link "Men" [ref=e207] [cursor=pointer]:
+          - /url: /catalog/Men
+          - img
+          - link [ref=e209]:
+            - /url: /catalog/Men
+            - img [ref=e210]
+          - generic [ref=e213]: Men
+        - link "Women" [ref=e214] [cursor=pointer]:
+          - /url: /catalog/Women
+          - img [ref=e215]
+          - link [ref=e217]:
+            - /url: /catalog/Women
+            - img [ref=e218]
+          - generic [ref=e221]: Women
+        - link "Electronics" [ref=e222] [cursor=pointer]:
+          - /url: /catalog/Electronics
+          - img
+          - link [ref=e224]:
+            - /url: /catalog/Electronics
+            - img [ref=e225]
+          - generic [ref=e228]: Electronics
+        - link "Jewelery" [ref=e229] [cursor=pointer]:
+          - /url: /catalog/Jewelery
+          - img
+          - link [ref=e231]:
+            - /url: /catalog/Jewelery
+            - img [ref=e232]
+          - generic [ref=e235]: Jewelery
+        - link "All" [ref=e236] [cursor=pointer]:
+          - /url: /catalog/All
+          - img [ref=e237]
+          - link [ref=e239]:
+            - /url: /catalog/All
+            - img [ref=e240]
+          - generic [ref=e243]: All
+  - contentinfo [ref=e244]:
+    - generic [ref=e245]:
+      - generic [ref=e247]:
+        - generic [ref=e248]: Flowy Cart
+        - generic [ref=e249]: Unleash your fashion. Find your flow.
+        - generic [ref=e251]:
+          - link [ref=e252] [cursor=pointer]:
+            - /url: https://www.instagram.com
+            - img [ref=e253]
+          - link [ref=e255] [cursor=pointer]:
+            - /url: https://tiktok.com
+            - img [ref=e256]
+          - link [ref=e258] [cursor=pointer]:
+            - /url: https://twitter.com
+            - img [ref=e259]
+          - link [ref=e261] [cursor=pointer]:
+            - /url: https://facebook.com
+            - img [ref=e262]
+          - link [ref=e264] [cursor=pointer]:
+            - /url: https://youtube.com
+            - img [ref=e265]
+        - generic [ref=e267]: All rights reserved.©️ 2024 Flowy Cart
+      - generic [ref=e269]:
+        - heading "Help" [level=4] [ref=e270]
+        - list [ref=e271]:
+          - listitem [ref=e272]:
+            - link "Help Center" [ref=e273] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e274]:
+            - link "Contact Us" [ref=e275] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e276]:
+            - link "Shipping Info" [ref=e277] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e278]:
+            - link "Track My Order" [ref=e279] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e280]:
+            - link "Returns & Exchanges" [ref=e281] [cursor=pointer]:
+              - /url: /
+```

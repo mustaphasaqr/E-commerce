@@ -1,0 +1,197 @@
+@import '../../variables.scss';
+
+.section {
+  overflow: hidden !important;
+  padding: 2rem 0;
+
+  @media (min-width: 768px) {
+    padding: 3rem 0;
+  }
+
+  .resetContainer {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+
+    @media (min-width: 768px) {
+      padding: 3rem 2rem;
+    }
+
+    .resetCard {
+      background-color: $back-c-primary;
+      border: 1px solid $border-c-var;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+
+      @media (min-width: 768px) {
+        padding: 3rem;
+      }
+
+      h1 {
+        font-family: $font-f-title;
+        font-size: 28px;
+        font-weight: $font-w-700;
+        color: $c-title;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .description {
+        font-family: $font-f-primary;
+        font-size: 14px;
+        color: $c-var;
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-family: $font-f-primary;
+        font-size: 14px;
+
+        &.alertError {
+          background-color: #fee;
+          border-left: 4px solid #f44;
+          color: #c33;
+        }
+
+        &.alertSuccess {
+          background-color: #efe;
+          border-left: 4px solid #4f4;
+          color: #3a3;
+        }
+      }
+
+      .resetForm {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .formGroup {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+
+          label {
+            font-family: $font-f-title;
+            font-size: 14px;
+            font-weight: $font-w-700;
+            color: $c-var;
+          }
+
+          input {
+            border: 1px solid $border-c-var;
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-family: $font-f-primary;
+            font-size: 14px;
+            color: $c-var;
+            transition: all 0.3s ease;
+
+            &:focus {
+              outline: none;
+              border-color: $c-title;
+              box-shadow: 0 0 0 3px rgba(255, 90, 30, 0.1);
+            }
+
+            &:disabled {
+              background-color: $border-c-var;
+              cursor: not-allowed;
+            }
+          }
+        }
+
+        button {
+          border: none;
+          display: flex;
+          justify-content: center;
+          font-size: 12px;
+          font-family: $font-f-title;
+          font-weight: $font-w-400;
+          background-color: #ffba00;
+          color: $c-primary;
+          line-height: 1.5;
+          border-radius: 16px;
+          padding: 0.8rem 2rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          width: 100%;
+
+          &:hover:not(:disabled),
+          &:active:not(:disabled) {
+            font-weight: $font-w-700;
+            transform: translateY(-2px);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+
+          @media (min-width: 478px) {
+            font-size: 16px;
+          }
+        }
+      }
+
+      .formNote {
+        text-align: center;
+        font-family: $font-f-primary;
+        font-size: 14px;
+        color: $c-var;
+        margin-top: 1rem;
+
+        a {
+          color: $c-title;
+          text-decoration: none;
+          font-weight: $font-w-700;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .securityInfo {
+      background-color: rgba(255, 90, 30, 0.05);
+      border: 1px solid rgba(255, 90, 30, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+
+      h3 {
+        font-family: $font-f-title;
+        font-size: 16px;
+        font-weight: $font-w-700;
+        color: $c-title;
+        margin-bottom: 1rem;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+          font-family: $font-f-primary;
+          font-size: 14px;
+          color: $c-var;
+          padding: 0.5rem 0;
+          padding-left: 1.5rem;
+          position: relative;
+
+          &:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: $c-title;
+            font-weight: $font-w-700;
+          }
+        }
+      }
+    }
+  }
+}

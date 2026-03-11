@@ -1,0 +1,114 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Flowy Cart" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "All" [ref=e9] [cursor=pointer]:
+              - /url: /catalog/All
+          - listitem [ref=e10]:
+            - link "Men" [ref=e11] [cursor=pointer]:
+              - /url: /catalog/Men
+          - listitem [ref=e12]:
+            - link "Women" [ref=e13] [cursor=pointer]:
+              - /url: /catalog/Women
+          - listitem [ref=e14]:
+            - link "Electronics" [ref=e15] [cursor=pointer]:
+              - /url: /catalog/Electronics
+          - listitem [ref=e16]:
+            - link "Jewelery" [ref=e17] [cursor=pointer]:
+              - /url: /catalog/Jewelery
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link [ref=e20] [cursor=pointer]:
+              - /url: /
+              - img [ref=e21]
+          - listitem [ref=e23]:
+            - img [ref=e26]
+          - listitem [ref=e28]:
+            - link [ref=e29] [cursor=pointer]:
+              - /url: /login
+              - img [ref=e30]
+  - main [ref=e32]:
+    - generic [ref=e34]:
+      - heading "User Management" [level=1] [ref=e35]
+      - generic [ref=e36]:
+        - generic [ref=e38]:
+          - heading "Search Users" [level=3] [ref=e39]
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: Email
+              - textbox "Email" [disabled] [ref=e43]:
+                - /placeholder: Search by email...
+            - generic [ref=e44]:
+              - generic [ref=e45]: Username
+              - textbox "Username" [disabled] [ref=e46]:
+                - /placeholder: Search by username...
+            - generic [ref=e47]:
+              - generic [ref=e48]: Status
+              - combobox "Status" [disabled] [ref=e49]:
+                - option "All Statuses" [selected]
+                - option "Active"
+                - option "Inactive"
+                - option "Blocked"
+            - generic [ref=e50]:
+              - generic [ref=e51]: Role
+              - combobox "Role" [disabled] [ref=e52]:
+                - option "All Roles" [selected]
+                - option "User"
+                - option "Admin"
+                - option "Owner"
+          - generic [ref=e53]:
+            - button "Searching..." [disabled] [ref=e54]
+            - button "Reset" [disabled] [ref=e55]
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - heading "Users" [level=2] [ref=e58]
+            - generic [ref=e59]: "Total: 0"
+          - generic [ref=e60]: Loading users...
+  - contentinfo [ref=e61]:
+    - generic [ref=e62]:
+      - generic [ref=e64]:
+        - generic [ref=e65]: Flowy Cart
+        - generic [ref=e66]: Unleash your fashion. Find your flow.
+        - generic [ref=e68]:
+          - link [ref=e69] [cursor=pointer]:
+            - /url: https://www.instagram.com
+            - img [ref=e70]
+          - link [ref=e72] [cursor=pointer]:
+            - /url: https://tiktok.com
+            - img [ref=e73]
+          - link [ref=e75] [cursor=pointer]:
+            - /url: https://twitter.com
+            - img [ref=e76]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: https://facebook.com
+            - img [ref=e79]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: https://youtube.com
+            - img [ref=e82]
+        - generic [ref=e84]: All rights reserved.©️ 2024 Flowy Cart
+      - generic [ref=e86]:
+        - heading "Help" [level=4] [ref=e87]
+        - list [ref=e88]:
+          - listitem [ref=e89]:
+            - link "Help Center" [ref=e90] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e91]:
+            - link "Contact Us" [ref=e92] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e93]:
+            - link "Shipping Info" [ref=e94] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e95]:
+            - link "Track My Order" [ref=e96] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e97]:
+            - link "Returns & Exchanges" [ref=e98] [cursor=pointer]:
+              - /url: /
+```

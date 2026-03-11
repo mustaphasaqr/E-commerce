@@ -1,0 +1,98 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Flowy Cart" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "All" [ref=e9] [cursor=pointer]:
+              - /url: /catalog/All
+          - listitem [ref=e10]:
+            - link "Men" [ref=e11] [cursor=pointer]:
+              - /url: /catalog/Men
+          - listitem [ref=e12]:
+            - link "Women" [ref=e13] [cursor=pointer]:
+              - /url: /catalog/Women
+          - listitem [ref=e14]:
+            - link "Electronics" [ref=e15] [cursor=pointer]:
+              - /url: /catalog/Electronics
+          - listitem [ref=e16]:
+            - link "Jewelery" [ref=e17] [cursor=pointer]:
+              - /url: /catalog/Jewelery
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link [ref=e20] [cursor=pointer]:
+              - /url: /
+              - img [ref=e21]
+          - listitem [ref=e23]:
+            - img [ref=e26]
+          - listitem [ref=e28]:
+            - link [ref=e29] [cursor=pointer]:
+              - /url: /login
+              - img [ref=e30]
+  - main [ref=e32]:
+    - generic [ref=e35]:
+      - heading "Login" [level=2] [ref=e36]
+      - form "Login form" [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: Email Address
+          - textbox "Email Address" [active] [ref=e40]:
+            - /placeholder: Email address
+        - generic [ref=e41]:
+          - generic [ref=e42]: Password
+          - textbox "Password" [ref=e43]
+        - generic [ref=e45] [cursor=pointer]:
+          - checkbox "Remember me on this device" [ref=e46]
+          - generic [ref=e47]: Remember me
+        - button "Sign In" [disabled] [ref=e48] [cursor=pointer]
+        - link "Forgot password?" [ref=e50] [cursor=pointer]:
+          - /url: /forgot-password
+      - generic [ref=e51]:
+        - text: Don't have an account?
+        - link "Sign up here" [ref=e52] [cursor=pointer]:
+          - /url: /register
+  - contentinfo [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e56]:
+        - generic [ref=e57]: Flowy Cart
+        - generic [ref=e58]: Unleash your fashion. Find your flow.
+        - generic [ref=e60]:
+          - link [ref=e61] [cursor=pointer]:
+            - /url: https://www.instagram.com
+            - img [ref=e62]
+          - link [ref=e64] [cursor=pointer]:
+            - /url: https://tiktok.com
+            - img [ref=e65]
+          - link [ref=e67] [cursor=pointer]:
+            - /url: https://twitter.com
+            - img [ref=e68]
+          - link [ref=e70] [cursor=pointer]:
+            - /url: https://facebook.com
+            - img [ref=e71]
+          - link [ref=e73] [cursor=pointer]:
+            - /url: https://youtube.com
+            - img [ref=e74]
+        - generic [ref=e76]: All rights reserved.©️ 2024 Flowy Cart
+      - generic [ref=e78]:
+        - heading "Help" [level=4] [ref=e79]
+        - list [ref=e80]:
+          - listitem [ref=e81]:
+            - link "Help Center" [ref=e82] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e83]:
+            - link "Contact Us" [ref=e84] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e85]:
+            - link "Shipping Info" [ref=e86] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e87]:
+            - link "Track My Order" [ref=e88] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e89]:
+            - link "Returns & Exchanges" [ref=e90] [cursor=pointer]:
+              - /url: /
+```

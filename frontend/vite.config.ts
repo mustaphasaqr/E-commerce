@@ -18,12 +18,13 @@ export default defineConfig({
       '@admin': path.resolve(__dirname, './src/admin'),
       '@observability': path.resolve(__dirname, './src/observability'),
       '@layout': path.resolve(__dirname, './src/layout'),
+      '@router': path.resolve(__dirname, './src/router'),
       '@store': path.resolve(__dirname, './src/store'),
     },
   },
 
   server: {
-    port: 3001,
+    port: 3002,
     open: true,
     proxy: {
       '/api': {

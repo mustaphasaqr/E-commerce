@@ -1,0 +1,172 @@
+/**
+ * Auth Pages Shared Styles
+ * FlowCart-inspired light theme with purple/orange accents
+ */
+
+/* Color Variables */
+:root {
+  --c-primary: #000;
+  --c-secondary: #fff;
+  --c-title: #ff5a1e;
+  --c-accent: #8c52ff;
+  --c-text: #3d3d3d;
+  --c-light-text: rgb(183, 177, 177);
+  --c-button: #ffba00;
+  --c-button-hover: #000;
+  --back-gradient: linear-gradient(0deg, #ffffff, #fee9f7);
+}
+
+.section {
+  overflow: hidden;
+  min-height: 100vh;
+  background: linear-gradient(0deg, #ffffff, #fee9f7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 450px;
+  padding: 2rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginContainer {
+  width: 100%;
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.loginContainer h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--c-text);
+  text-align: center;
+  margin-bottom: 2rem;
+  font-family: "Poppins", sans-serif;
+}
+
+.signupLink {
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--c-light-text);
+  margin-top: 1.5rem;
+  font-family: "Nunito", sans-serif;
+}
+
+.signupLink a {
+  color: var(--c-title);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.signupLink a:hover {
+  color: var(--c-button);
+  text-decoration: underline;
+}
+
+.infoBox {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 90, 30, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid var(--c-title);
+  text-align: center;
+}
+
+.infoTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--c-title);
+  margin-bottom: 0.8rem;
+  font-family: "Poppins", sans-serif;
+}
+
+.infoText {
+  font-size: 1rem;
+  color: var(--c-text);
+  margin: 0.5rem 0;
+  font-family: "Nunito", sans-serif;
+}
+
+.infoText code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-weight: 600;
+  color: var(--c-title);
+}
+
+.errorBox {
+  padding: 1.2rem 1.6rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  text-align: center;
+  margin-bottom: 1.6rem;
+  font-size: 1.3rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+.errorBox p {
+  margin: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (min-width: 496px) {
+  .section {
+    padding: 4rem 2rem;
+  }
+
+  .loginContainer {
+    padding: 4rem 3rem;
+  }
+
+  .loginContainer h2 {
+    font-size: 2.4rem;
+    margin-bottom: 2.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .loginContainer {
+    padding: 2rem 1.5rem;
+    border-radius: 12px;
+  }
+
+  .loginContainer h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .signupLink {
+    font-size: 1.2rem;
+    margin-top: 1rem;
+  }
+
+  .infoBox {
+    display: none;
+  }
+}

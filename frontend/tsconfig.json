@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
-    "types": ["node", "vitest/globals"],
+    "types": ["node"],
 
     /* Path aliases - For clean imports */
     "baseUrl": ".",
@@ -36,7 +36,8 @@
       "@admin/*": ["src/admin/*"],
       "@observability/*": ["src/observability/*"],
       "@layout/*": ["src/layout/*"],
-      "@store/*": ["src/store/*"]
+      "@router/*": ["src/router/*"],
+      "@store/*": ["src/app/*"]
     }
   },
   "include": ["src"],

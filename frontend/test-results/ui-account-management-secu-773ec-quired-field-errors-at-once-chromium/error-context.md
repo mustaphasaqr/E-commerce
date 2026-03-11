@@ -1,0 +1,112 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Flowy Cart" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "All" [ref=e9] [cursor=pointer]:
+              - /url: /catalog/All
+          - listitem [ref=e10]:
+            - link "Men" [ref=e11] [cursor=pointer]:
+              - /url: /catalog/Men
+          - listitem [ref=e12]:
+            - link "Women" [ref=e13] [cursor=pointer]:
+              - /url: /catalog/Women
+          - listitem [ref=e14]:
+            - link "Electronics" [ref=e15] [cursor=pointer]:
+              - /url: /catalog/Electronics
+          - listitem [ref=e16]:
+            - link "Jewelery" [ref=e17] [cursor=pointer]:
+              - /url: /catalog/Jewelery
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link [ref=e20] [cursor=pointer]:
+              - /url: /
+              - img [ref=e21]
+          - listitem [ref=e23]:
+            - img [ref=e26]
+          - listitem [ref=e28]:
+            - link [ref=e29] [cursor=pointer]:
+              - /url: /login
+              - img [ref=e30]
+  - main [ref=e32]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - heading "Create Account" [level=1] [ref=e37]
+          - paragraph [ref=e38]: Join us and start shopping today
+        - form "Registration form" [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: Username *
+            - textbox "Username *" [ref=e44]:
+              - /placeholder: Choose a username
+          - generic [ref=e45]:
+            - generic [ref=e46]: Email Address *
+            - textbox "Email Address *" [ref=e49]:
+              - /placeholder: Enter your email
+          - generic [ref=e50]:
+            - generic [ref=e51]: Password *
+            - textbox "Password *" [ref=e54]:
+              - /placeholder: Create a strong password
+          - generic [ref=e56] [cursor=pointer]:
+            - checkbox "I accept the terms and conditions" [ref=e57]
+            - generic [ref=e58]: I accept the terms and conditions *
+          - button "Create Account" [ref=e59] [cursor=pointer]:
+            - generic [ref=e60]: Create Account
+        - generic [ref=e61]:
+          - text: Already have an account?
+          - link "Sign in here" [ref=e62] [cursor=pointer]:
+            - /url: /login
+      - generic [ref=e63]:
+        - heading "What you'll get" [level=3] [ref=e64]
+        - list [ref=e65]:
+          - listitem [ref=e66]: ✓ Express checkout with saved addresses
+          - listitem [ref=e67]: ✓ Order history and tracking
+          - listitem [ref=e68]: ✓ Personalized recommendations
+          - listitem [ref=e69]: ✓ Exclusive member deals
+  - contentinfo [ref=e70]:
+    - generic [ref=e71]:
+      - generic [ref=e73]:
+        - generic [ref=e74]: Flowy Cart
+        - generic [ref=e75]: Unleash your fashion. Find your flow.
+        - generic [ref=e77]:
+          - link [ref=e78] [cursor=pointer]:
+            - /url: https://www.instagram.com
+            - img [ref=e79]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: https://tiktok.com
+            - img [ref=e82]
+          - link [ref=e84] [cursor=pointer]:
+            - /url: https://twitter.com
+            - img [ref=e85]
+          - link [ref=e87] [cursor=pointer]:
+            - /url: https://facebook.com
+            - img [ref=e88]
+          - link [ref=e90] [cursor=pointer]:
+            - /url: https://youtube.com
+            - img [ref=e91]
+        - generic [ref=e93]: All rights reserved.©️ 2024 Flowy Cart
+      - generic [ref=e95]:
+        - heading "Help" [level=4] [ref=e96]
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Help Center" [ref=e99] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e100]:
+            - link "Contact Us" [ref=e101] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e102]:
+            - link "Shipping Info" [ref=e103] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e104]:
+            - link "Track My Order" [ref=e105] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e106]:
+            - link "Returns & Exchanges" [ref=e107] [cursor=pointer]:
+              - /url: /
+```

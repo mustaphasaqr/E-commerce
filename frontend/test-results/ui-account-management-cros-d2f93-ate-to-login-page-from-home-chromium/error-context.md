@@ -1,0 +1,155 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Flowy Cart" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "All" [ref=e9] [cursor=pointer]:
+              - /url: /catalog/All
+          - listitem [ref=e10]:
+            - link "Men" [ref=e11] [cursor=pointer]:
+              - /url: /catalog/Men
+          - listitem [ref=e12]:
+            - link "Women" [ref=e13] [cursor=pointer]:
+              - /url: /catalog/Women
+          - listitem [ref=e14]:
+            - link "Electronics" [ref=e15] [cursor=pointer]:
+              - /url: /catalog/Electronics
+          - listitem [ref=e16]:
+            - link "Jewelery" [ref=e17] [cursor=pointer]:
+              - /url: /catalog/Jewelery
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link [ref=e20] [cursor=pointer]:
+              - /url: /
+              - img [ref=e21]
+          - listitem [ref=e23]:
+            - img [ref=e26]
+          - listitem [ref=e28]:
+            - link [ref=e29] [cursor=pointer]:
+              - /url: /login
+              - img [ref=e30]
+  - main [ref=e32]:
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - heading "unleash your Style" [level=1] [ref=e37]
+        - heading "find your Flow." [level=1] [ref=e38]
+      - link "Shop Now" [ref=e40] [cursor=pointer]:
+        - /url: /catalog/All
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - img
+          - generic:
+            - img
+          - generic:
+            - img
+    - generic [ref=e47]:
+      - paragraph [ref=e48]: Quick View
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - radio "All" [ref=e52]
+            - generic [ref=e53] [cursor=pointer]: All
+          - generic [ref=e54]:
+            - radio "Men" [ref=e55]
+            - generic [ref=e56] [cursor=pointer]: Men
+          - generic [ref=e57]:
+            - radio "Women" [ref=e58]
+            - generic [ref=e59] [cursor=pointer]: Women
+          - generic [ref=e60]:
+            - radio "Electronics" [ref=e61]
+            - generic [ref=e62] [cursor=pointer]: Electronics
+          - generic [ref=e63]:
+            - radio "Jewelery" [ref=e64]
+            - generic [ref=e65] [cursor=pointer]: Jewelery
+        - link "View More" [ref=e66] [cursor=pointer]:
+          - /url: /catalog/All
+          - generic [ref=e67]: View More
+          - img [ref=e68]
+    - generic [ref=e73]:
+      - paragraph [ref=e74]: Collections
+      - generic [ref=e76]:
+        - link "Men" [ref=e77] [cursor=pointer]:
+          - /url: /catalog/Men
+          - img
+          - link [ref=e79]:
+            - /url: /catalog/Men
+            - img [ref=e80]
+          - generic [ref=e83]: Men
+        - link "Women" [ref=e84] [cursor=pointer]:
+          - /url: /catalog/Women
+          - img
+          - link [ref=e86]:
+            - /url: /catalog/Women
+            - img [ref=e87]
+          - generic [ref=e90]: Women
+        - link "Electronics" [ref=e91] [cursor=pointer]:
+          - /url: /catalog/Electronics
+          - img
+          - link [ref=e93]:
+            - /url: /catalog/Electronics
+            - img [ref=e94]
+          - generic [ref=e97]: Electronics
+        - link "Jewelery" [ref=e98] [cursor=pointer]:
+          - /url: /catalog/Jewelery
+          - img
+          - link [ref=e100]:
+            - /url: /catalog/Jewelery
+            - img [ref=e101]
+          - generic [ref=e104]: Jewelery
+        - link "All" [ref=e105] [cursor=pointer]:
+          - /url: /catalog/All
+          - img
+          - link [ref=e107]:
+            - /url: /catalog/All
+            - img [ref=e108]
+          - generic [ref=e111]: All
+  - contentinfo [ref=e112]:
+    - generic [ref=e113]:
+      - generic [ref=e115]:
+        - generic [ref=e116]: Flowy Cart
+        - generic [ref=e117]: Unleash your fashion. Find your flow.
+        - generic [ref=e119]:
+          - link [ref=e120] [cursor=pointer]:
+            - /url: https://www.instagram.com
+            - img [ref=e121]
+          - link [ref=e123] [cursor=pointer]:
+            - /url: https://tiktok.com
+            - img [ref=e124]
+          - link [ref=e126] [cursor=pointer]:
+            - /url: https://twitter.com
+            - img [ref=e127]
+          - link [ref=e129] [cursor=pointer]:
+            - /url: https://facebook.com
+            - img [ref=e130]
+          - link [ref=e132] [cursor=pointer]:
+            - /url: https://youtube.com
+            - img [ref=e133]
+        - generic [ref=e135]: All rights reserved.©️ 2024 Flowy Cart
+      - generic [ref=e137]:
+        - heading "Help" [level=4] [ref=e138]
+        - list [ref=e139]:
+          - listitem [ref=e140]:
+            - link "Help Center" [ref=e141] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e142]:
+            - link "Contact Us" [ref=e143] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e144]:
+            - link "Shipping Info" [ref=e145] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e146]:
+            - link "Track My Order" [ref=e147] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e148]:
+            - link "Returns & Exchanges" [ref=e149] [cursor=pointer]:
+              - /url: /
+```

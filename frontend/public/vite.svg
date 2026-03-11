@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <!-- Shopping cart icon for e-commerce -->
+  <path d="M20 30h60l-8 45H28L20 30z" stroke="#ff5a1e" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="38" cy="80" r="4" fill="#ff5a1e"/>
+  <circle cx="68" cy="80" r="4" fill="#ff5a1e"/>
+  <path d="M80 30c0-6 -5-11 -11-11S58 24 58 30" stroke="#ff5a1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

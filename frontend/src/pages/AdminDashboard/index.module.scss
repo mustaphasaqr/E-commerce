@@ -1,0 +1,163 @@
+@import '../../variables.scss';
+
+.section {
+  overflow: hidden !important;
+  padding: 2rem 0;
+
+  @media (min-width: 768px) {
+    padding: 3rem 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+
+    @media (min-width: 768px) {
+      padding: 3rem 2rem;
+    }
+
+    h1 {
+      font-family: $font-f-title;
+      font-size: 32px;
+      font-weight: $font-w-700;
+      color: $c-title;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .errorBanner {
+      background-color: #fee;
+      border-left: 4px solid #f44;
+      color: #c33;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      font-family: $font-f-primary;
+      font-size: 14px;
+    }
+
+    .adminContent {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+
+      .searchSection {
+        background-color: $back-c-primary;
+        border: 1px solid $border-c-var;
+        border-radius: 12px;
+        padding: 1.5rem;
+
+        @media (min-width: 768px) {
+          padding: 2rem;
+        }
+      }
+
+      .usersSection {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .sectionHeader {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+
+          h2 {
+            font-family: $font-f-title;
+            font-size: 24px;
+            font-weight: $font-w-700;
+            color: $c-var;
+            margin: 0;
+          }
+
+          .userCount {
+            font-family: $font-f-primary;
+            font-size: 14px;
+            color: $c-var;
+            background-color: rgba(255, 90, 30, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid $border-c-var;
+          }
+        }
+
+        .loading,
+        .noData {
+          text-align: center;
+          padding: 3rem 2rem;
+          font-family: $font-f-primary;
+          font-size: 16px;
+          color: $c-var;
+          background-color: $back-c-primary;
+          border: 1px solid $border-c-var;
+          border-radius: 12px;
+          min-height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .loading {
+          color: $c-title;
+        }
+
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1rem;
+          padding: 1.5rem;
+          background-color: $back-c-primary;
+          border: 1px solid $border-c-var;
+          border-radius: 12px;
+          flex-wrap: wrap;
+
+          button {
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-family: $font-f-title;
+            font-weight: $font-w-400;
+            background-color: #ffba00;
+            color: $c-primary;
+            line-height: 1.5;
+            border-radius: 16px;
+            padding: 0.6rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+
+            &:hover:not(:disabled),
+            &:active:not(:disabled) {
+              font-weight: $font-w-700;
+              transform: translateY(-2px);
+            }
+
+            &:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+              transform: none;
+            }
+
+            @media (min-width: 478px) {
+              font-size: 14px;
+              padding: 0.8rem 2rem;
+            }
+          }
+
+          .pageInfo {
+            font-family: $font-f-primary;
+            font-size: 14px;
+            color: $c-var;
+            white-space: nowrap;
+            padding: 0 1rem;
+          }
+        }
+      }
+    }
+  }
+}

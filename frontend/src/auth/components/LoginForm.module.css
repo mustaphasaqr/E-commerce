@@ -1,0 +1,186 @@
+/**
+ * LoginForm Module Styles
+ * FlowCart-inspired design with orange accent button
+ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.label {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #3d3d3d;
+  font-family: "Poppins", sans-serif;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: #3d3d3d;
+  user-select: none;
+  font-family: "Nunito", sans-serif;
+}
+
+.checkboxLabel:hover {
+  color: #ff5a1e;
+}
+
+.checkbox {
+  width: 1.8rem;
+  height: 1.8rem;
+  cursor: pointer;
+  accent-color: #ff5a1e;
+}
+
+.errorMessage {
+  font-size: 1.1rem;
+  color: #b91c1c;
+  font-weight: 500;
+  animation: slideDown 0.2s ease-out;
+}
+
+.input {
+  padding: 0.8rem 1.2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-family: "Nunito", sans-serif;
+  color: #3d3d3d;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #8c52ff;
+  box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+}
+
+.input::placeholder {
+  color: #b7b1b1;
+}
+
+.input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.alert {
+  padding: 1.2rem 1.6rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 1.3rem;
+  animation: slideDown 0.3s ease-out;
+  font-family: "Nunito", sans-serif;
+}
+
+.button {
+  padding: 0.8rem 2rem;
+  background: #ffba00;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.button:hover:not(:disabled) {
+  background: #000;
+  color: #ffba00;
+  font-weight: 700;
+}
+
+.button:active:not(:disabled) {
+  background: #8c52ff;
+  color: white;
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  background: #ddd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 0px;
+}
+
+.link {
+  font-size: 1.3rem;
+  color: #ff5a1e;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 0.2s ease;
+  cursor: pointer;
+  font-family: "Nunito", sans-serif;
+}
+
+.link:hover {
+  color: #ffba00;
+  text-decoration: underline;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .form {
+    gap: 1.2rem;
+  }
+
+  .button {
+    padding: 0.7rem 1.5rem;
+    font-size: 1.4rem;
+    min-height: 44px;
+  }
+
+  .input {
+    padding: 0.7rem 1rem;
+    font-size: 1.3rem;
+    min-height: 44px;
+  }
+}
+
+/* Screen reader only text */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
