@@ -52,7 +52,7 @@ jobs:
         run: |
           echo "🎯 Starting Chromium tests (156 tests total on 10 workers)"
           echo "========================================================="
-          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --max-workers=10 -v
+          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10 -v
         continue-on-error: true
 
       - name: Display Chromium test progress
@@ -92,10 +92,13 @@ jobs:
             'test-results/results.json'
           ];
 
+          let foundResults = false;
+
           for (const reportPath of reportPaths) {
             if (fs.existsSync(reportPath)) {
               try {
                 const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                foundResults = true;
                 
                 let output = '🎯 CHROMIUM TEST FAILURES REPORT\n';
                 output += '================================\n\n';
@@ -139,6 +142,12 @@ jobs:
                 console.error('Error parsing results:', err.message);
               }
             }
+          }
+
+          if (!foundResults) {
+            console.error('❌ ERROR: No test results found! Tests may not have executed.');
+            console.error('Expected files: test-results/results.json or json-report/results.json');
+            process.exit(1);
           }
           EOF
           
@@ -203,7 +212,7 @@ jobs:
         run: |
           echo "🎯 Starting Mobile Chrome tests (156 tests total on 10 workers)"
           echo "==============================================================" 
-          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --max-workers=10 -v
+          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10 -v
         continue-on-error: true
 
       - name: Display Mobile test progress
@@ -243,10 +252,13 @@ jobs:
             'test-results/results.json'
           ];
 
+          let foundResults = false;
+
           for (const reportPath of reportPaths) {
             if (fs.existsSync(reportPath)) {
               try {
                 const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                foundResults = true;
                 
                 let output = '🎯 MOBILE CHROME TEST FAILURES REPORT\n';
                 output += '=====================================\n\n';
@@ -290,6 +302,12 @@ jobs:
                 console.error('Error parsing results:', err.message);
               }
             }
+          }
+
+          if (!foundResults) {
+            console.error('❌ ERROR: No test results found! Tests may not have executed.');
+            console.error('Expected files: test-results/results.json or json-report/results.json');
+            process.exit(1);
           }
           EOF
           
