@@ -82,6 +82,7 @@ test.describe('NAVIGATION & ROUTING', () => {
     test.beforeEach(async ({ page }) => {
       // Login before each test
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -231,6 +232,7 @@ test.describe('NAVIGATION & ROUTING', () => {
     test.beforeEach(async ({ page }) => {
       // Login first
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -418,6 +420,7 @@ test.describe('NAVIGATION & ROUTING', () => {
     test.beforeEach(async ({ page }) => {
       // Login first
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');

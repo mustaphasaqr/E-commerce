@@ -13,6 +13,7 @@ test.describe('ADMIN USER MANAGEMENT UI', () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
     
     const emailInput = page.locator('input[type="email"]');
     const passwordInput = page.locator('input[type="password"]');

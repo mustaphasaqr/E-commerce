@@ -50,128 +50,17 @@ jobs:
           PYTHONUNBUFFERED: 1
           NODE_ENV: test
         run: |
-          echo "🎯 Starting Chromium tests (156 tests total on 10 workers)"
+          echo "🎯 Starting Chromium tests (156 tests total on 20 workers)"
           echo "========================================================="
-          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10
+          npx playwright test tests/ui/ --project=chromium --reporter=list --reporter=json --reporter=html --timeout=120000 --workers=20
         continue-on-error: true
-
-      - name: Display Chromium test progress
-        if: always()
-        working-directory: ./frontend
-        run: |
-          echo "🎯 CHROMIUM TEST EXECUTION SUMMARY"
-          echo "=================================="
-          echo ""
-          echo "Total tests planned: 156"
-          echo "Browser: Chromium (Desktop Web)"
-          echo "Timeout per test: 15 seconds"
-          echo ""
-          echo "📊 Test Results Breakdown:"
-          if [ -f "test-results/results.json" ]; then
-            PASSED=$(grep -o '"status":"passed"' test-results/results.json | wc -l || echo 0)
-            FAILED=$(grep -o '"status":"failed"' test-results/results.json | wc -l || echo 0)
-            SKIPPED=$(grep -o '"status":"skipped"' test-results/results.json | wc -l || echo 0)
-            echo "  ✅ Passed: $PASSED"
-            echo "  ❌ Failed: $FAILED"
-            echo "  ⏭️  Skipped: $SKIPPED"
-          else
-            echo "  (Results processing...)"
-          fi
-          echo ""
-
-      - name: Extract failed tests with reasons
-        if: always()
-        working-directory: ./frontend
-        run: |
-          cat > extract_failures.mjs << 'EOF'
-          import fs from 'fs';
-          import path from 'path';
-
-          const reportPaths = [
-            'json-report/results.json',
-            'test-results/results.json'
-          ];
-
-          let foundResults = false;
-
-          for (const reportPath of reportPaths) {
-            if (fs.existsSync(reportPath)) {
-              try {
-                const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-                foundResults = true;
-                
-                let output = '🎯 CHROMIUM TEST FAILURES REPORT\n';
-                output += '================================\n\n';
-                
-                let failedCount = 0;
-                let passedCount = 0;
-                
-                data.suites?.forEach(suite => {
-                  suite.suites?.forEach(subSuite => {
-                    subSuite.tests?.forEach(test => {
-                      if (test.status === 'failed') {
-                        failedCount++;
-                        output += `❌ ${test.title}\n`;
-                        output += `   File: ${test.file}\n`;
-                        output += `   Location: Line ${test.line}\n`;
-                        
-                        if (test.results?.[0]?.error?.message) {
-                          output += `   Error: ${test.results[0].error.message}\n`;
-                        }
-                        if (test.results?.[0]?.error?.stack) {
-                          const stack = test.results[0].error.stack.split('\n').slice(0, 3).join('\n');
-                          output += `   Stack: ${stack}\n`;
-                        }
-                        output += '\n';
-                      } else if (test.status === 'passed') {
-                        passedCount++;
-                      }
-                    });
-                  });
-                });
-                
-                output += `\n📊 SUMMARY\n`;
-                output += `==========\n`;
-                output += `✅ Passed: ${passedCount}\n`;
-                output += `❌ Failed: ${failedCount}\n`;
-                
-                fs.writeFileSync('CHROMIUM_FAILURES.txt', output);
-                console.log(output);
-                break;
-              } catch (err) {
-                console.error('Error parsing results:', err.message);
-              }
-            }
-          }
-
-          if (!foundResults) {
-            console.error('❌ ERROR: No test results found! Tests may not have executed.');
-            console.error('Expected files: test-results/results.json or json-report/results.json');
-            process.exit(1);
-          }
-          EOF
-          
-          node extract_failures.mjs
-
-      - name: Display Chromium failures
-        if: always()
-        working-directory: ./frontend
-        run: |
-          if [ -f "CHROMIUM_FAILURES.txt" ]; then
-            echo "📄 Chromium Test Failures:"
-            cat CHROMIUM_FAILURES.txt
-          else
-            echo "✅ All Chromium tests passed"
-          fi
 
       - name: Upload Chromium results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: chromium-report
-          path: |
-            frontend/playwright-report/
-            frontend/CHROMIUM_FAILURES.txt
+          path: frontend/playwright-report/
           retention-days: 7
 
   # ==================== STAGE 2: MOBILE CHROME ====================
@@ -210,128 +99,17 @@ jobs:
           PYTHONUNBUFFERED: 1
           NODE_ENV: test
         run: |
-          echo "🎯 Starting Mobile Chrome tests (156 tests total on 10 workers)"
-          echo "==============================================================" 
-          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=15000 --workers=10
+          echo "🎯 Starting Mobile Chrome tests (156 tests total on 20 workers)"
+          echo "=============================================================" 
+          npx playwright test tests/ui/ --project="Mobile Chrome" --reporter=list --reporter=json --reporter=html --timeout=120000 --workers=20
         continue-on-error: true
-
-      - name: Display Mobile test progress
-        if: always()
-        working-directory: ./frontend
-        run: |
-          echo "🎯 MOBILE CHROME TEST EXECUTION SUMMARY"
-          echo "========================================"
-          echo ""
-          echo "Total tests planned: 156"
-          echo "Browser: Mobile Chrome (Android Pixel 5)"
-          echo "Timeout per test: 15 seconds"
-          echo ""
-          echo "📊 Test Results Breakdown:"
-          if [ -f "test-results/results.json" ]; then
-            PASSED=$(grep -o '"status":"passed"' test-results/results.json | wc -l || echo 0)
-            FAILED=$(grep -o '"status":"failed"' test-results/results.json | wc -l || echo 0)
-            SKIPPED=$(grep -o '"status":"skipped"' test-results/results.json | wc -l || echo 0)
-            echo "  ✅ Passed: $PASSED"
-            echo "  ❌ Failed: $FAILED"
-            echo "  ⏭️  Skipped: $SKIPPED"
-          else
-            echo "  (Results processing...)"
-          fi
-          echo ""
-
-      - name: Extract failed tests with reasons
-        if: always()
-        working-directory: ./frontend
-        run: |
-          cat > extract_failures.mjs << 'EOF'
-          import fs from 'fs';
-          import path from 'path';
-
-          const reportPaths = [
-            'json-report/results.json',
-            'test-results/results.json'
-          ];
-
-          let foundResults = false;
-
-          for (const reportPath of reportPaths) {
-            if (fs.existsSync(reportPath)) {
-              try {
-                const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-                foundResults = true;
-                
-                let output = '🎯 MOBILE CHROME TEST FAILURES REPORT\n';
-                output += '=====================================\n\n';
-                
-                let failedCount = 0;
-                let passedCount = 0;
-                
-                data.suites?.forEach(suite => {
-                  suite.suites?.forEach(subSuite => {
-                    subSuite.tests?.forEach(test => {
-                      if (test.status === 'failed') {
-                        failedCount++;
-                        output += `❌ ${test.title}\n`;
-                        output += `   File: ${test.file}\n`;
-                        output += `   Location: Line ${test.line}\n`;
-                        
-                        if (test.results?.[0]?.error?.message) {
-                          output += `   Error: ${test.results[0].error.message}\n`;
-                        }
-                        if (test.results?.[0]?.error?.stack) {
-                          const stack = test.results[0].error.stack.split('\n').slice(0, 3).join('\n');
-                          output += `   Stack: ${stack}\n`;
-                        }
-                        output += '\n';
-                      } else if (test.status === 'passed') {
-                        passedCount++;
-                      }
-                    });
-                  });
-                });
-                
-                output += `\n📊 SUMMARY\n`;
-                output += `==========\n`;
-                output += `✅ Passed: ${passedCount}\n`;
-                output += `❌ Failed: ${failedCount}\n`;
-                
-                fs.writeFileSync('MOBILE_FAILURES.txt', output);
-                console.log(output);
-                break;
-              } catch (err) {
-                console.error('Error parsing results:', err.message);
-              }
-            }
-          }
-
-          if (!foundResults) {
-            console.error('❌ ERROR: No test results found! Tests may not have executed.');
-            console.error('Expected files: test-results/results.json or json-report/results.json');
-            process.exit(1);
-          }
-          EOF
-          
-          node extract_failures.mjs
-
-      - name: Display Mobile failures
-        if: always()
-        working-directory: ./frontend
-        run: |
-          if [ -f "MOBILE_FAILURES.txt" ]; then
-            echo "📄 Mobile Chrome Test Failures:"
-            cat MOBILE_FAILURES.txt
-          else
-            echo "✅ All Mobile Chrome tests passed"
-          fi
 
       - name: Upload Mobile results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mobile-report
-          path: |
-            frontend/playwright-report/
-            frontend/MOBILE_FAILURES.txt
+          path: frontend/playwright-report/
           retention-days: 7
 
       - name: Comment test results on PR

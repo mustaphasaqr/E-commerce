@@ -106,6 +106,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-cta-1: Primary button visually distinct from secondary', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
     
     const primaryBtn = page.locator('button[type="submit"]'); // Primary CTA
     const secondaryBtn = page.locator('a:has-text("Register"), a:has-text("Forgot"), button:not([type="submit"])').first();
@@ -132,6 +133,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-cta-2: Call-to-action button clearly labeled', async ({ page }) => {
     await page.goto(`${BASE_URL}/profile`);
+    await page.waitForLoadState('networkidle');
     
     const actionButtons = page.locator('button');
     
@@ -148,6 +150,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-cta-3: Destructive actions clearly marked or confirmed', async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/users`);
+    await page.waitForLoadState('networkidle');
     
     const deleteBtn = page.locator('button:has-text("Delete")').first();
     
@@ -175,6 +178,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
     
     for (const pageUrl of pages) {
       await page.goto(pageUrl);
+      await page.waitForLoadState('networkidle');
       
       const nav = page.locator('nav, header, [role="navigation"]');
       const hasNav = await nav.isVisible().catch(() => false);
@@ -186,6 +190,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-nav-2: Current page highlighted in navigation', async ({ page }) => {
     await page.goto(`${BASE_URL}/profile`);
+    await page.waitForLoadState('networkidle');
     
     const navItems = page.locator('nav a, nav button, [role="navigation"] a, [role="navigation"] button');
     
@@ -208,6 +213,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-nav-3: Breadcrumbs show current location (if used)', async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/users`);
+    await page.waitForLoadState('networkidle');
     
     const breadcrumb = page.locator('[class*="breadcrumb"], nav[aria-label="breadcrumb"]');
     
@@ -228,6 +234,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-nav-4: Back button or link available on nested pages', async ({ page }) => {
     await page.goto(`${BASE_URL}/profile`);
+    await page.waitForLoadState('networkidle');
     
     const backButton = page.locator('button:has-text("Back"), a:has-text("Back"), [aria-label*="Back"]');
     const pageTitle = page.locator('h1');
@@ -242,7 +249,9 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
   // ======================== BUTTON & CLICKABLE SIZING ========================
 
   test('ux-button-1: Buttons have minimum clickable size (44x44px)', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`);    await page.waitForLoadState('networkidle');    
+    await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
+    
     const buttons = page.locator('button');
     
     for (let i = 0; i < Math.min(5, await buttons.count()); i++) {
@@ -257,6 +266,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-button-2: Links have adequate spacing (not cramped)', async ({ page }) => {
     await page.goto(`${BASE_URL}/profile`);
+    await page.waitForLoadState('networkidle');
     
     const links = page.locator('a');
     
@@ -277,6 +287,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-form-1: Form labels clearly associated with inputs', async ({ page }) => {
     await page.goto(`${BASE_URL}/register`);
+    await page.waitForLoadState('networkidle');
     
     const inputs = page.locator('input[type="text"], input[type="email"], input[type="password"]');
     
@@ -295,6 +306,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-form-2: Required fields clearly marked', async ({ page }) => {
     await page.goto(`${BASE_URL}/register`);
+    await page.waitForLoadState('networkidle');
     
     const requiredInputs = page.locator('input[required]');
     
@@ -318,6 +330,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-form-3: Form input has visual focus indicator', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
     
     const emailInput = page.locator('input[type="email"]');
     await emailInput.focus();
@@ -345,6 +358,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-hierarchy-1: Most important action is visually prominent', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
     
     // Submit button should be larger/more colored than links
     const submitBtn = page.locator('button[type="submit"]');
@@ -361,6 +375,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-hierarchy-2: Page title prominent and clear', async ({ page }) => {
     await page.goto(`${BASE_URL}/profile`);
+    await page.waitForLoadState('networkidle');
     
     const pageTitle = page.locator('h1');
     
@@ -374,6 +389,7 @@ test.describe('UX Clarity - Error Messages, Navigation, Button Sizing, Feedback'
 
   test('ux-hierarchy-3: Input focus changes are obvious', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForLoadState('networkidle');
     
     const email = page.locator('input[type="email"]');
     const password = page.locator('input[type="password"]');

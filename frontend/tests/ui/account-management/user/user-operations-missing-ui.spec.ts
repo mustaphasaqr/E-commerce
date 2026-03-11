@@ -25,6 +25,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
     test.beforeEach(async ({ page }) => {
       // Login as admin to access user lookup features
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -98,6 +99,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('GET /users/email/{email} - User Lookup by Email', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -182,6 +184,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('GET /users/username/{username} - User Lookup by Username', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -251,6 +254,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('POST /users/me/email/verify - Email Verification', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -304,6 +308,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('POST /users/{id}/activate - Activate User (Non-Admin)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -360,6 +365,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('POST /users/{id}/deactivate - Deactivate User (Non-Admin)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -423,6 +429,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('POST /users/{id}/block - Block User (Non-Admin)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -495,6 +502,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('POST /users/{id}/unblock - Unblock User (Non-Admin)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
@@ -547,6 +555,7 @@ test.describe('USER OPERATIONS - MISSING ENDPOINT COVERAGE', () => {
   test.describe('DELETE /users/{id} - Delete User (Non-Admin)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(`${BASE_URL}/login`);
+      await page.waitForLoadState('networkidle');
       
       const emailInput = page.locator('input[type="email"]');
       const passwordInput = page.locator('input[type="password"]');
