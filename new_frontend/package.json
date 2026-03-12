@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run src/**/*.test.ts --exclude src/**/*.integration.test.ts",
     "test:unit": "vitest run src/**/*.test.ts --exclude src/**/*.integration.test.ts",
-    "test:integration": "vitest run src/**/*.integration.test.ts --env=node",
+    "test:integration": "vitest run --environment node src/**/*.integration.test.ts",
     "test:all": "vitest run src/**/*.test.ts src/**/*.integration.test.ts",
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
