@@ -1,5 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
+import { LoginForm } from '@/features/auth/components/LoginForm'
+import { RegisterForm } from '@/features/auth/components/RegisterForm'
 
 /** ============================================
  * ROUTE CONFIGURATION
@@ -14,6 +16,7 @@ import { ProtectedRoute } from './ProtectedRoute'
  * ============================================ */
 
 export function AppRoutes() {
+  const navigate = useNavigate()
   return (
     <Router>
       <Routes>
@@ -23,8 +26,14 @@ export function AppRoutes() {
         <Route path="/" element={<div className="p-4">Home Page (Coming Soon)</div>} />
 
         {/* Authentication Routes */}
-        <Route path="/login" element={<div className="p-4">Login Page (Coming Soon)</div>} />
-        <Route path="/register" element={<div className="p-4">Register Page (Coming Soon)</div>} />
+        <Route 
+          path="/login" 
+          element={<LoginForm onLoginSuccess={() => navigate('/products')} />} 
+        />
+        <Route 
+          path="/register" 
+          element={<RegisterForm onRegisterSuccess={() => navigate('/login')} />} 
+        />
 
         {/* Products Listing (Public) */}
         <Route path="/products" element={<div className="p-4">Products Page (Coming Soon)</div>} />
@@ -80,7 +89,7 @@ export function AppRoutes() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="ADMIN">
               <div className="p-4">Admin Dashboard (Coming Soon)</div>
             </ProtectedRoute>
           }
@@ -90,7 +99,7 @@ export function AppRoutes() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="ADMIN">
               <div className="p-4">Manage Users (Coming Soon)</div>
             </ProtectedRoute>
           }
@@ -100,7 +109,7 @@ export function AppRoutes() {
         <Route
           path="/admin/products"
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="ADMIN">
               <div className="p-4">Manage Products (Coming Soon)</div>
             </ProtectedRoute>
           }
@@ -110,7 +119,7 @@ export function AppRoutes() {
         <Route
           path="/admin/analytics"
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="ADMIN">
               <div className="p-4">Analytics Dashboard (Coming Soon)</div>
             </ProtectedRoute>
           }

@@ -3,7 +3,7 @@ import { useAuthStore } from '@/features/auth/store/authSlice'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: 'user' | 'admin'
+  requiredRole?: 'CUSTOMER' | 'ADMIN'
 }
 
 /**

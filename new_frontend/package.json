@@ -15,6 +15,7 @@
     "type-check:watch": "tsc --noEmit --watch"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
