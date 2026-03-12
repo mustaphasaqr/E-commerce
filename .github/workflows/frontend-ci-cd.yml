@@ -6,11 +6,6 @@ on:
       - main
       - frontend-rebuild
       - develop
-    paths:
-      - 'new_frontend/**'
-      - '.github/workflows/frontend-ci-cd.yml'
-      - 'package.json'
-      - 'package-lock.json'
   pull_request:
     branches:
       - main
