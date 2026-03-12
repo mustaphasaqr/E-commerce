@@ -47,3 +47,6 @@ error-log.txt
 test-output.txt
 test-results.txt
 product-test-output.txt
+
+### Old Frontend (Legacy) ###
+frontend/
