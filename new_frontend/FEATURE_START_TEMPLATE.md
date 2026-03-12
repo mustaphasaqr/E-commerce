@@ -40,7 +40,7 @@ STEP 5: Build Component Using Test Formula
 RESULT: Test passed → Code uses same formula → Code guaranteed to work
 
 
-3-shadcn/ui + Tailwind CSS + Lucide Icons + Radix UI primitives
+3-shadcn/ui + Tailwind CSS + Lucide Icons + Radix UI primitives + Preline UI (Layouts / Pages / Sections)
 
 4- do not change or touch anything in backend 
 

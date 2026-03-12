@@ -14,9 +14,12 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor - logs all API calls
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // Only access localStorage if in browser environment
+    if (typeof window !== 'undefined' && localStorage) {
+      const token = localStorage.getItem('authToken')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
     
     // Console monitoring - request
@@ -53,8 +56,11 @@ axiosInstance.interceptors.response.use(
     
     if (error.response?.status === 401) {
       console.warn('⚠️ Unauthorized - clearing auth and redirecting to login')
-      localStorage.removeItem('authToken')
-      window.location.href = '/login'
+      // Only access localStorage and window in browser environment
+      if (typeof window !== 'undefined' && localStorage) {
+        localStorage.removeItem('authToken')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

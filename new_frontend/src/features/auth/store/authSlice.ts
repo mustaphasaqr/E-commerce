@@ -1,6 +1,26 @@
 import { create } from 'zustand'
 import type { User } from '../types'
 
+// Helper functions to safely access localStorage
+const getFromStorage = (key: string): string | null => {
+  if (typeof window !== 'undefined' && localStorage) {
+    return localStorage.getItem(key)
+  }
+  return null
+}
+
+const setInStorage = (key: string, value: string): void => {
+  if (typeof window !== 'undefined' && localStorage) {
+    localStorage.setItem(key, value)
+  }
+}
+
+const removeFromStorage = (key: string): void => {
+  if (typeof window !== 'undefined' && localStorage) {
+    localStorage.removeItem(key)
+  }
+}
+
 interface AuthStore {
   // State
   token: string | null
@@ -39,20 +59,20 @@ interface AuthStore {
  *            Logout → clear localStorage → isAuthenticated returns false
  */
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  token: localStorage.getItem('authToken'),
-  refreshToken: localStorage.getItem('authRefreshToken'),
+  token: getFromStorage('authToken'),
+  refreshToken: getFromStorage('authRefreshToken'),
   user: null,
-  sessionId: localStorage.getItem('authSessionId'),
+  sessionId: getFromStorage('authSessionId'),
   expiresIn: null,
 
   setToken: (token: string) => {
-    localStorage.setItem('authToken', token)
+    setInStorage('authToken', token)
     set({ token })
     console.log('✅ Access token stored')
   },
 
   setRefreshToken: (refreshToken: string) => {
-    localStorage.setItem('authRefreshToken', refreshToken)
+    setInStorage('authRefreshToken', refreshToken)
     set({ refreshToken })
     console.log('✅ Refresh token stored')
   },
@@ -63,7 +83,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   setSessionId: (sessionId: string) => {
-    localStorage.setItem('authSessionId', sessionId)
+    setInStorage('authSessionId', sessionId)
     set({ sessionId })
     console.log(`✅ Session stored: ${sessionId}`)
   },
@@ -74,9 +94,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('authRefreshToken')
-    localStorage.removeItem('authSessionId')
+    removeFromStorage('authToken')
+    removeFromStorage('authRefreshToken')
+    removeFromStorage('authSessionId')
     set({ token: null, refreshToken: null, user: null, sessionId: null, expiresIn: null })
     console.log('🚪 User logged out - all tokens cleared')
   },

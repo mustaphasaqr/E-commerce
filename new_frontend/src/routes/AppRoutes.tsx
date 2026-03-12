@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
@@ -18,8 +18,7 @@ import { RegisterForm } from '@/features/auth/components/RegisterForm'
 export function AppRoutes() {
   const navigate = useNavigate()
   return (
-    <Router>
-      <Routes>
+    <Routes>
         {/* ========== PUBLIC ROUTES ========== */}
 
         {/* Landing / Home Page */}
@@ -128,6 +127,5 @@ export function AppRoutes() {
         {/* ========== 404 NOT FOUND ========== */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
-  )
-}
+    )
+  }

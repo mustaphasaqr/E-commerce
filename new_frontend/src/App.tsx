@@ -1,11 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
+import { AppRoutes } from './routes/AppRoutes'
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<div className="p-4">Welcome to E-Commerce</div>} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   )
 }
