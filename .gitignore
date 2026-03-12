@@ -32,6 +32,22 @@ build/
 ### VS Code ###
 .vscode/
 
+### Node.js ###
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+dist/
+.npm
+
+### Frontend Build ###
+new_frontend/node_modules/
+new_frontend/dist/
+new_frontend/coverage/
+new_frontend/.env.local
+new_frontend/.env.*.local
+
 ### Environment Variables ###
 .env
 .env.local
