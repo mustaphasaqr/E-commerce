@@ -1,0 +1,1 @@
+// useLogout hook - handles logout
