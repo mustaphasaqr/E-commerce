@@ -68,11 +68,15 @@ axiosInstance.interceptors.response.use(
     console.log('📋 Full Response:', error.response)
     
     if (error.response?.status === 401) {
-      console.warn('⚠️ Unauthorized - clearing auth and redirecting to login')
-      // Only access localStorage and window in browser environment
-      if (typeof window !== 'undefined' && localStorage) {
-        localStorage.removeItem('authToken')
-        window.location.href = '/login'
+      // Only redirect/clear if NOT already on login page and NOT a login attempt
+      const isLoginRequest = error.config?.url?.includes('/auth/login')
+      const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/login')
+      if (!isLoginRequest && !isOnLoginPage) {
+        console.warn('⚠️ Unauthorized - clearing auth and redirecting to login')
+        if (typeof window !== 'undefined' && localStorage) {
+          localStorage.removeItem('authToken')
+          window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(error)

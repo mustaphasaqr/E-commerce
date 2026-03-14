@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { Loader2 } from 'lucide-react'
 import { ShoppingCart, User, Menu, X, LogOut, ChevronLeft } from 'lucide-react'
 
 interface NavigationProps {}
@@ -25,6 +26,7 @@ export function Navigation({}: NavigationProps) {
   const { isAuthenticated, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [showLogoutLoader, setShowLogoutLoader] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -48,21 +50,26 @@ export function Navigation({}: NavigationProps) {
   const canGoBack = location.pathname !== '/'
 
   const handleProfileClick = () => {
-    if (!isAuthenticated) {
-      setProfileMenuOpen(!profileMenuOpen)
-    } else {
-      navigate('/profile')
-    }
+    setProfileMenuOpen(!profileMenuOpen)
   }
 
   const handleLogout = async () => {
     await logout()
     setProfileMenuOpen(false)
-    navigate('/')
+    setShowLogoutLoader(true)
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000); // 2 seconds
   }
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      {showLogoutLoader && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white bg-opacity-90">
+          <Loader2 size={64} className="animate-spin text-blue-600 mb-4" />
+          <div className="text-lg font-semibold text-blue-700">Logging out...</div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left Side: Back Arrow + Logo */}
@@ -76,7 +83,7 @@ export function Navigation({}: NavigationProps) {
                 <ChevronLeft size={24} className="text-gray-600" />
               </button>
             )}
-            <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('/')}> 
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 ShopHub
               </h1>
@@ -152,12 +159,12 @@ export function Navigation({}: NavigationProps) {
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10">
                   <button
                     onClick={() => {
-                      navigate('/profile')
+                      navigate('/account')
                       setProfileMenuOpen(false)
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                   >
-                    My Profile
+                    My Account
                   </button>
                   <button
                     onClick={() => {
@@ -168,15 +175,7 @@ export function Navigation({}: NavigationProps) {
                   >
                     My Orders
                   </button>
-                  <button
-                    onClick={() => {
-                      navigate('/profile')
-                      setProfileMenuOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                  >
-                    Settings
-                  </button>
+                  {/* Wishlist is not implemented in backend, so not shown */}
                   <hr className="my-2" />
                   <button
                     onClick={handleLogout}

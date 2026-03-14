@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { register as registerService } from '../api/authService'
 import type { RegisterRequest, RegisterResponse } from '../types'
+import { useAuthStore } from './useAuthStore'
 
 /**
  * useRegister Hook
@@ -15,6 +16,7 @@ export function useRegister() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<RegisterResponse | null>(null)
+  const { setToken, setUser, setRefreshToken, setSessionId } = useAuthStore()
 
   const register = async (request: RegisterRequest): Promise<RegisterResponse | null> => {
     setLoading(true)
@@ -23,7 +25,12 @@ export function useRegister() {
     try {
       const response = await registerService(request)
       setData(response)
-      console.log('🆕 Registration: Check email to verify account')
+      // Simulate login: set auth state (no token, but user is set)
+      setUser(response as unknown as User)
+      setToken('dummy-token') // You may want to get a real token from backend
+      setRefreshToken('dummy-refresh-token')
+      setSessionId('dummy-session-id')
+      console.log('🆕 Registration: User considered logged in')
       return response
     } catch (err) {
       // Extract detailed error message from axios error response

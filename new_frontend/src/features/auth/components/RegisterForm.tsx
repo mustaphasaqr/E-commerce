@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Mail, User, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Zap, Shield, Headphones } from 'lucide-react'
@@ -32,6 +33,18 @@ export function RegisterForm({ onRegisterSuccess }: RegisterFormProps) {
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const navigate = useNavigate();
+
+  // Fix: Always call hooks in the same order, useEffect outside conditional
+  useEffect(() => {
+    if (registerData) {
+      const timer = setTimeout(() => {
+        navigate("/");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [registerData, navigate]);
 
   const {
     register,

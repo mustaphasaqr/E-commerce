@@ -15,26 +15,65 @@ import type { LoginRequest, LoginResponse } from '../types'
 export function useLogin() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
+  const [retryAfter, setRetryAfter] = useState<number | null>(null)
   const { setToken, setUser, setRefreshToken, setSessionId } = useAuthStore()
 
   const login = async (request: LoginRequest): Promise<LoginResponse | null> => {
     setLoading(true)
     setError(null)
+    setFieldErrors({})
+    setRetryAfter(null)
 
     try {
       const response = await loginService(request)
-
-      // Update store with response
       setToken(response.accessToken)
       setRefreshToken(response.refreshToken)
       setUser(response.user)
       setSessionId(response.sessionId)
-
       console.log('🔓 Login: User authenticated', response.user.email)
       return response
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed'
+    } catch (err: any) {
+      let message = 'Login failed. Please try again.'
+      let emailError: string | undefined
+      let passwordError: string | undefined
+      let retryAfterSeconds: number | null = null
+
+      if (err?.response) {
+        const status = err.response.status
+        const apiMsg = err.response.data?.message || ''
+        // Handle rate limit (429)
+        if (status === 429) {
+          // Check Retry-After header (in seconds)
+          const retryAfterHeader = err.response.headers?.['retry-after']
+          if (retryAfterHeader) {
+            retryAfterSeconds = parseInt(retryAfterHeader, 10)
+          } else if (err.response.data?.retryAfterSeconds) {
+            retryAfterSeconds = parseInt(err.response.data.retryAfterSeconds, 10)
+          }
+          message = apiMsg || 'Too many failed login attempts. Please try again later.'
+        }
+        // Professional message for unregistered/deleted account
+        else if (
+          status === 401 &&
+          (apiMsg.toLowerCase().includes('not found') || apiMsg.toLowerCase().includes('no user') || apiMsg.toLowerCase().includes('deleted') || apiMsg.toLowerCase().includes('invalid credentials'))
+        ) {
+          message =
+            'This account is not registered or has been deleted. Please check your email or '
+            + 'sign up for a new account.'
+          emailError = 'Account not found'
+        } else if (status === 401 && apiMsg.toLowerCase().includes('password')) {
+          message = 'Incorrect password. Please try again.'
+          passwordError = 'Incorrect password'
+        } else if (apiMsg) {
+          message = apiMsg
+        }
+      } else if (err instanceof Error) {
+        message = err.message
+      }
       setError(message)
+      setFieldErrors({ email: emailError, password: passwordError })
+      setRetryAfter(retryAfterSeconds)
       console.error('❌ Login error:', message)
       return null
     } finally {
@@ -42,5 +81,5 @@ export function useLogin() {
     }
   }
 
-  return { login, loading, error }
+  return { login, loading, error, fieldErrors, retryAfter }
 }

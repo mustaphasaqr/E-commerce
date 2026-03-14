@@ -21,6 +21,25 @@ const removeFromStorage = (key: string): void => {
   }
 }
 
+// User object helpers
+const getUserFromStorage = (): User | null => {
+  const raw = getFromStorage('authUser')
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const setUserInStorage = (user: User) => {
+  setInStorage('authUser', JSON.stringify(user))
+}
+
+const removeUserFromStorage = () => {
+  removeFromStorage('authUser')
+}
+
 interface AuthStore {
   // State
   token: string | null
@@ -61,7 +80,7 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set, get) => ({
   token: getFromStorage('authToken'),
   refreshToken: getFromStorage('authRefreshToken'),
-  user: null,
+  user: getUserFromStorage(),
   sessionId: getFromStorage('authSessionId'),
   expiresIn: null,
 
@@ -78,6 +97,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   setUser: (user: User) => {
+    setUserInStorage(user)
     set({ user })
     console.log(`✅ User set: ${user.email} (${user.role})`)
   },
@@ -97,6 +117,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     removeFromStorage('authToken')
     removeFromStorage('authRefreshToken')
     removeFromStorage('authSessionId')
+    removeUserFromStorage()
     set({ token: null, refreshToken: null, user: null, sessionId: null, expiresIn: null })
     console.log('🚪 User logged out - all tokens cleared')
   },

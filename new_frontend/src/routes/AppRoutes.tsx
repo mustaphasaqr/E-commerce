@@ -3,7 +3,7 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
-import { HomePage } from '@/pages'
+import { HomePage, AccountPage, OrdersPage } from '@/pages'
 
 /** ============================================
  * ROUTE CONFIGURATION
@@ -67,12 +67,23 @@ export function AppRoutes() {
           }
         />
 
+
         {/* Orders History */}
         <Route
           path="/orders"
           element={
             <ProtectedRoute>
-              <div className="p-4">Orders (Coming Soon)</div>
+              <OrdersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* My Account */}
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <AccountPage />
             </ProtectedRoute>
           }
         />

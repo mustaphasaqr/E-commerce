@@ -31,12 +31,13 @@ interface LoginFormProps {
  */
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const navigate = useNavigate()
-  const { login, loading, error: loginError } = useLogin()
+  const { login, loading, error: loginError, fieldErrors, retryAfter } = useLogin()
   const [generalError, setGeneralError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -44,12 +45,32 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   })
 
   const onSubmit = async (data: LoginFormData) => {
-    setGeneralError(null)
+    // Do not clear generalError here; only clear on input change
     const result = await login(data)
 
+    // Always show any loginError as a general error if login failed
+    if (!result) {
+      let hasFieldError = false
+      if (fieldErrors.email) {
+        setError('email', { type: 'manual', message: fieldErrors.email })
+        hasFieldError = true
+      }
+      if (fieldErrors.password) {
+        setError('password', { type: 'manual', message: fieldErrors.password })
+        hasFieldError = true
+      }
+      // Always show the error, even for 429, 500, etc.
+      if (loginError && !hasFieldError) {
+        setGeneralError(loginError)
+      } else if (!loginError && !hasFieldError) {
+        setGeneralError('Login failed. Please try again.')
+      }
+      return
+    }
+
     if (result) {
+      setGeneralError(null)
       onLoginSuccess?.()
-      
       // Redirect to previous page or home
       const redirectPath = sessionStorage.getItem('redirectAfterAuth') || '/'
       sessionStorage.removeItem('redirectAfterAuth')
@@ -137,12 +158,26 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
 
               <CardContent className="space-y-4">
                 {/* General Error Message */}
-                {(loginError || generalError) && (
+                {generalError && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                     <span className="text-red-600 text-lg flex-shrink-0">❌</span>
                     <div className="flex-1">
                       <p className="text-sm text-red-800 font-medium">Login Failed</p>
-                      <p className="text-sm text-red-700 mt-1">{loginError || generalError}</p>
+                      <p className="text-sm text-red-700 mt-1">{generalError}</p>
+                      {generalError.includes('too many failed') && (
+                        <p className="text-sm text-orange-700 mt-2 font-semibold">
+                          You have been rate limited.{' '}
+                          {retryAfter && retryAfter > 0
+                            ? `Please wait ${Math.ceil(retryAfter / 60) > 1 ? Math.ceil(retryAfter / 60) + ' minutes' : retryAfter + ' seconds'} before trying again.`
+                            : 'Please wait a few minutes before trying again.'}
+                        </p>
+                      )}
+                      {generalError && generalError.includes('not registered') && (
+                        <p className="text-sm text-blue-700 mt-2">
+                          Don&apos;t have an account?{' '}
+                          <a href="/register" className="text-blue-600 hover:text-blue-800 underline font-semibold">Sign up here</a>.
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -167,7 +202,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                       placeholder="you@example.com"
                       icon={<Mail size={18} />}
                       error={!!errors.email}
-                      {...register('email')}
+                      {...register('email', {
+                        onChange: () => {
+                          setGeneralError(null)
+                        },
+                      })}
                       aria-label="Email address"
                       aria-describedby={errors.email ? 'email-error' : undefined}
                     />
@@ -194,7 +233,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                       placeholder="••••••••"
                       icon={<Lock size={18} />}
                       error={!!errors.password}
-                      {...register('password')}
+                      {...register('password', {
+                        onChange: () => {
+                          setGeneralError(null)
+                        },
+                      })}
                       aria-label="Password"
                       aria-describedby={errors.password ? 'password-error' : undefined}
                     />
@@ -208,7 +251,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (generalError && generalError.toLowerCase().includes('too many failed'))}
                     className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold"
                   >
                     {loading ? (
