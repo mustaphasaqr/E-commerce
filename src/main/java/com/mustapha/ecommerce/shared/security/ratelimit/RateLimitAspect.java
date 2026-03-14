@@ -101,10 +101,36 @@ public class RateLimitAspect {
         String identifier = switch (rateLimit.scope()) {
             case IP -> extractIpAddress(request);
             case USER -> extractUserId(request);
-            case PARAMETER -> request.getRequestURI();
+            case PARAMETER -> extractParameterValue(request, rateLimit.parameterName());
         };
-        
         return RATE_LIMIT_PREFIX + rateLimit.scope() + ":" + identifier + ":" + request.getRequestURI();
+    }
+
+    private String extractParameterValue(HttpServletRequest request, String parameterName) {
+        if (parameterName == null || parameterName.isEmpty()) {
+            return "unknown";
+        }
+        // Try to extract from JSON body (for POST)
+        try {
+            request.getInputStream().mark(0);
+            String body = new String(request.getInputStream().readAllBytes());
+            request.getInputStream().reset();
+            // Very basic JSON extraction (assumes flat JSON)
+            String search = "\"" + parameterName + "\":";
+            int idx = body.indexOf(search);
+            if (idx != -1) {
+                int start = body.indexOf('"', idx + search.length());
+                int end = body.indexOf('"', start + 1);
+                if (start != -1 && end != -1) {
+                    return body.substring(start + 1, end);
+                }
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        // Fallback to request param
+        String param = request.getParameter(parameterName);
+        return param != null ? param : "unknown";
     }
 
     private String extractIpAddress(HttpServletRequest request) {

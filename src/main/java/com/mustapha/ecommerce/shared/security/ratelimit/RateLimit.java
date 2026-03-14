@@ -23,6 +23,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RateLimit {
+        /**
+         * Name of the parameter to use for PARAMETER scope (e.g., "email").
+         * Only used if scope = PARAMETER.
+         */
+        String parameterName() default "";
     
     /**
      * Maximum number of requests allowed within the time window

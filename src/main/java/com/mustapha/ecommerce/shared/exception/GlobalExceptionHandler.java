@@ -199,17 +199,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleRateLimitExceededException(
             RateLimitExceededException ex, HttpServletRequest request) {
-        
-        logger.warn("Rate limit exceeded from IP: {} at {}", 
-            request.getRemoteAddr(), request.getRequestURI());
-        
-        ErrorResponse response = new ErrorResponse(
-            ErrorCode.AUTH_RATE_LIMIT_EXCEEDED,
-            "Too many failed login attempts. Please try again later.",
-            request.getRequestURI(),
-            429
-        );
-        
+        logger.warn("Rate limit exceeded from IP: {} at {}", request.getRemoteAddr(), request.getRequestURI());
         // Calculate retry-after in seconds
         long retryAfterSeconds = 60; // default 1 minute
         if (ex.getLockedUntil() != null) {
@@ -217,10 +207,16 @@ public class GlobalExceptionHandler {
                 java.time.LocalDateTime.now(), 
                 ex.getLockedUntil()
             ).getSeconds();
-            // Ensure non-negative value
             retryAfterSeconds = Math.max(retryAfterSeconds, 0);
         }
-        
+        ErrorResponse response = new ErrorResponse(
+            ErrorCode.AUTH_RATE_LIMIT_EXCEEDED,
+            "Too many failed login attempts. Please try again later.",
+            request.getRequestURI(),
+            null,
+            429,
+            retryAfterSeconds
+        );
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .header("Retry-After", String.valueOf(retryAfterSeconds))
             .body(response);

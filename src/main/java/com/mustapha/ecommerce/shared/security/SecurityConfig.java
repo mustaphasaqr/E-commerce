@@ -105,6 +105,7 @@ public class SecurityConfig {
                 
                 corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                 corsConfig.setAllowedHeaders(java.util.List.of("*"));
+                corsConfig.setExposedHeaders(java.util.List.of("Retry-After"));
                 corsConfig.setAllowCredentials(true);
                 corsConfig.setMaxAge(3600L);
                 return corsConfig;

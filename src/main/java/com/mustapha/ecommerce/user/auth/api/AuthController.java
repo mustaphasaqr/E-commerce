@@ -153,14 +153,14 @@ public class AuthController {
         )
     })
     @PostMapping("/login")
+    @RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.PARAMETER, message = "Too many login attempts for this account. Please try again in 5 minutes.", parameterName = "email")
     public ResponseEntity<LoginResponse> login(
             @Parameter(description = "Login credentials (email/username + password)", required = true)
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
-        
+        // Use email as the parameter for per-user/email rate limiting
         String ipAddress = extractIpAddress(httpRequest);
         String userAgent = extractUserAgent(httpRequest);
-        
         LoginResponse response = authFacade.login(request, ipAddress, userAgent);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
