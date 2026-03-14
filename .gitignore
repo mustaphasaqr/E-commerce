@@ -1,3 +1,5 @@
+# Vite cache
+new_frontend/.vite/
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
