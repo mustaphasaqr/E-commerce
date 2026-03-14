@@ -119,3 +119,25 @@ export async function getCurrentUser(): Promise<User> {
   const response = await axios.get<User>('/users/me')
   return response.data
 }
+
+// ========== EMAIL VERIFICATION ==========
+/**
+ * Verify email with token
+ * POST /api/v1/auth/email-verification/verify
+ * Returns: accessToken, refreshToken, user (auto-login after verification)
+ */
+export async function verifyEmail(token: string): Promise<LoginResponse> {
+  const response = await axios.post<LoginResponse>('/auth/email-verification/verify', { token })
+  console.log('✅ Email verified and logged in automatically')
+  return response.data
+}
+
+/**
+ * Resend verification email
+ * POST /api/v1/auth/email-verification/resend
+ * Returns: 204 No Content
+ */
+export async function resendVerificationEmail(email: string): Promise<void> {
+  await axios.post('/auth/email-verification/resend', { email })
+  console.log('✅ Verification email resent')
+}

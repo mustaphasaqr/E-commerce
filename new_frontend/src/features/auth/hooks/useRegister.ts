@@ -26,9 +26,26 @@ export function useRegister() {
       console.log('🆕 Registration: Check email to verify account')
       return response
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed'
+      // Extract detailed error message from axios error response
+      let message = 'Registration failed'
+      
+      if (err instanceof Error) {
+        // Check if it's an axios error with response data
+        const axiosError = err as any
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error
+        } else if (axiosError.response?.statusText) {
+          message = `${axiosError.response.statusText}: ${axiosError.message}`
+        } else {
+          message = err.message
+        }
+      }
+      
       setError(message)
       console.error('❌ Registration error:', message)
+      console.error('Full error details:', err)
       return null
     } finally {
       setLoading(false)

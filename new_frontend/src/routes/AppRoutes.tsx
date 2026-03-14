@@ -2,13 +2,15 @@ import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
+import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
+import { HomePage } from '@/pages'
 
 /** ============================================
  * ROUTE CONFIGURATION
  *
  * This file defines all routes in the application.
  * Routes are organized by accessibility level:
- * - Public: Anyone can access (Login, Register, Home)
+ * - Public: Anyone can access (Home, Login, Register, Products)
  * - Protected: Requires authentication (Profile, Cart, Orders)
  * - Admin: Requires authentication + admin role (Dashboard, Users)
  *
@@ -21,8 +23,8 @@ export function AppRoutes() {
     <Routes>
         {/* ========== PUBLIC ROUTES ========== */}
 
-        {/* Landing / Home Page */}
-        <Route path="/" element={<div className="p-4">Home Page (Coming Soon)</div>} />
+        {/* Landing / Home Page - Default route when opening app */}
+        <Route path="/" element={<HomePage />} />
 
         {/* Authentication Routes */}
         <Route 
@@ -31,7 +33,11 @@ export function AppRoutes() {
         />
         <Route 
           path="/register" 
-          element={<RegisterForm onRegisterSuccess={() => navigate('/login')} />} 
+          element={<RegisterForm />} 
+        />
+        <Route
+          path="/verify-email"
+          element={<VerifyEmailPage />}
         />
 
         {/* Products Listing (Public) */}
