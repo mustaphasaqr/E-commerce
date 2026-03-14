@@ -29,6 +29,47 @@ import java.util.UUID;
 @Service
 public class AuthFacade {
 
+    /**
+     * Auto-login after registration
+     * @param userResponse Registered user info
+     * @param plainPassword The password used for registration
+     * @param ipAddress Client IP address
+     * @param userAgent Client user agent
+     * @return LoginResponse with tokens and user info
+     */
+    public LoginResponse loginAfterRegistration(UserResponse userResponse, String plainPassword, String ipAddress, String userAgent) {
+        // Find the user by id (to get domain model)
+        User user = userRepository.findById(com.mustapha.ecommerce.user.domain.model.valueobject.UserId.of(java.util.UUID.fromString(userResponse.getId())))
+            .orElseThrow(() -> new IllegalArgumentException("User not found after registration"));
+
+        // Create refresh token
+        com.mustapha.ecommerce.user.auth.domain.model.RefreshToken refreshToken = com.mustapha.ecommerce.user.auth.domain.model.RefreshToken.create(user.getId().getValue().toString());
+        refreshTokenRepository.save(refreshToken);
+
+        // Create login session
+        com.mustapha.ecommerce.user.auth.domain.model.LoginSession session = com.mustapha.ecommerce.user.auth.domain.model.LoginSession.create(
+            user.getId().getValue().toString(),
+            ipAddress,
+            userAgent
+        );
+        loginSessionRepository.save(session);
+
+        // Generate JWT access token
+        String accessToken = jwtTokenGenerator.generateAccessToken(
+            user.getId().getValue().toString(),
+            user.getRole().name(),
+            session.getSessionId()
+        );
+
+        return new LoginResponse(
+            accessToken,
+            refreshToken.getTokenValue(),
+            session.getSessionId(),
+            3600000, // 1 hour in ms
+            userResponse
+        );
+    }
+
     private final LoginUseCase loginUseCase;
     private final LogoutUseCase logoutUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
@@ -41,6 +82,7 @@ public class AuthFacade {
     private final JwtTokenGenerator jwtTokenGenerator;
     private final UserRepository userRepository;
     private final com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository refreshTokenRepository;
+    private final com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository loginSessionRepository;
 
     public AuthFacade(LoginUseCase loginUseCase,
                      LogoutUseCase logoutUseCase,
@@ -53,7 +95,8 @@ public class AuthFacade {
                      PasswordHasher passwordHasher,
                      JwtTokenGenerator jwtTokenGenerator,
                      UserRepository userRepository,
-                     com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository refreshTokenRepository) {
+                     com.mustapha.ecommerce.user.auth.domain.repository.RefreshTokenRepository refreshTokenRepository,
+                     com.mustapha.ecommerce.user.auth.domain.repository.LoginSessionRepository loginSessionRepository) {
         this.loginUseCase = loginUseCase;
         this.logoutUseCase = logoutUseCase;
         this.refreshTokenUseCase = refreshTokenUseCase;
@@ -66,6 +109,7 @@ public class AuthFacade {
         this.jwtTokenGenerator = jwtTokenGenerator;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.loginSessionRepository = loginSessionRepository;
     }
 
     /**

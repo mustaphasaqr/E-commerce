@@ -38,9 +38,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserFacade userFacade;
+    private final com.mustapha.ecommerce.user.auth.application.facade.AuthFacade authFacade;
 
-    public UserController(UserFacade userFacade) {
+    public UserController(UserFacade userFacade, com.mustapha.ecommerce.user.auth.application.facade.AuthFacade authFacade) {
         this.userFacade = userFacade;
+        this.authFacade = authFacade;
     }
 
     // ========== Public Endpoints ==========
@@ -50,9 +52,15 @@ public class UserController {
      * POST /api/users
      */
     @PostMapping
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterUserRequest request) {
-        UserResponse response = userFacade.registerUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterUserRequest request,
+                                                 @RequestHeader(value = "X-Forwarded-For", required = false) String xForwardedFor,
+                                                 @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+        // Register the user
+        UserResponse userResponse = userFacade.registerUser(request);
+        // Use the same email and password for auto-login
+        String ipAddress = xForwardedFor != null ? xForwardedFor : "127.0.0.1";
+        LoginResponse loginResponse = authFacade.loginAfterRegistration(userResponse, request.getPassword(), ipAddress, userAgent);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     // ========== Authenticated User Endpoints (requires JWT) ==========
