@@ -59,8 +59,9 @@ export function useLogin() {
           (apiMsg.toLowerCase().includes('not found') || apiMsg.toLowerCase().includes('no user') || apiMsg.toLowerCase().includes('deleted') || apiMsg.toLowerCase().includes('invalid credentials'))
         ) {
           message =
-            'This account is not registered or has been deleted. Please check your email or '
-            + 'sign up for a new account.'
+            'No account found for this email address. ' +
+            'If you don\'t have an account, you can ' +
+            '<a href="/register" class="text-blue-600 hover:text-blue-800 underline font-semibold">create one here</a>.'
           emailError = 'Account not found'
         } else if (status === 401 && apiMsg.toLowerCase().includes('password')) {
           message = 'Incorrect password. Please try again.'

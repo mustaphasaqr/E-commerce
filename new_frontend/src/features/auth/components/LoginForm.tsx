@@ -163,19 +163,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                     <span className="text-red-600 text-lg flex-shrink-0">❌</span>
                     <div className="flex-1">
                       <p className="text-sm text-red-800 font-medium">Login Failed</p>
-                      <p className="text-sm text-red-700 mt-1">{generalError}</p>
+                      <p className="text-sm text-red-700 mt-1" dangerouslySetInnerHTML={{ __html: generalError }} />
                       {generalError.includes('too many failed') && (
                         <p className="text-sm text-orange-700 mt-2 font-semibold">
                           You have been rate limited.{' '}
                           {retryAfter && retryAfter > 0
                             ? `Please wait ${Math.ceil(retryAfter / 60) > 1 ? Math.ceil(retryAfter / 60) + ' minutes' : retryAfter + ' seconds'} before trying again.`
                             : 'Please wait a few minutes before trying again.'}
-                        </p>
-                      )}
-                      {generalError && generalError.includes('not registered') && (
-                        <p className="text-sm text-blue-700 mt-2">
-                          Don&apos;t have an account?{' '}
-                          <a href="/register" className="text-blue-600 hover:text-blue-800 underline font-semibold">Sign up here</a>.
                         </p>
                       )}
                     </div>
