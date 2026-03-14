@@ -1,15 +1,44 @@
+# Vite build cache
+new_frontend/.vite/
+
+# Test results and screenshots
+new_frontend/test-results/
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Node modules
+node_modules/
+frontend/node_modules/
+new_frontend/node_modules/
+
+# Build outputs
+target/
+frontend/dist/
+new_frontend/dist/
+
+# Dependency lock files (optional, if you want to ignore them)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE and system files
+
 ### STS ###
+.DS_Store
+
+# Environment files
 .apt_generated
 .classpath
 .factorypath
+.env.*
+
+# Misc
 .project
 .settings
+HELP.md
 .springBeans
 .sts4-cache
 
