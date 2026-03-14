@@ -69,16 +69,7 @@ export interface RegisterRequest {
   termsAccepted: boolean
 }
 
-export interface RegisterResponse {
-  id: string
-  username: string
-  email: string
-  role: string
-  status: string
-  emailVerified: boolean
-  createdAt: string
-  updatedAt: string
-}
+// Registration now returns LoginResponse (see below)
 
 // ========== Email Verification Formulas ==========
 export interface RequestEmailVerificationRequest {

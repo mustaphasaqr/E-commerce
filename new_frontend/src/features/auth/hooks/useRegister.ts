@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { register as registerService } from '../api/authService'
-import type { RegisterRequest, RegisterResponse } from '../types'
+import type { RegisterRequest, LoginResponse } from '../types'
 import { useAuthStore } from './useAuthStore'
 
 /**
@@ -15,22 +15,21 @@ import { useAuthStore } from './useAuthStore'
 export function useRegister() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<RegisterResponse | null>(null)
-  const { setToken, setUser, setRefreshToken, setSessionId } = useAuthStore()
+  const [data, setData] = useState<LoginResponse | null>(null)
+  const { setUser, setToken, setRefreshToken, setSessionId } = useAuthStore()
 
-  const register = async (request: RegisterRequest): Promise<RegisterResponse | null> => {
+  const register = async (request: RegisterRequest): Promise<LoginResponse | null> => {
     setLoading(true)
     setError(null)
 
     try {
       const response = await registerService(request)
       setData(response)
-      // Simulate login: set auth state (no token, but user is set)
-      setUser(response as unknown as User)
-      setToken('dummy-token') // You may want to get a real token from backend
-      setRefreshToken('dummy-refresh-token')
-      setSessionId('dummy-session-id')
-      console.log('🆕 Registration: User considered logged in')
+      setToken(response.accessToken)
+      setRefreshToken(response.refreshToken)
+      setUser(response.user)
+      setSessionId(response.sessionId)
+      console.log('🆕 Registration: User registered and auto-logged in')
       return response
     } catch (err) {
       // Extract detailed error message from axios error response

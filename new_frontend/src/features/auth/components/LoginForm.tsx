@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -31,39 +31,50 @@ interface LoginFormProps {
  */
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const navigate = useNavigate()
-  const { login, loading, error: loginError, fieldErrors, retryAfter } = useLogin()
+  const { login, loading, error: loginError, fieldErrors, retryAfter, rateLimitedEmail, clearRateLimitState } = useLogin?.() ?? {}
   const [generalError, setGeneralError] = useState<string | null>(null)
+  const [localFieldErrors, setLocalFieldErrors] = useState<{ email?: string; password?: string }>({})
 
   const {
     register,
     handleSubmit,
     setError,
     formState: { errors },
+    resetField,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onBlur',
   })
 
+  const registrationSuggestion =
+    "<span style=\"color:#2563eb;\">If you don't have an account, you can <a href=\"/register\" class=\"text-blue-600 hover:text-blue-800 underline font-semibold\">create one here</a>.</span>";
+
+  // Sync local field errors with hook fieldErrors
+  React.useEffect(() => {
+    setLocalFieldErrors(fieldErrors)
+  }, [fieldErrors])
+
   const onSubmit = async (data: LoginFormData) => {
     // Do not clear generalError here; only clear on input change
     const result = await login(data)
 
-    // Always show any loginError as a general error if login failed
     if (!result) {
-      let hasFieldError = false
-      if (fieldErrors.email) {
-        setError('email', { type: 'manual', message: fieldErrors.email })
-        hasFieldError = true
-      }
-      if (fieldErrors.password) {
-        setError('password', { type: 'manual', message: fieldErrors.password })
-        hasFieldError = true
-      }
-      // Always show the error, even for 429, 500, etc.
-      if (loginError && !hasFieldError) {
-        setGeneralError(loginError)
-      } else if (!loginError && !hasFieldError) {
-        setGeneralError('Login failed. Please try again.')
+      // Always show the registration suggestion for any login failure except rate limit
+      let errorMsg = loginError || 'Login failed. Please try again.'
+      if (errorMsg.toLowerCase().includes('too many failed')) {
+        // Get the current email input value
+        const emailInput = (document.getElementById('email') as HTMLInputElement)?.value?.trim()?.toLowerCase() || ''
+        if (!rateLimitedEmail || (rateLimitedEmail && rateLimitedEmail.toLowerCase() === emailInput)) {
+          setGeneralError(errorMsg)
+        } else {
+          // If another user is rate limited, show generic error with registration suggestion
+          setGeneralError('Login failed. Please try again.<br/>' + registrationSuggestion)
+        }
+      } else {
+        // Always append the registration suggestion
+        setGeneralError(
+          'Login failed. Please try again.<br/>' + registrationSuggestion
+        )
       }
       return
     }
@@ -163,8 +174,8 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                     <span className="text-red-600 text-lg flex-shrink-0">❌</span>
                     <div className="flex-1">
                       <p className="text-sm text-red-800 font-medium">Login Failed</p>
-                      <p className="text-sm text-red-700 mt-1" dangerouslySetInnerHTML={{ __html: generalError }} />
-                      {generalError.includes('too many failed') && (
+                      <p className="text-sm mt-1" style={{ color: generalError.toLowerCase().includes('too many failed') ? '#b91c1c' : undefined }} dangerouslySetInnerHTML={{ __html: generalError }} />
+                      {generalError.toLowerCase().includes('too many failed') && (
                         <p className="text-sm text-orange-700 mt-2 font-semibold">
                           You have been rate limited.{' '}
                           {retryAfter && retryAfter > 0
@@ -190,24 +201,34 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                       Email Address
                     </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      icon={<Mail size={18} />}
-                      error={!!errors.email}
-                      {...register('email', {
-                        onChange: () => {
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        icon={<Mail size={18} />}
+                        error={!!errors.email || !!localFieldErrors.email}
+                        {...register('email', {
+                          onChange: () => {
+                            setGeneralError(null)
+                            setLocalFieldErrors({})
+                            if (typeof clearRateLimitState === 'function') clearRateLimitState();
+                          },
+                        })}
+                        onFocus={() => {
                           setGeneralError(null)
-                        },
-                      })}
-                      aria-label="Email address"
-                      aria-describedby={errors.email ? 'email-error' : undefined}
-                    />
-                    {errors.email && (
-                      <p id="email-error" className="text-sm text-red-600 font-medium">
-                        {errors.email.message}
-                      </p>
+                          setLocalFieldErrors({})
+                          if (typeof clearRateLimitState === 'function') clearRateLimitState();
+                        }}
+                        autoComplete="username"
+                        aria-label="Email address"
+                        aria-describedby={errors.email ? 'email-error' : undefined}
+                      />
+                    {(errors.email || localFieldErrors.email) && (
+                      <p
+                        id="email-error"
+                        className="text-sm text-red-600 font-medium"
+                        dangerouslySetInnerHTML={{ __html: ((errors.email?.message || localFieldErrors.email) || '').replace(/\n/g, '<br/>') }}
+                      />
                     )}
                   </div>
 
@@ -226,26 +247,34 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                       type="password"
                       placeholder="••••••••"
                       icon={<Lock size={18} />}
-                      error={!!errors.password}
+                      error={!!errors.password || !!localFieldErrors.password}
                       {...register('password', {
                         onChange: () => {
                           setGeneralError(null)
+                          setLocalFieldErrors({})
                         },
                       })}
+                      onFocus={() => {
+                        setGeneralError(null)
+                        setLocalFieldErrors({})
+                      }}
+                      autoComplete="current-password"
                       aria-label="Password"
                       aria-describedby={errors.password ? 'password-error' : undefined}
                     />
-                    {errors.password && (
-                      <p id="password-error" className="text-sm text-red-600 font-medium">
-                        {errors.password.message}
-                      </p>
+                    {(errors.password || localFieldErrors.password) && (
+                      <p
+                        id="password-error"
+                        className="text-sm text-red-600 font-medium"
+                        dangerouslySetInnerHTML={{ __html: ((errors.password?.message || localFieldErrors.password) || '').replace(/\n/g, '<br/>') }}
+                      />
                     )}
                   </div>
 
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    disabled={loading || (generalError && generalError.toLowerCase().includes('too many failed'))}
+                    disabled={Boolean(loading || (generalError && generalError.toLowerCase().includes('too many failed')))}
                     className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold"
                   >
                     {loading ? (

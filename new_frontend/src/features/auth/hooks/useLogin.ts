@@ -17,6 +17,7 @@ export function useLogin() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [rateLimitedEmail, setRateLimitedEmail] = useState<string | null>(null)
   const { setToken, setUser, setRefreshToken, setSessionId } = useAuthStore()
 
   const login = async (request: LoginRequest): Promise<LoginResponse | null> => {
@@ -24,6 +25,7 @@ export function useLogin() {
     setError(null)
     setFieldErrors({})
     setRetryAfter(null)
+    setRateLimitedEmail(null)
 
     try {
       const response = await loginService(request)
@@ -38,6 +40,7 @@ export function useLogin() {
       let emailError: string | undefined
       let passwordError: string | undefined
       let retryAfterSeconds: number | null = null
+      let limitedEmail: string | null = null
 
       if (err?.response) {
         const status = err.response.status
@@ -51,21 +54,14 @@ export function useLogin() {
           } else if (err.response.data?.retryAfterSeconds) {
             retryAfterSeconds = parseInt(err.response.data.retryAfterSeconds, 10)
           }
+          // Try to get the affected email from backend response
+          if (err.response.data?.email) {
+            limitedEmail = err.response.data.email
+          }
           message = apiMsg || 'Too many failed login attempts. Please try again later.'
-        }
-        // Professional message for unregistered/deleted account
-        else if (
-          status === 401 &&
-          (apiMsg.toLowerCase().includes('not found') || apiMsg.toLowerCase().includes('no user') || apiMsg.toLowerCase().includes('deleted') || apiMsg.toLowerCase().includes('invalid credentials'))
-        ) {
-          message =
-            'No account found for this email address. ' +
-            'If you don\'t have an account, you can ' +
-            '<a href="/register" class="text-blue-600 hover:text-blue-800 underline font-semibold">create one here</a>.'
-          emailError = 'Account not found'
-        } else if (status === 401 && apiMsg.toLowerCase().includes('password')) {
-          message = 'Incorrect password. Please try again.'
-          passwordError = 'Incorrect password'
+        } else if (status === 401) {
+          // For any 401 error, always use the generic message
+          message = 'Login failed. Please try again.'
         } else if (apiMsg) {
           message = apiMsg
         }
@@ -75,6 +71,7 @@ export function useLogin() {
       setError(message)
       setFieldErrors({ email: emailError, password: passwordError })
       setRetryAfter(retryAfterSeconds)
+      setRateLimitedEmail(limitedEmail)
       console.error('❌ Login error:', message)
       return null
     } finally {
@@ -82,5 +79,11 @@ export function useLogin() {
     }
   }
 
-  return { login, loading, error, fieldErrors, retryAfter }
+  const clearRateLimitState = () => {
+    setError(null)
+    setFieldErrors({})
+    setRetryAfter(null)
+    setRateLimitedEmail(null)
+  }
+  return { login, loading, error, fieldErrors, retryAfter, rateLimitedEmail, clearRateLimitState }
 }

@@ -100,13 +100,13 @@ export async function completePasswordReset(
 
 // ========== BONUS: Register ==========
 /**
- * Register new user
+ * Register new user (now returns LoginResponse and auto-logs in)
  * POST /api/v1/users
- * Returns: User with status PENDING
+ * Returns: LoginResponse (tokens, sessionId, user)
  */
-export async function register(request: RegisterRequest): Promise<RegisterResponse> {
-  const response = await axios.post<RegisterResponse>('/users', request)
-  console.log('✅ Registration successful - check email to verify')
+export async function register(request: RegisterRequest): Promise<LoginResponse> {
+  const response = await axios.post<LoginResponse>('/users', request)
+  console.log('✅ Registration successful, user auto-logged in')
   return response.data
 }
 

@@ -112,7 +112,7 @@ export function RegisterForm({ onRegisterSuccess }: RegisterFormProps) {
                     <div>
                       <p className="font-medium text-sm text-green-900">Check your email</p>
                       <p className="text-sm text-green-700 mt-1">We sent a verification link to</p>
-                      <p className="text-sm font-semibold text-green-900">{registerData.email}</p>
+                      <p className="text-sm font-semibold text-green-900">{registerData.user.email}</p>
                     </div>
                   </div>
 

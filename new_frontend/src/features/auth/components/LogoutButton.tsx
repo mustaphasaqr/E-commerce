@@ -1,4 +1,5 @@
-import { LogOut, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { LogOut, AlertCircle, Loader2 } from 'lucide-react'
 import { useLogout } from '../hooks/useLogout'
 import { Button } from '@/shared/components/ui'
 
@@ -28,19 +29,31 @@ interface LogoutButtonProps {
  * - Service returns void (204 No Content)
  * - Store is cleared on success
  */
+
 export function LogoutButton({ onLogoutSuccess, className = '', variant = 'destructive' }: LogoutButtonProps) {
   const { logout, loading, error } = useLogout()
+  const [showLogoutLoader, setShowLogoutLoader] = useState(false)
 
   const handleLogout = async () => {
     await logout()
     onLogoutSuccess?.()
+    setShowLogoutLoader(true)
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000)
   }
 
   return (
     <div className="space-y-2">
+      {showLogoutLoader && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white bg-opacity-90">
+          <Loader2 size={64} className="animate-spin text-blue-600 mb-4" />
+          <div className="text-lg font-semibold text-blue-700">Logging out...</div>
+        </div>
+      )}
       <Button
         onClick={handleLogout}
-        disabled={loading}
+        disabled={loading || showLogoutLoader}
         variant={variant}
         className={`flex items-center justify-center gap-2 ${className}`}
         aria-label="Logout from your account"
@@ -59,7 +72,7 @@ export function LogoutButton({ onLogoutSuccess, className = '', variant = 'destr
       </Button>
 
       {/* Error Message */}
-      {error && (
+      {error && !showLogoutLoader && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
           <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
