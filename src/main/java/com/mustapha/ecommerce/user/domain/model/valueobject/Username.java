@@ -126,9 +126,14 @@ public class Username {
         }
 
         String propertyValue = System.getProperty("app.owner.one-time-signup.enabled");
+        String legacyPropertyValue = System.getProperty("OWNER_ONE_TIME_SIGNUP_ENABLED");
         String envValue = System.getenv("APP_OWNER_ONE_TIME_SIGNUP_ENABLED");
+        String springStyleEnvValue = System.getenv("OWNER_ONE_TIME_SIGNUP_ENABLED");
 
-        return "true".equalsIgnoreCase(propertyValue) || "true".equalsIgnoreCase(envValue);
+        return "true".equalsIgnoreCase(propertyValue)
+            || "true".equalsIgnoreCase(legacyPropertyValue)
+            || "true".equalsIgnoreCase(envValue)
+            || "true".equalsIgnoreCase(springStyleEnvValue);
     }
 
     public String getValue() {
