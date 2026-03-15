@@ -10,10 +10,16 @@ public class DeleteUserCommand {
     
     private final UserId userId;
     private final String reason;
+    private final UserId requestedByUserId;
     
     public DeleteUserCommand(UserId userId, String reason) {
+        this(userId, reason, null);
+    }
+
+    public DeleteUserCommand(UserId userId, String reason, UserId requestedByUserId) {
         this.userId = userId;
         this.reason = reason;
+        this.requestedByUserId = requestedByUserId;
     }
     
     public UserId getUserId() {
@@ -22,5 +28,9 @@ public class DeleteUserCommand {
     
     public String getReason() {
         return reason;
+    }
+
+    public UserId getRequestedByUserId() {
+        return requestedByUserId;
     }
 }

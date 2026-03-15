@@ -20,6 +20,11 @@ import java.util.Optional;
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, String> {
 
     /**
+     * List only non-deleted users (soft-delete aware listing).
+     */
+    Page<UserJpaEntity> findByDeletedFalse(Pageable pageable);
+
+    /**
      * Find user by email
      */
     Optional<UserJpaEntity> findByEmail(String email);
@@ -42,7 +47,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, S
     /**
      * Search users by criteria (admin only)
      */
-    @Query("SELECT u FROM UserJpaEntity u WHERE " +
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.deleted = false AND " +
            "(:email IS NULL OR u.email LIKE %:email%) AND " +
            "(:username IS NULL OR u.username LIKE %:username%) AND " +
            "(:status IS NULL OR u.status = :status) AND " +

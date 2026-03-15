@@ -177,7 +177,7 @@ class AdminControllerIntegrationTest {
 
     @Test
     void deleteUser_AsOwner_Returns200() throws Exception {
-        DeleteUserRequest request = new DeleteUserRequest(customerUserId, "GDPR deletion request");
+        DeleteUserRequest request = new DeleteUserRequest("GDPR deletion request");
 
         mockMvc.perform(delete("/api/v1/admin/users/" + customerUserId)
                 .header("Authorization", "Bearer " + ownerJwt)
@@ -316,7 +316,7 @@ class AdminControllerIntegrationTest {
         mockMvc.perform(delete("/api/v1/admin/users/" + customerUserId)
                 .header("Authorization", "Bearer " + customerJwt)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new DeleteUserRequest(customerUserId, "Test"))))
+                .content(objectMapper.writeValueAsString(new DeleteUserRequest("Test"))))
             .andExpect(status().isForbidden());
 
         // List endpoint

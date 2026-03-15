@@ -140,7 +140,7 @@ class AdminFacadeTest {
             String userId = mockUser.getId().toString();
             when(deleteUserUseCase.execute(any(DeleteUserCommand.class))).thenReturn(mockUser);
 
-            User result = adminFacade.deleteUser(userId, "GDPR request");
+            User result = adminFacade.deleteUser(userId, "GDPR request", mockUser.getId().toString());
 
             assertThat(result).isNotNull();
             verify(deleteUserUseCase, times(1)).execute(any(DeleteUserCommand.class));

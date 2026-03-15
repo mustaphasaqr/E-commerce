@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,8 +58,11 @@ public class AdminController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<UserResponse> deleteUser(@PathVariable String id, @RequestBody DeleteUserRequest request) {
-        User user = adminFacade.deleteUser(id, request.reason());
+    public ResponseEntity<UserResponse> deleteUser(
+            @PathVariable String id,
+            @Valid @RequestBody DeleteUserRequest request,
+            @AuthenticationPrincipal String authenticatedUserId) {
+        User user = adminFacade.deleteUser(id, request.reason(), authenticatedUserId);
         return ResponseEntity.status(HttpStatus.OK).body(UserResponse.fromDomain(user));
     }
 

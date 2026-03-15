@@ -213,7 +213,7 @@ class AdminControllerTest {
                 }
                 """;
 
-            when(adminFacade.deleteUser(anyString(), anyString())).thenReturn(mockUser);
+            when(adminFacade.deleteUser(anyString(), anyString(), anyString())).thenReturn(mockUser);
 
             mockMvc.perform(delete("/api/v1/admin/users/{id}", mockUser.getId().toString())
                     .with(csrf())
@@ -222,7 +222,7 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("johndoe"));
 
-            verify(adminFacade, times(1)).deleteUser(anyString(), anyString());
+            verify(adminFacade, times(1)).deleteUser(anyString(), anyString(), anyString());
         }
 
         @Test
@@ -234,7 +234,7 @@ class AdminControllerTest {
                 }
                 """;
 
-            when(adminFacade.deleteUser(anyString(), anyString()))
+            when(adminFacade.deleteUser(anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("User not found"));
 
             mockMvc.perform(delete("/api/v1/admin/users/{id}", "USER-999")

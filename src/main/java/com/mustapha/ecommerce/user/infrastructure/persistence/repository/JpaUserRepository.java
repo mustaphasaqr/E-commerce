@@ -83,7 +83,7 @@ public class JpaUserRepository implements UserRepository {
 
     @Override
     public Page<User> findAll(Pageable pageable) {
-        return springDataRepository.findAll(pageable)
+        return springDataRepository.findByDeletedFalse(pageable)
             .map(mapper::toDomain);
     }
 
