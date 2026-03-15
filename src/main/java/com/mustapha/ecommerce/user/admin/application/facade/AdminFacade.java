@@ -81,8 +81,12 @@ public class AdminFacade {
     /**
      * Delete user account (OWNER only - soft delete for GDPR)
      */
-    public User deleteUser(String userId, String reason) {
-        DeleteUserCommand command = new DeleteUserCommand(UserId.of(userId), reason);
+    public User deleteUser(String userId, String reason, String requestedByUserId) {
+        DeleteUserCommand command = new DeleteUserCommand(
+            UserId.of(userId),
+            reason,
+            requestedByUserId != null ? UserId.of(requestedByUserId) : null
+        );
         return deleteUserUseCase.execute(command);
     }
 
