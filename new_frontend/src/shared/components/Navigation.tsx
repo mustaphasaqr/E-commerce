@@ -198,21 +198,12 @@ export function Navigation({}: NavigationProps) {
                   {/* User menu */}
                   <button
                     onClick={() => {
-                      navigate('/account')
+                      navigate('/account?tab=account')
                       setProfileMenuOpen(false)
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                   >
                     My Account
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/orders')
-                      setProfileMenuOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                  >
-                    My Orders
                   </button>
                   <hr className="my-2" />
                   <button

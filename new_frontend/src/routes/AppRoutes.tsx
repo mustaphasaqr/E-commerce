@@ -3,7 +3,7 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
-import { HomePage, AccountPage, OrdersPage } from '@/pages'
+import { HomePage, AccountPage, OrderDetailPage } from '@/pages'
 import {
   OrdersPage as AdminOrdersPage,
   UsersPage,
@@ -77,8 +77,8 @@ export function AppRoutes() {
         <Route
           path="/orders"
           element={
-            <ProtectedRoute>
-              <OrdersPage />
+            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
+              <Navigate to="/account?tab=orders" replace />
             </ProtectedRoute>
           }
         />
@@ -87,7 +87,7 @@ export function AppRoutes() {
         <Route
           path="/account"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
               <AccountPage />
             </ProtectedRoute>
           }
@@ -97,8 +97,8 @@ export function AppRoutes() {
         <Route
           path="/orders/:id"
           element={
-            <ProtectedRoute>
-              <div className="p-4">Order Detail (Coming Soon)</div>
+            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
+              <OrderDetailPage />
             </ProtectedRoute>
           }
         />

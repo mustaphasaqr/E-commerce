@@ -3,7 +3,6 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  RegisterResponse,
   RefreshTokenRequest,
   TokenResponse,
   PasswordResetRequestRequest,
