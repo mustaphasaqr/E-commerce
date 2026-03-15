@@ -14,6 +14,7 @@ import com.mustapha.ecommerce.user.auth.domain.exception.InvalidCredentialsExcep
 import com.mustapha.ecommerce.user.auth.domain.exception.RateLimitExceededException;
 import com.mustapha.ecommerce.user.auth.domain.exception.TokenAlreadyUsedException;
 import com.mustapha.ecommerce.user.auth.domain.service.AccountLockedException;
+import com.mustapha.ecommerce.user.domain.exception.InvalidUserStateException;
 import com.mustapha.ecommerce.user.domain.exception.UserBlockedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -414,6 +415,26 @@ public class GlobalExceptionHandler {
             400
         );
         
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * Handles invalid user lifecycle transitions (e.g., activating already active user,
+     * or activation prerequisites not met).
+     */
+    @ExceptionHandler(InvalidUserStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidUserStateException(
+            InvalidUserStateException ex, HttpServletRequest request) {
+
+        logger.warn("Invalid user state transition at {}: {}", request.getRequestURI(), ex.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+            ErrorCode.VALIDATION_FAILED,
+            ex.getMessage(),
+            request.getRequestURI(),
+            400
+        );
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
     
