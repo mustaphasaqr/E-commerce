@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
 
 import java.util.List;
 import java.util.UUID;
@@ -62,6 +63,17 @@ public class UserFacade {
 
     @Value("${app.owner.one-time-signup.username:owner}")
     private String ownerOneTimeSignupUsername;
+
+    @PostConstruct
+    void syncOneTimeOwnerSignupFlagForUsernameValidation() {
+        // Username value object is static and reads JVM properties/env directly.
+        // Keep it in sync with Spring configuration toggle.
+        if (ownerOneTimeSignupEnabled) {
+            System.setProperty("app.owner.one-time-signup.enabled", "true");
+        } else {
+            System.clearProperty("app.owner.one-time-signup.enabled");
+        }
+    }
 
     public UserFacade(RegisterUserUseCase registerUserUseCase,
                      ActivateUserUseCase activateUserUseCase,
