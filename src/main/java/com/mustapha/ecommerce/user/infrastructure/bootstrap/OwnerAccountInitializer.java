@@ -57,79 +57,83 @@ public class OwnerAccountInitializer implements CommandLineRunner {
         String normalizedEmail = ownerEmail.toLowerCase();
         String normalizedUsername = ownerUsername.toLowerCase();
 
-        Optional<UserJpaEntity> existingByEmail = userRepository.findByEmail(normalizedEmail);
-        if (existingByEmail.isPresent()) {
-            UserJpaEntity existing = existingByEmail.get();
+        try {
+            Optional<UserJpaEntity> existingByEmail = userRepository.findByEmail(normalizedEmail);
+            if (existingByEmail.isPresent()) {
+                UserJpaEntity existing = existingByEmail.get();
 
-            boolean alreadyHealthy = normalizedUsername.equals(existing.getUsername())
-                && UserJpaEntity.RoleType.OWNER == existing.getRole()
-                && UserJpaEntity.StatusType.ACTIVE == existing.getStatus()
-                && existing.isEmailVerified()
-                && !existing.isDeleted()
-                && passwordHasher.matches(ownerPassword, existing.getHashedPassword());
+                boolean alreadyHealthy = normalizedUsername.equals(existing.getUsername())
+                    && UserJpaEntity.RoleType.OWNER == existing.getRole()
+                    && UserJpaEntity.StatusType.ACTIVE == existing.getStatus()
+                    && existing.isEmailVerified()
+                    && !existing.isDeleted()
+                    && passwordHasher.matches(ownerPassword, existing.getHashedPassword());
 
-            if (alreadyHealthy) {
-                log.info("OWNER bootstrap skipped: account already initialized and healthy for email={}", normalizedEmail);
+                if (alreadyHealthy) {
+                    log.info("OWNER bootstrap skipped: account already initialized and healthy for email={}", normalizedEmail);
+                    return;
+                }
+
+                // Repair partially incorrect owner state once, then future startups will skip.
+                existing.setUsername(normalizedUsername);
+                existing.setEmail(normalizedEmail);
+                existing.setRole(UserJpaEntity.RoleType.OWNER);
+                existing.setStatus(UserJpaEntity.StatusType.ACTIVE);
+                existing.setEmailVerified(true);
+                existing.setBlockReason(null);
+                existing.setDeleted(false);
+                existing.setDeletedAt(null);
+                existing.setDeletionReason(null);
+                existing.setTermsAccepted(true);
+                if (existing.getTermsAcceptedAt() == null) {
+                    existing.setTermsAcceptedAt(LocalDateTime.now());
+                }
+                if (existing.getTermsVersion() == null || existing.getTermsVersion().isBlank()) {
+                    existing.setTermsVersion("v1.0");
+                }
+                existing.setMarketingConsentGiven(false);
+                existing.setMarketingConsentDate(null);
+                if (!passwordHasher.matches(ownerPassword, existing.getHashedPassword())) {
+                    existing.setHashedPassword(passwordHasher.hash(ownerPassword));
+                }
+                if (existing.getVersion() == null || existing.getVersion() < 1L) {
+                    existing.setVersion(1L);
+                }
+                existing.setUpdatedAt(LocalDateTime.now());
+                existing.setUpdatedBy("SYSTEM");
+
+                userRepository.save(existing);
+                log.info("OWNER account repaired successfully for email={}", normalizedEmail);
                 return;
             }
 
-            // Repair partially incorrect owner state once, then future startups will skip.
-            existing.setUsername(normalizedUsername);
-            existing.setEmail(normalizedEmail);
-            existing.setRole(UserJpaEntity.RoleType.OWNER);
-            existing.setStatus(UserJpaEntity.StatusType.ACTIVE);
-            existing.setEmailVerified(true);
-            existing.setBlockReason(null);
-            existing.setDeleted(false);
-            existing.setDeletedAt(null);
-            existing.setDeletionReason(null);
-            existing.setTermsAccepted(true);
-            if (existing.getTermsAcceptedAt() == null) {
-                existing.setTermsAcceptedAt(LocalDateTime.now());
-            }
-            if (existing.getTermsVersion() == null || existing.getTermsVersion().isBlank()) {
-                existing.setTermsVersion("v1.0");
-            }
-            existing.setMarketingConsentGiven(false);
-            existing.setMarketingConsentDate(null);
-            if (!passwordHasher.matches(ownerPassword, existing.getHashedPassword())) {
-                existing.setHashedPassword(passwordHasher.hash(ownerPassword));
-            }
-            if (existing.getVersion() == null || existing.getVersion() < 1L) {
-                existing.setVersion(1L);
-            }
-            existing.setUpdatedAt(LocalDateTime.now());
-            existing.setUpdatedBy("SYSTEM");
+            UserJpaEntity owner = new UserJpaEntity();
+            owner.setId(UUID.randomUUID().toString());
+            owner.setUsername(normalizedUsername);
+            owner.setEmail(normalizedEmail);
+            owner.setHashedPassword(passwordHasher.hash(ownerPassword));
+            owner.setRole(UserJpaEntity.RoleType.OWNER);
+            owner.setStatus(UserJpaEntity.StatusType.ACTIVE);
+            owner.setEmailVerified(true);
+            owner.setBlockReason(null);
+            owner.setDeleted(false);
+            owner.setDeletedAt(null);
+            owner.setDeletionReason(null);
+            owner.setTermsAccepted(true);
+            owner.setTermsAcceptedAt(LocalDateTime.now());
+            owner.setTermsVersion("v1.0");
+            owner.setMarketingConsentGiven(false);
+            owner.setMarketingConsentDate(null);
+            owner.setVersion(1L);
+            owner.setCreatedAt(LocalDateTime.now());
+            owner.setCreatedBy("SYSTEM");
+            owner.setUpdatedAt(LocalDateTime.now());
+            owner.setUpdatedBy("SYSTEM");
 
-            userRepository.save(existing);
-            log.info("OWNER account repaired successfully for email={}", normalizedEmail);
-            return;
+            userRepository.save(owner);
+            log.info("OWNER account created successfully for email={}", normalizedEmail);
+        } catch (Exception ex) {
+            log.error("OWNER bootstrap failed for email={} but startup will continue.", normalizedEmail, ex);
         }
-
-        UserJpaEntity owner = new UserJpaEntity();
-        owner.setId(UUID.randomUUID().toString());
-        owner.setUsername(normalizedUsername);
-        owner.setEmail(normalizedEmail);
-        owner.setHashedPassword(passwordHasher.hash(ownerPassword));
-        owner.setRole(UserJpaEntity.RoleType.OWNER);
-        owner.setStatus(UserJpaEntity.StatusType.ACTIVE);
-        owner.setEmailVerified(true);
-        owner.setBlockReason(null);
-        owner.setDeleted(false);
-        owner.setDeletedAt(null);
-        owner.setDeletionReason(null);
-        owner.setTermsAccepted(true);
-        owner.setTermsAcceptedAt(LocalDateTime.now());
-        owner.setTermsVersion("v1.0");
-        owner.setMarketingConsentGiven(false);
-        owner.setMarketingConsentDate(null);
-        owner.setVersion(1L);
-        owner.setCreatedAt(LocalDateTime.now());
-        owner.setCreatedBy("SYSTEM");
-        owner.setUpdatedAt(LocalDateTime.now());
-        owner.setUpdatedBy("SYSTEM");
-
-        userRepository.save(owner);
-        log.info("OWNER account created successfully for email={}", normalizedEmail);
     }
 }
