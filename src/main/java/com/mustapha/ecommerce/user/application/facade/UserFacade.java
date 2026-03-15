@@ -9,10 +9,12 @@ import com.mustapha.ecommerce.user.domain.service.PasswordBreachChecker;
 import com.mustapha.ecommerce.user.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +54,26 @@ public class UserFacade {
     private final CommonPasswordChecker commonPasswordChecker;
     private final PasswordBreachChecker passwordBreachChecker;
     private final com.mustapha.ecommerce.user.domain.repository.UserRepository userRepository;
+
+    @Value("${app.owner.one-time-signup.enabled:false}")
+    private boolean ownerOneTimeSignupEnabled;
+
+    @Value("${app.owner.one-time-signup.email:owner@mecommerce.com}")
+    private String ownerOneTimeSignupEmail;
+
+    @Value("${app.owner.one-time-signup.username:owner}")
+    private String ownerOneTimeSignupUsername;
+
+    @PostConstruct
+    void syncOneTimeOwnerSignupFlagForUsernameValidation() {
+        // Username value object is static and reads JVM properties/env directly.
+        // Keep it in sync with Spring configuration toggle.
+        if (ownerOneTimeSignupEnabled) {
+            System.setProperty("app.owner.one-time-signup.enabled", "true");
+        } else {
+            System.clearProperty("app.owner.one-time-signup.enabled");
+        }
+    }
 
     public UserFacade(RegisterUserUseCase registerUserUseCase,
                      ActivateUserUseCase activateUserUseCase,
@@ -101,12 +123,22 @@ public class UserFacade {
         // Enhanced password validation BEFORE hashing
         // Note: Password.from PlainText already validates basic strength (length, chars, etc.)
         validatePasswordSecurity(request.getPassword());
+
+        Role targetRole = Role.CUSTOMER;
+        if (ownerOneTimeSignupEnabled
+            && request.getEmail() != null
+            && request.getUsername() != null
+            && ownerOneTimeSignupEmail.equalsIgnoreCase(request.getEmail().trim())
+            && ownerOneTimeSignupUsername.equalsIgnoreCase(request.getUsername().trim())) {
+            targetRole = Role.OWNER;
+            logger.warn("⚠️ One-time OWNER signup path used for email={}. Disable app.owner.one-time-signup.enabled after account creation.", request.getEmail());
+        }
         
         RegisterUserCommand command = new RegisterUserCommand(
             Email.of(request.getEmail()),
             Password.fromPlainText(request.getPassword(), passwordHasher),
             Username.of(request.getUsername()),
-            Role.CUSTOMER, // Default role
+            targetRole,
             request.getTermsAccepted()
         );
         User user = registerUserUseCase.execute(command);
