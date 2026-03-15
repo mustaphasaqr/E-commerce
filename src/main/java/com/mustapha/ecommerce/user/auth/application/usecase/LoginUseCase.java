@@ -15,6 +15,8 @@ import com.mustapha.ecommerce.user.domain.model.valueobject.PasswordHasher;
 import com.mustapha.ecommerce.user.domain.model.valueobject.Username;
 import com.mustapha.ecommerce.user.domain.repository.UserRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 public class LoginUseCase {
+    private static final Logger logger = LoggerFactory.getLogger(LoginUseCase.class);
     
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -115,7 +118,13 @@ public class LoginUseCase {
         
         // Step 6: Create refresh token (30-day validity)
         RefreshToken refreshToken = RefreshToken.create(user.getId().getValue().toString());
-        refreshTokenRepository.save(refreshToken);
+        try {
+            refreshTokenRepository.save(refreshToken);
+        } catch (Exception e) {
+            // Degrade gracefully so login does not fail when auth storage is temporarily unavailable.
+            logger.error("Failed to persist refresh token for userId={}. Login continues with access token only. Cause: {}",
+                user.getId().getValue(), e.getMessage());
+        }
         
         // Step 5: Create login session (24-hour validity)
         LoginSession session = LoginSession.create(
@@ -123,29 +132,40 @@ public class LoginUseCase {
             command.getIpAddress(),
             command.getUserAgent()
         );
-        loginSessionRepository.save(session);
+        try {
+            loginSessionRepository.save(session);
+        } catch (Exception e) {
+            // Degrade gracefully so login does not fail when auth storage is temporarily unavailable.
+            logger.error("Failed to persist login session for userId={}. Login continues with stateless access token. Cause: {}",
+                user.getId().getValue(), e.getMessage());
+        }
         
         // Step 6: Publish events (auth aggregates don't store events, publish directly)
-        eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.RefreshTokenCreatedEvent(
-            refreshToken.getTokenValue(),
-            refreshToken.getUserId(),
-            refreshToken.getExpiresAt()
-        ));
-        
-        eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.SessionCreatedEvent(
-            session.getSessionId(),
-            session.getUserId(),
-            session.getIpAddress(),
-            session.getUserAgent(),
-            session.getExpiresAt()
-        ));
-        
-        eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.UserLoggedInEvent(
-            user.getId().getValue().toString(),
-            session.getSessionId(),
-            command.getIpAddress(),
-            command.getUserAgent()
-        ));
+        try {
+            eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.RefreshTokenCreatedEvent(
+                refreshToken.getTokenValue(),
+                refreshToken.getUserId(),
+                refreshToken.getExpiresAt()
+            ));
+
+            eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.SessionCreatedEvent(
+                session.getSessionId(),
+                session.getUserId(),
+                session.getIpAddress(),
+                session.getUserAgent(),
+                session.getExpiresAt()
+            ));
+
+            eventPublisher.publish(new com.mustapha.ecommerce.user.auth.domain.event.UserLoggedInEvent(
+                user.getId().getValue().toString(),
+                session.getSessionId(),
+                command.getIpAddress(),
+                command.getUserAgent()
+            ));
+        } catch (Exception e) {
+            logger.warn("Failed to publish one or more login events for userId={}. Cause: {}",
+                user.getId().getValue(), e.getMessage());
+        }
         
         return new LoginResult(user, refreshToken.getTokenValue(), session.getSessionId());
     }
