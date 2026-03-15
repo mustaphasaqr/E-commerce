@@ -8,7 +8,7 @@ export interface User {
   id: string
   username: string
   email: string
-  role: 'CUSTOMER' | 'ADMIN'
+  role: 'CUSTOMER' | 'ADMIN' | 'OWNER'
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'DELETED'
   emailVerified: boolean
   marketingConsent?: boolean

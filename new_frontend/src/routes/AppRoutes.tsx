@@ -4,6 +4,11 @@ import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
 import { HomePage, AccountPage, OrdersPage } from '@/pages'
+import {
+  OrdersPage as AdminOrdersPage,
+  UsersPage,
+  AnalyticsPage
+} from '@/features/admin'
 
 /** ============================================
  * ROUTE CONFIGURATION
@@ -98,45 +103,29 @@ export function AppRoutes() {
           }
         />
 
-        {/* ========== ADMIN ROUTES ========== */}
-        {/* Requires: isAuthenticated = true && user.role = 'admin' */}
-
-        {/* Admin Dashboard */}
+        {/* ========== ADMIN/OWNER ROUTES ========== */}
+        {/* Requires: isAuthenticated = true && (user.role = 'OWNER' || user.role = 'ADMIN') */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <div className="p-4">Admin Dashboard (Coming Soon)</div>
+            <ProtectedRoute requiredRole="OWNER">
+              <AnalyticsPage />
             </ProtectedRoute>
           }
         />
-
-        {/* Manage Users */}
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute requiredRole="OWNER">
+              <AdminOrdersPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <div className="p-4">Manage Users (Coming Soon)</div>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Manage Products */}
-        <Route
-          path="/admin/products"
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <div className="p-4">Manage Products (Coming Soon)</div>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* View Analytics */}
-        <Route
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <div className="p-4">Analytics Dashboard (Coming Soon)</div>
+            <ProtectedRoute requiredRole="OWNER">
+              <UsersPage />
             </ProtectedRoute>
           }
         />

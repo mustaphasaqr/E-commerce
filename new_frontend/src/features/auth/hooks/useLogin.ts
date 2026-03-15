@@ -20,7 +20,11 @@ export function useLogin() {
   const [rateLimitedEmail, setRateLimitedEmail] = useState<string | null>(null)
   const { setToken, setUser, setRefreshToken, setSessionId } = useAuthStore()
 
-  const login = async (request: LoginRequest): Promise<LoginResponse | null> => {
+  type LoginAttemptResult =
+    | { ok: true; data: LoginResponse }
+    | { ok: false; message: string; status?: number; retryAfterSeconds?: number | null; rateLimitedEmail?: string | null }
+
+  const login = async (request: LoginRequest): Promise<LoginAttemptResult> => {
     setLoading(true)
     setError(null)
     setFieldErrors({})
@@ -34,7 +38,7 @@ export function useLogin() {
       setUser(response.user)
       setSessionId(response.sessionId)
       console.log('🔓 Login: User authenticated', response.user.email)
-      return response
+      return { ok: true, data: response }
     } catch (err: any) {
       let message = 'Login failed. Please try again.'
       let emailError: string | undefined
@@ -60,8 +64,7 @@ export function useLogin() {
           }
           message = apiMsg || 'Too many failed login attempts. Please try again later.'
         } else if (status === 401) {
-          // For any 401 error, always use the generic message
-          message = 'Login failed. Please try again.'
+          message = apiMsg || 'Invalid email or password.'
         } else if (apiMsg) {
           message = apiMsg
         }
@@ -73,7 +76,13 @@ export function useLogin() {
       setRetryAfter(retryAfterSeconds)
       setRateLimitedEmail(limitedEmail)
       console.error('❌ Login error:', message)
-      return null
+      return {
+        ok: false,
+        message,
+        status: err?.response?.status,
+        retryAfterSeconds,
+        rateLimitedEmail: limitedEmail,
+      }
     } finally {
       setLoading(false)
     }

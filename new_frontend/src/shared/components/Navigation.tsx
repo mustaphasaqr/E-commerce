@@ -23,7 +23,7 @@ interface NavigationProps {}
 export function Navigation({}: NavigationProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, logout, user } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [showLogoutLoader, setShowLogoutLoader] = useState(false)
@@ -45,6 +45,11 @@ export function Navigation({}: NavigationProps) {
       document.removeEventListener('click', handleClickOutside)
     }
   }, [profileMenuOpen])
+
+  // Always close the profile dropdown when route changes.
+  useEffect(() => {
+    setProfileMenuOpen(false)
+  }, [location.pathname])
 
   // Check if we can go back
   const canGoBack = location.pathname !== '/'
@@ -156,7 +161,41 @@ export function Navigation({}: NavigationProps) {
 
               {/* Profile Dropdown Menu - Show when authenticated */}
               {isAuthenticated && profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10">
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10">
+                  {/* Admin/Owner menu */}
+                  {user?.role === 'OWNER' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate('/admin')
+                          setProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                      >
+                        Commerce Insights
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/admin/orders')
+                          setProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                      >
+                        Orders
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/admin/users')
+                          setProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                      >
+                        Users
+                      </button>
+                      <hr className="my-2" />
+                    </>
+                  )}
+                  {/* User menu */}
                   <button
                     onClick={() => {
                       navigate('/account')
@@ -175,7 +214,6 @@ export function Navigation({}: NavigationProps) {
                   >
                     My Orders
                   </button>
-                  {/* Wishlist is not implemented in backend, so not shown */}
                   <hr className="my-2" />
                   <button
                     onClick={handleLogout}

@@ -1,9 +1,10 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/authSlice'
 
+type RoleType = 'CUSTOMER' | 'ADMIN' | 'OWNER';
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: 'CUSTOMER' | 'ADMIN'
+  requiredRole?: RoleType | RoleType[];
 }
 
 /**
@@ -28,19 +29,24 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuthStore()
+  const authenticated = typeof isAuthenticated === 'function' ? isAuthenticated() : Boolean(isAuthenticated)
 
   // Check if user is authenticated
-  if (!isAuthenticated) {
+  if (!authenticated) {
     console.warn('🔐 Route protected: User not authenticated, redirecting to /login')
     return <Navigate to="/login" replace />
   }
 
-  // Check if user has required role
-  if (requiredRole && user?.role !== requiredRole) {
-    console.warn(
-      `🔐 Route protected: User role "${user?.role}" does not match required role "${requiredRole}", redirecting to /`
-    )
-    return <Navigate to="/" replace />
+
+  // Check if user has required role (single or array)
+  if (requiredRole) {
+    const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!user || !allowedRoles.includes(user.role as RoleType)) {
+      console.warn(
+        `🔐 Route protected: User role "${user?.role}" does not match required roles [${allowedRoles.join(', ')}], redirecting to /`
+      );
+      return <Navigate to="/" replace />;
+    }
   }
 
   console.log(`🔓 Route protected: Access granted to user "${user?.email}"`)
