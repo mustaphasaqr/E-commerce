@@ -99,7 +99,7 @@ public class Username {
         String normalized = trimmed.toLowerCase();
 
         // Prevent reserved usernames
-        if (isReserved(normalized)) {
+        if (isReserved(normalized) && !isTemporarilyAllowedReservedUsername(normalized)) {
             throw new IllegalArgumentException("Username '" + trimmed + "' is reserved");
         }
 
@@ -112,6 +112,23 @@ public class Username {
      */
     private static boolean isReserved(String normalizedUsername) {
         return RESERVED_USERNAMES.contains(normalizedUsername);
+    }
+
+    /**
+     * Temporary escape hatch for one-time owner signup.
+     * Controlled by either:
+     * - JVM property: app.owner.one-time-signup.enabled=true
+     * - Env var: APP_OWNER_ONE_TIME_SIGNUP_ENABLED=true
+     */
+    private static boolean isTemporarilyAllowedReservedUsername(String normalizedUsername) {
+        if (!"owner".equals(normalizedUsername)) {
+            return false;
+        }
+
+        String propertyValue = System.getProperty("app.owner.one-time-signup.enabled");
+        String envValue = System.getenv("APP_OWNER_ONE_TIME_SIGNUP_ENABLED");
+
+        return "true".equalsIgnoreCase(propertyValue) || "true".equalsIgnoreCase(envValue);
     }
 
     public String getValue() {
