@@ -210,13 +210,15 @@ public class GlobalExceptionHandler {
             ).getSeconds();
             retryAfterSeconds = Math.max(retryAfterSeconds, 0);
         }
+        Map<String, String> details = new HashMap<>();
+        details.put("retryAfterSeconds", String.valueOf(retryAfterSeconds));
+
         ErrorResponse response = new ErrorResponse(
             ErrorCode.AUTH_RATE_LIMIT_EXCEEDED,
             "Too many failed login attempts. Please try again later.",
             request.getRequestURI(),
-            null,
-            429,
-            retryAfterSeconds
+            details,
+            429
         );
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .header("Retry-After", String.valueOf(retryAfterSeconds))
