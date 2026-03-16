@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,28 +48,35 @@ public class RateLimitAspect {
         // Try to get request from method arguments first (testable), fall back to RequestContextHolder
         HttpServletRequest request = extractRequest(joinPoint);
         
-        String key = buildRateLimitKey(rateLimit, request);
-        
-        Long count = redisTemplate.opsForValue().increment(key);
-        
-        if (count == null) {
-            count = 1L;
+        String key = buildRateLimitKey(joinPoint, rateLimit, request);
+
+        try {
+            Long count = redisTemplate.opsForValue().increment(key);
+
+            if (count == null) {
+                count = 1L;
+            }
+
+            // Set expiration on first request
+            if (count == 1) {
+                redisTemplate.expire(key, rateLimit.windowSeconds(), TimeUnit.SECONDS);
+            }
+
+            if (count > rateLimit.maxRequests()) {
+                log.warn("Rate limit exceeded for key: {}", key);
+                throw new TooManyRequestsException(
+                    ErrorCode.RATE_LIMIT_EXCEEDED,
+                    rateLimit.message()
+                );
+            }
+
+            log.debug("Rate limit check passed: {} ({}/{})", key, count, rateLimit.maxRequests());
+        } catch (TooManyRequestsException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            // Fail-open: authentication and core APIs must not return 500 due to cache/network outages.
+            log.warn("Rate limit infrastructure unavailable for key {}. Allowing request. Cause: {}", key, ex.getMessage());
         }
-        
-        // Set expiration on first request
-        if (count == 1) {
-            redisTemplate.expire(key, rateLimit.windowSeconds(), TimeUnit.SECONDS);
-        }
-        
-        if (count > rateLimit.maxRequests()) {
-            log.warn("Rate limit exceeded for key: {}", key);
-            throw new TooManyRequestsException(
-                ErrorCode.RATE_LIMIT_EXCEEDED,
-                rateLimit.message()
-            );
-        }
-        
-        log.debug("Rate limit check passed: {} ({}/{})", key, count, rateLimit.maxRequests());
     }
 
     /**
@@ -97,40 +105,68 @@ public class RateLimitAspect {
         );
     }
 
-    private String buildRateLimitKey(RateLimit rateLimit, HttpServletRequest request) {
+    private String buildRateLimitKey(JoinPoint joinPoint, RateLimit rateLimit, HttpServletRequest request) {
         String identifier = switch (rateLimit.scope()) {
             case IP -> extractIpAddress(request);
             case USER -> extractUserId(request);
-            case PARAMETER -> extractParameterValue(request, rateLimit.parameterName());
+            case PARAMETER -> extractParameterValue(joinPoint, request, rateLimit.parameterName());
         };
         return RATE_LIMIT_PREFIX + rateLimit.scope() + ":" + identifier + ":" + request.getRequestURI();
     }
 
-    private String extractParameterValue(HttpServletRequest request, String parameterName) {
+    private String extractParameterValue(JoinPoint joinPoint, HttpServletRequest request, String parameterName) {
         if (parameterName == null || parameterName.isEmpty()) {
             return "unknown";
         }
-        // Try to extract from JSON body (for POST)
-        try {
-            request.getInputStream().mark(0);
-            String body = new String(request.getInputStream().readAllBytes());
-            request.getInputStream().reset();
-            // Very basic JSON extraction (assumes flat JSON)
-            String search = "\"" + parameterName + "\":";
-            int idx = body.indexOf(search);
-            if (idx != -1) {
-                int start = body.indexOf('"', idx + search.length());
-                int end = body.indexOf('"', start + 1);
-                if (start != -1 && end != -1) {
-                    return body.substring(start + 1, end);
-                }
-            }
-        } catch (Exception e) {
-            // fallback
+
+        // Prefer extracting from already-bound method arguments (safe, no stream side effects).
+        String fromArgs = extractFromJoinPointArgs(joinPoint, parameterName);
+        if (fromArgs != null && !fromArgs.isBlank()) {
+            return fromArgs;
         }
-        // Fallback to request param
+
+        // Fallback to request parameter for query/form submissions.
         String param = request.getParameter(parameterName);
         return param != null ? param : "unknown";
+    }
+
+    private String extractFromJoinPointArgs(JoinPoint joinPoint, String parameterName) {
+        String getterName = "get" + Character.toUpperCase(parameterName.charAt(0)) + parameterName.substring(1);
+
+        for (Object arg : joinPoint.getArgs()) {
+            if (arg == null || arg instanceof HttpServletRequest) {
+                continue;
+            }
+
+            try {
+                Method getter = arg.getClass().getMethod(getterName);
+                Object value = getter.invoke(arg);
+                if (value != null) {
+                    return String.valueOf(value);
+                }
+            } catch (Exception ignored) {
+                // Ignore and try next argument or fallback source.
+            }
+        }
+
+        // Secondary fallback: inspect method parameter names if debug info is available.
+        try {
+            org.aspectj.lang.reflect.MethodSignature signature =
+                (org.aspectj.lang.reflect.MethodSignature) joinPoint.getSignature();
+            String[] names = signature.getParameterNames();
+            Object[] values = joinPoint.getArgs();
+            if (names != null && values != null) {
+                for (int i = 0; i < Math.min(names.length, values.length); i++) {
+                    if (parameterName.equals(names[i]) && values[i] != null) {
+                        return String.valueOf(values[i]);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // ignore and return null
+        }
+
+        return null;
     }
 
     private String extractIpAddress(HttpServletRequest request) {
