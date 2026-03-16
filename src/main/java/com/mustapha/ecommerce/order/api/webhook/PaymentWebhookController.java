@@ -3,6 +3,8 @@ package com.mustapha.ecommerce.order.api.webhook;
 import com.mustapha.ecommerce.order.application.port.PaymentPort;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentVerificationResult;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentStatus;
+import com.mustapha.ecommerce.order.application.command.VerifyPaymentCommand;
+import com.mustapha.ecommerce.order.application.usecase.VerifyPaymentUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -40,10 +42,10 @@ public class PaymentWebhookController {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentWebhookController.class);
     
-    private final PaymentPort paymentPort;
+    private final VerifyPaymentUseCase verifyPaymentUseCase;
     
-    public PaymentWebhookController(PaymentPort paymentPort) {
-        this.paymentPort = paymentPort;
+    public PaymentWebhookController(VerifyPaymentUseCase verifyPaymentUseCase) {
+        this.verifyPaymentUseCase = verifyPaymentUseCase;
     }
 
     /**
@@ -71,8 +73,8 @@ public class PaymentWebhookController {
                 return new RedirectView("/payment/failure?error=missing_checkout_id");
             }
             
-            // Verify payment with Accept
-            PaymentVerificationResult result = paymentPort.verifyPayment(checkoutId);
+            // Verify payment and apply order orchestration (paid/failed/cancelled flows)
+            PaymentVerificationResult result = verifyPaymentUseCase.execute(new VerifyPaymentCommand(checkoutId));
             
             logger.info("Payment verification result: status={}, transactionId={}", 
                        result.status(), result.transactionId());
@@ -81,27 +83,15 @@ public class PaymentWebhookController {
             if (result.status() == PaymentStatus.SUCCESS) {
                 logger.info("✅ Payment succeeded for checkoutId: {}", checkoutId);
                 
-                // TODO: Update order status to PAID
-                // - Extract order ID from result or session
-                // - Call orderService.confirmPayment(orderId, transactionId)
-                // - This should update order status and publish OrderPaidEvent
-                
                 return new RedirectView("/payment/success?transactionId=" + result.transactionId());
                 
             } else if (result.status() == PaymentStatus.FAILED) {
                 logger.warn("❌ Payment failed for checkoutId: {}", checkoutId);
                 
-                // TODO: Update order status to PAYMENT_FAILED
-                // - Extract order ID from result or session
-                // - Call orderService.markPaymentFailed(orderId, transactionId)
-                
                 return new RedirectView("/payment/failure?reason=" + result.message());
                 
             } else if (result.status() == PaymentStatus.PENDING) {
                 logger.info("⏳ Payment pending for checkoutId: {}", checkoutId);
-                
-                // TODO: Update order status to PAYMENT_PENDING
-                // - Some payment methods require manual confirmation
                 
                 return new RedirectView("/payment/pending?transactionId=" + result.transactionId());
                 
@@ -132,7 +122,7 @@ public class PaymentWebhookController {
         try {
             logger.info("Verifying payment for checkoutId: {}", checkoutId);
             
-            PaymentVerificationResult result = paymentPort.verifyPayment(checkoutId);
+            PaymentVerificationResult result = verifyPaymentUseCase.execute(new VerifyPaymentCommand(checkoutId));
             
             return ResponseEntity.ok(Map.of(
                     "success", result.status() == PaymentStatus.SUCCESS,
