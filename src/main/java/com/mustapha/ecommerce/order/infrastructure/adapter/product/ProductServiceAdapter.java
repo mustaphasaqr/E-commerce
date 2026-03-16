@@ -115,4 +115,26 @@ public class ProductServiceAdapter implements ProductPort {
             throw e;
         }
     }
+
+    @Override
+    public void releaseReservation(ProductId productId, String orderId) {
+        try {
+            productFacade.releaseReservation(productId.getValue(), orderId);
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            throw new ProductNotFoundException(productId);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        }
+    }
+
+    @Override
+    public void fulfillReservation(ProductId productId, String orderId) {
+        try {
+            productFacade.fulfillReservation(productId.getValue(), orderId);
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            throw new ProductNotFoundException(productId);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        }
+    }
 }

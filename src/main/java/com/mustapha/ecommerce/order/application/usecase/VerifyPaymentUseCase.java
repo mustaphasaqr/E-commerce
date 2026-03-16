@@ -11,6 +11,7 @@ import com.mustapha.ecommerce.order.application.port.NotificationPort;
 import com.mustapha.ecommerce.order.application.port.PaymentPort;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentStatus;
 import com.mustapha.ecommerce.order.application.port.PaymentPort.PaymentVerificationResult;
+import com.mustapha.ecommerce.order.application.port.ProductPort;
 import com.mustapha.ecommerce.order.domain.model.Order;
 import com.mustapha.ecommerce.order.domain.repository.OrderRepository;
 
@@ -37,16 +38,19 @@ public class VerifyPaymentUseCase {
     
     private final OrderRepository orderRepository;
     private final PaymentPort paymentPort;
+    private final ProductPort productPort;
     private final DomainEventPublisher eventPublisher;
     private final NotificationPort notificationPort;
 
     public VerifyPaymentUseCase(
             OrderRepository orderRepository,
             PaymentPort paymentPort,
+            ProductPort productPort,
             DomainEventPublisher eventPublisher,
             NotificationPort notificationPort) {
         this.orderRepository = orderRepository;
         this.paymentPort = paymentPort;
+        this.productPort = productPort;
         this.eventPublisher = eventPublisher;
         this.notificationPort = notificationPort;
     }
@@ -75,6 +79,11 @@ public class VerifyPaymentUseCase {
             // Payment succeeded - mark order as paid
             order.markAsPaid();
             order.setTransactionId(result.transactionId());
+
+            // Convert reserved stock into fulfilled stock after confirmed payment.
+            order.getItems().forEach(item ->
+                productPort.fulfillReservation(item.getProductId(), order.getId().getValue())
+            );
             
             // Save and publish events
             Order savedOrder = orderRepository.save(order);
@@ -88,8 +97,10 @@ public class VerifyPaymentUseCase {
                        order.getId().getValue(), result.transactionId());
             
         } else if (result.status() == PaymentStatus.FAILED) {
-            // Payment failed - keep order in CONFIRMED state
-            // Customer can try payment again
+            // Payment failed - release reservation to avoid stock lock.
+            order.getItems().forEach(item ->
+                productPort.releaseReservation(item.getProductId(), order.getId().getValue())
+            );
             logger.warn("❌ Payment failed for order: {}, reason: {}", 
                        order.getId().getValue(), result.message());
             
@@ -99,7 +110,10 @@ public class VerifyPaymentUseCase {
             logger.info("⏳ Payment pending for order: {}", order.getId().getValue());
             
         } else if (result.status() == PaymentStatus.CANCELLED) {
-            // Customer cancelled payment
+            // Customer cancelled payment - release reservation as no charge happened.
+            order.getItems().forEach(item ->
+                productPort.releaseReservation(item.getProductId(), order.getId().getValue())
+            );
             logger.info("🚫 Payment cancelled by customer for order: {}", order.getId().getValue());
         }
         

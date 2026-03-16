@@ -72,6 +72,24 @@ public interface ProductPort {
      * @throws IllegalArgumentException if quantity exceeds available stock
      */
     void reserveStock(ProductId productId, String orderId, int quantity);
+
+    /**
+     * Release reserved stock for a specific order.
+     * Use for payment failure/cancellation and explicit order cancellation flows.
+     *
+     * @param productId Product that has reserved stock
+     * @param orderId Order identifier tied to reservation
+     */
+    void releaseReservation(ProductId productId, String orderId);
+
+    /**
+     * Fulfill reservation for a specific order.
+     * Moves reserved stock into consumed stock after successful payment.
+     *
+     * @param productId Product that has reserved stock
+     * @param orderId Order identifier tied to reservation
+     */
+    void fulfillReservation(ProductId productId, String orderId);
     
     /**
      * Product Information DTO
