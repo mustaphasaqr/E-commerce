@@ -52,7 +52,18 @@ public class Username {
      * Normalizes to lowercase for case-insensitive uniqueness.
      */
     public static Username of(String value) {
-        String normalized = validateAndNormalize(value);
+        String normalized = validateAndNormalize(value, true);
+        return new Username(normalized);
+    }
+
+    /**
+     * Reconstitutes an existing username from persistence/lookup context.
+     *
+     * Reserved-name checks are intentionally skipped here because legacy/system
+     * accounts may legitimately already exist in storage.
+     */
+    public static Username reconstitute(String value) {
+        String normalized = validateAndNormalize(value, false);
         return new Username(normalized);
     }
 
@@ -64,13 +75,13 @@ public class Username {
      * @throws IllegalArgumentException with specific error message if validation fails
      */
     public static void validate(String value) {
-        validateAndNormalize(value);
+        validateAndNormalize(value, true);
     }
 
     /**
      * Validates and normalizes username to lowercase.
      */
-    private static String validateAndNormalize(String value) {
+    private static String validateAndNormalize(String value, boolean enforceReservedCheck) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Username cannot be null or blank");
         }
@@ -99,7 +110,9 @@ public class Username {
         String normalized = trimmed.toLowerCase();
 
         // Prevent reserved usernames
-        if (isReserved(normalized) && !isTemporarilyAllowedReservedUsername(normalized)) {
+        if (enforceReservedCheck
+            && isReserved(normalized)
+            && !isTemporarilyAllowedReservedUsername(normalized)) {
             throw new IllegalArgumentException("Username '" + trimmed + "' is reserved");
         }
 

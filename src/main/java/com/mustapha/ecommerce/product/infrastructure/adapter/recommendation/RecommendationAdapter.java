@@ -193,7 +193,7 @@ public class RecommendationAdapter implements RecommendationPort {
             FROM products p
             JOIN order_items oi ON p.id = oi.product_id
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.created_at >= DATEADD('DAY', -30, NOW())
+                        WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
               AND o.status != 'CANCELLED'
             GROUP BY p.id, p.name, p.price
             ORDER BY recent_sales DESC

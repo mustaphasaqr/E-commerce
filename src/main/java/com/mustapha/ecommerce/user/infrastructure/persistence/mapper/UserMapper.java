@@ -74,7 +74,7 @@ public class UserMapper {
     public User toDomain(UserJpaEntity entity) {
         return User.reconstitute(
             UserId.of(entity.getId()),
-            Username.of(entity.getUsername()),
+            Username.reconstitute(entity.getUsername()),
             Email.of(entity.getEmail()),
             Password.fromHashed(entity.getHashedPassword()),
             mapRoleToDomain(entity.getRole()),

@@ -85,7 +85,7 @@ public class LoginUseCase {
         
         if (user == null) {
             try {
-                user = userRepository.findByUsername(Username.of(identifier)).orElse(null);
+                user = userRepository.findByUsername(Username.reconstitute(identifier)).orElse(null);
             } catch (IllegalArgumentException e) {
                 // Not a valid username either
             }

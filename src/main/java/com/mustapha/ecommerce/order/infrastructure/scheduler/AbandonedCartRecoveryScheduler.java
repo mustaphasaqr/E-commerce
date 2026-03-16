@@ -34,6 +34,11 @@ public class AbandonedCartRecoveryScheduler {
     public void recoverAbandonedCarts() {
         log.info("🛒 Starting abandoned cart recovery process...");
 
+        if (!isReminderTableAvailable()) {
+            log.warn("⚠️ Skipping abandoned cart recovery: table 'abandoned_cart_reminders' does not exist");
+            return;
+        }
+
         try {
             // Find carts abandoned more than 1 hour ago but less than 24 hours
             List<AbandonedCartInfo> abandonedCarts = findAbandonedCarts();
@@ -79,9 +84,9 @@ public class AbandonedCartRecoveryScheduler {
             JOIN products p ON ci.product_id = p.id
             JOIN users cu ON c.user_id = cu.id
             LEFT JOIN abandoned_cart_reminders acr ON c.user_id = acr.customer_id 
-                AND acr.sent_at > DATEADD('DAY', -7, NOW())
-            WHERE c.last_updated_at BETWEEN DATEADD('HOUR', -24, NOW()) 
-                                        AND DATEADD('HOUR', -1, NOW())
+                AND acr.sent_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+            WHERE c.last_updated_at BETWEEN DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                                        AND DATE_SUB(NOW(), INTERVAL 1 HOUR)
               AND acr.id IS NULL
               AND cu.email IS NOT NULL
             GROUP BY c.user_id, cu.email, cu.username, c.last_updated_at
@@ -172,6 +177,23 @@ public class AbandonedCartRecoveryScheduler {
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("customerId", customerId);
         query.executeUpdate();
+    }
+
+    private boolean isReminderTableAvailable() {
+        String sql = """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'abandoned_cart_reminders'
+            """;
+
+        try {
+            Number count = (Number) entityManager.createNativeQuery(sql).getSingleResult();
+            return count != null && count.longValue() > 0;
+        } catch (Exception ex) {
+            log.warn("Unable to verify 'abandoned_cart_reminders' table availability. Skipping recovery. Cause: {}", ex.getMessage());
+            return false;
+        }
     }
 
     private record AbandonedCartInfo(

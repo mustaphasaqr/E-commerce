@@ -300,7 +300,7 @@ public class UserFacade {
      * Get User by Username
      */
     public UserResponse getUserByUsername(String username) {
-        GetUserByUsernameQuery query = new GetUserByUsernameQuery(Username.of(username));
+        GetUserByUsernameQuery query = new GetUserByUsernameQuery(Username.reconstitute(username));
         User user = getUserByUsernameUseCase.execute(query);
         return UserResponse.fromDomain(user);
     }
