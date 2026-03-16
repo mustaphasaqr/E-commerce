@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * DTO for cart item
  */
 public record CartItemDTO(
-    Long productId,
+    String productId,
     String productName,
     int quantity,
     BigDecimal price,

@@ -91,7 +91,7 @@ public class CartFacade {
     /**
      * Remove item from cart
      */
-    public CartDTO removeFromCart(Long productId, Long userId, String sessionId) {
+    public CartDTO removeFromCart(String productId, Long userId, String sessionId) {
         RemoveFromCartCommand command = new RemoveFromCartCommand(
             new UserId(userId),
             new SessionId(sessionId),

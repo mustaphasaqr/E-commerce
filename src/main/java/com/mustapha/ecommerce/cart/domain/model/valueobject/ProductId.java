@@ -1,6 +1,7 @@
 package com.mustapha.ecommerce.cart.domain.model.valueobject;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Product ID Value Object (Cart Context)
@@ -26,7 +27,7 @@ import java.util.Objects;
  */
 public final class ProductId {
     
-    private final Long value;
+    private final String value;
     
     /**
      * Create a ProductId with validation
@@ -34,12 +35,14 @@ public final class ProductId {
      * @param value The product identifier
      * @throws IllegalArgumentException if value is null or not positive
      */
-    public ProductId(Long value) {
-        if (value == null) {
+    public ProductId(String value) {
+        if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Product ID cannot be null");
         }
-        if (value <= 0) {
-            throw new IllegalArgumentException("Product ID must be positive, got: " + value);
+        try {
+            UUID.fromString(value);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Product ID must be a valid UUID format. Got: " + value, ex);
         }
         
         this.value = value;
@@ -48,7 +51,7 @@ public final class ProductId {
     /**
      * Get the raw value (for persistence layer)
      */
-    public Long getValue() {
+    public String getValue() {
         return value;
     }
     

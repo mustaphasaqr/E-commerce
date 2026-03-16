@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * HTTP Boundary - Product Controller
@@ -39,6 +40,8 @@ import java.util.Map;
 @RequestMapping("/api/v1/products")
 @Tag(name = "Product Management", description = "Comprehensive product catalog management including CRUD operations, inventory management, image uploads, reviews, and recommendations")
 public class ProductController {
+
+    private static final Pattern STRICT_NUMERIC_ID_PATTERN = Pattern.compile("^(?:[A-Za-z_]+-)?(\\d+)$");
 
     private final ProductFacade productFacade;
     private final ProductReviewPort productReviewPort;
@@ -484,12 +487,16 @@ public class ProductController {
      */
     @GetMapping("/{id}/reviews")
     public ResponseEntity<ReviewsPage> getProductReviews(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
-        
-        ReviewsPage reviews = productReviewPort.getProductReviews(id, page, size, sortBy);
+        Long productId = parseLongFromMixedId(id);
+        if (productId == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(new ReviewsPage(List.of(), 0, page, size));
+        }
+
+        ReviewsPage reviews = productReviewPort.getProductReviews(productId, page, size, sortBy);
         return ResponseEntity.status(HttpStatus.OK).body(reviews);
     }
 
@@ -498,8 +505,13 @@ public class ProductController {
      * GET /api/products/{id}/reviews/stats
      */
     @GetMapping("/{id}/reviews/stats")
-    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable Long id) {
-        ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
+    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable String id) {
+        Long productId = parseLongFromMixedId(id);
+        if (productId == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(new ProductReviewStats(0.0, 0, Map.of(), 0));
+        }
+
+        ProductReviewStats stats = productReviewPort.getProductReviewStats(productId);
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
 
@@ -510,11 +522,27 @@ public class ProductController {
      */
     @PostMapping("/{id}/reviews")
     public ResponseEntity<Map<String, Object>> submitReview(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody SubmitReviewRequest request) {
-        
-        Long reviewId = productReviewPort.submitReview(request);
+        Long productId = parseLongFromMixedId(id);
+        Long customerId = parseLongFromMixedId(userId);
+        if (productId == null || customerId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "Review endpoint requires numeric product/customer IDs in current backend model"));
+        }
+
+        SubmitReviewRequest normalizedRequest = new SubmitReviewRequest(
+            productId,
+            customerId,
+            request.customerName(),
+            request.orderId(),
+            request.rating(),
+            request.title(),
+            request.reviewText()
+        );
+
+        Long reviewId = productReviewPort.submitReview(normalizedRequest);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("reviewId", reviewId, "message", "Review submitted successfully"));
     }
@@ -525,11 +553,17 @@ public class ProductController {
      */
     @PostMapping("/{productId}/reviews/{reviewId}/helpful")
     public ResponseEntity<Map<String, String>> markReviewHelpful(
-            @PathVariable Long productId,
+            @PathVariable String productId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal String userId) {
-        
-        productReviewPort.markHelpful(reviewId, Long.parseLong(userId));
+        Long parsedProductId = parseLongFromMixedId(productId);
+        Long parsedUserId = parseLongFromMixedId(userId);
+        if (parsedProductId == null || parsedUserId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Helpful endpoint requires numeric product/customer IDs in current backend model"));
+        }
+
+        productReviewPort.markHelpful(reviewId, parsedUserId);
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Review marked as helpful"));
     }
 
@@ -555,9 +589,13 @@ public class ProductController {
     public ResponseEntity<List<ProductRecommendation>> getPersonalizedRecommendations(
             @AuthenticationPrincipal String userId,
             @RequestParam(defaultValue = "10") int limit) {
-        
-        List<ProductRecommendation> recommendations = 
-            recommendationPort.getRecommendationsForCustomer(Long.parseLong(userId), limit);
+        Long customerId = parseLongFromMixedId(userId);
+        if (customerId == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(List.of());
+        }
+
+        List<ProductRecommendation> recommendations =
+            recommendationPort.getRecommendationsForCustomer(customerId, limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
@@ -567,11 +605,32 @@ public class ProductController {
      */
     @GetMapping("/{id}/recommendations/frequently-bought-together")
     public ResponseEntity<List<ProductRecommendation>> getFrequentlyBoughtTogether(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(defaultValue = "5") int limit) {
-        
-        List<ProductRecommendation> recommendations = 
-            recommendationPort.getFrequentlyBoughtTogether(id, limit);
+        Long productId = parseLongFromMixedId(id);
+        if (productId == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(List.of());
+        }
+
+        List<ProductRecommendation> recommendations =
+            recommendationPort.getFrequentlyBoughtTogether(productId, limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
+    }
+
+    private Long parseLongFromMixedId(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        java.util.regex.Matcher matcher = STRICT_NUMERIC_ID_PATTERN.matcher(value);
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        try {
+            return Long.parseLong(matcher.group(1));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }

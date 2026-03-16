@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 public class CartController {
     
     private static final Logger log = LoggerFactory.getLogger(CartController.class);
+    private static final java.util.regex.Pattern STRICT_NUMERIC_ID_PATTERN = java.util.regex.Pattern.compile("^(?:[A-Za-z_]+-)?(\\d+)$");
     
     private final CartFacade cartFacade;
     
@@ -188,7 +189,7 @@ public class CartController {
                      "Recalculates cart total and updates last_updated_at timestamp."
     )
     public ResponseEntity<CartDTO> removeFromCart(
-            @PathVariable Long productId,
+            @PathVariable String productId,
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
@@ -259,8 +260,16 @@ public class CartController {
         if (userIdStr == null) {
             return null;
         }
-        // Extract numeric ID from USER-123 format
-        String numericPart = userIdStr.replaceAll("[^0-9]", "");
-        return numericPart.isEmpty() ? null : Long.parseLong(numericPart);
+        // Accept only numeric IDs or PREFIX-numeric format such as USER-123.
+        java.util.regex.Matcher matcher = STRICT_NUMERIC_ID_PATTERN.matcher(userIdStr);
+        if (!matcher.matches()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(matcher.group(1));
+        } catch (NumberFormatException ex) {
+            log.warn("Unable to parse authentication principal '{}' into numeric user ID", userIdStr);
+            return null;
+        }
     }
 }

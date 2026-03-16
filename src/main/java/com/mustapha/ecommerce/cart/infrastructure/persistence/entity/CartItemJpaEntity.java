@@ -25,7 +25,7 @@ public class CartItemJpaEntity {
     private CartJpaEntity cart;
 
     @Column(name = "product_id", nullable = false)
-    private Long productId;
+    private String productId;
 
     @Column(name = "product_name", nullable = false, length = 255)
     private String productName;
@@ -57,11 +57,11 @@ public class CartItemJpaEntity {
         this.cart = cart;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
+    public void setProductId(String productId) {
         this.productId = productId;
     }
 
