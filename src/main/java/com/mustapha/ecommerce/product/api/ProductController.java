@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -163,9 +164,20 @@ public class ProductController {
      * Search products by name
      */
     @GetMapping("/search")
-    public ResponseEntity<?> searchProducts(@RequestParam(required = false) String name) {
-        // For now, return empty list (would need search use case)
-        return ResponseEntity.status(HttpStatus.OK).body(java.util.Collections.emptyList());
+    public ResponseEntity<List<ProductListResponse>> searchProducts(@RequestParam(required = false) String name) {
+        List<ProductListResponse> products = productFacade.listProducts();
+
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.status(HttpStatus.OK).body(products);
+        }
+
+        String term = name.trim().toLowerCase(Locale.ROOT);
+        List<ProductListResponse> filtered = products.stream()
+                .filter(product -> (product.getName() != null && product.getName().toLowerCase(Locale.ROOT).contains(term))
+                        || (product.getSku() != null && product.getSku().toLowerCase(Locale.ROOT).contains(term)))
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.OK).body(filtered);
     }
 
     @Operation(
