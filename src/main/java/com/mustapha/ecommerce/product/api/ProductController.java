@@ -22,13 +22,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * HTTP Boundary - Product Controller
@@ -40,8 +40,6 @@ import java.util.regex.Pattern;
 @RequestMapping("/api/v1/products")
 @Tag(name = "Product Management", description = "Comprehensive product catalog management including CRUD operations, inventory management, image uploads, reviews, and recommendations")
 public class ProductController {
-
-    private static final Pattern STRICT_NUMERIC_ID_PATTERN = Pattern.compile("^(?:[A-Za-z_]+-)?(\\d+)$");
 
     private final ProductFacade productFacade;
     private final ProductReviewPort productReviewPort;
@@ -491,12 +489,8 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
-        Long productId = parseLongFromMixedId(id);
-        if (productId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(new ReviewsPage(List.of(), 0, page, size));
-        }
-
-        ReviewsPage reviews = productReviewPort.getProductReviews(productId, page, size, sortBy);
+        
+        ReviewsPage reviews = productReviewPort.getProductReviews(id, page, size, sortBy);
         return ResponseEntity.status(HttpStatus.OK).body(reviews);
     }
 
@@ -506,12 +500,7 @@ public class ProductController {
      */
     @GetMapping("/{id}/reviews/stats")
     public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable String id) {
-        Long productId = parseLongFromMixedId(id);
-        if (productId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(new ProductReviewStats(0.0, 0, Map.of(), 0));
-        }
-
-        ProductReviewStats stats = productReviewPort.getProductReviewStats(productId);
+        ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
 
@@ -525,24 +514,8 @@ public class ProductController {
             @PathVariable String id,
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody SubmitReviewRequest request) {
-        Long productId = parseLongFromMixedId(id);
-        Long customerId = parseLongFromMixedId(userId);
-        if (productId == null || customerId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", "Review endpoint requires numeric product/customer IDs in current backend model"));
-        }
-
-        SubmitReviewRequest normalizedRequest = new SubmitReviewRequest(
-            productId,
-            customerId,
-            request.customerName(),
-            request.orderId(),
-            request.rating(),
-            request.title(),
-            request.reviewText()
-        );
-
-        Long reviewId = productReviewPort.submitReview(normalizedRequest);
+        
+        Long reviewId = productReviewPort.submitReview(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("reviewId", reviewId, "message", "Review submitted successfully"));
     }
@@ -556,14 +529,13 @@ public class ProductController {
             @PathVariable String productId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal String userId) {
-        Long parsedProductId = parseLongFromMixedId(productId);
-        Long parsedUserId = parseLongFromMixedId(userId);
-        if (parsedProductId == null || parsedUserId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Helpful endpoint requires numeric product/customer IDs in current backend model"));
+
+        String customerId = parseUserId(userId);
+        if (customerId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required to mark a review as helpful");
         }
 
-        productReviewPort.markHelpful(reviewId, parsedUserId);
+        productReviewPort.markHelpful(reviewId, customerId);
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Review marked as helpful"));
     }
 
@@ -589,9 +561,10 @@ public class ProductController {
     public ResponseEntity<List<ProductRecommendation>> getPersonalizedRecommendations(
             @AuthenticationPrincipal String userId,
             @RequestParam(defaultValue = "10") int limit) {
-        Long customerId = parseLongFromMixedId(userId);
+
+        String customerId = parseUserId(userId);
         if (customerId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(List.of());
+            return ResponseEntity.status(HttpStatus.OK).body(java.util.Collections.emptyList());
         }
 
         List<ProductRecommendation> recommendations =
@@ -607,30 +580,16 @@ public class ProductController {
     public ResponseEntity<List<ProductRecommendation>> getFrequentlyBoughtTogether(
             @PathVariable String id,
             @RequestParam(defaultValue = "5") int limit) {
-        Long productId = parseLongFromMixedId(id);
-        if (productId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(List.of());
-        }
-
-        List<ProductRecommendation> recommendations =
-            recommendationPort.getFrequentlyBoughtTogether(productId, limit);
+        
+        List<ProductRecommendation> recommendations = 
+            recommendationPort.getFrequentlyBoughtTogether(id, limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
-    private Long parseLongFromMixedId(String value) {
-        if (value == null || value.isBlank()) {
+    private String parseUserId(String userIdStr) {
+        if (userIdStr == null || userIdStr.isBlank()) {
             return null;
         }
-
-        java.util.regex.Matcher matcher = STRICT_NUMERIC_ID_PATTERN.matcher(value);
-        if (!matcher.matches()) {
-            return null;
-        }
-
-        try {
-            return Long.parseLong(matcher.group(1));
-        } catch (NumberFormatException ex) {
-            return null;
-        }
+        return userIdStr.trim();
     }
 }

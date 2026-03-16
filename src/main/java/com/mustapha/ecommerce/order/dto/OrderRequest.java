@@ -40,6 +40,9 @@ public class OrderRequest {
     // Cart tracking for abandonment analytics
     private Long cartId;
 
+    // Checkout-selected payment method
+    private String paymentMethod;
+
     // Constructors
     public OrderRequest() {
     }
@@ -128,5 +131,13 @@ public class OrderRequest {
     
     public void setCartId(Long cartId) {
         this.cartId = cartId;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

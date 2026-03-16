@@ -37,8 +37,8 @@ class RecommendationAdapterTest {
     @Autowired
     private RecommendationAdapter recommendationAdapter;
 
-    private static final Long TEST_PRODUCT_ID = 1L;
-    private static final Long TEST_CUSTOMER_ID = 1L;
+    private static final String TEST_PRODUCT_ID = "1";
+    private static final String TEST_CUSTOMER_ID = "1";
 
     @Nested
     @DisplayName("Unit Tests - Similar Products")
@@ -100,7 +100,7 @@ class RecommendationAdapterTest {
         void testNonExistentProduct() {
             // When: Get similar products for non-existent product
             List<ProductRecommendation> recommendations = recommendationAdapter
-                .getSimilarProducts(999999L, 5);
+                .getSimilarProducts("999999", 5);
 
             // Then: Should return empty list (no exception)
             assertThat(recommendations).isNotNull();
@@ -174,7 +174,7 @@ class RecommendationAdapterTest {
         void testNoCoPurchases() {
             // When: Get FBT for product that's never been bought with others
             List<ProductRecommendation> recommendations = recommendationAdapter
-                .getFrequentlyBoughtTogether(999999L, 5);
+                .getFrequentlyBoughtTogether("999999", 5);
 
             // Then: Should return empty list
             assertThat(recommendations).isEmpty();
@@ -266,7 +266,7 @@ class RecommendationAdapterTest {
         void testNewCustomerColdStart() {
             // When: Get recommendations for customer with no history
             List<ProductRecommendation> recommendations = recommendationAdapter
-                .getRecommendationsForCustomer(999999L, 5);
+                .getRecommendationsForCustomer("999999", 5);
 
             // Then: Should return empty list (cold start scenario)
             assertThat(recommendations).isEmpty();
@@ -338,7 +338,7 @@ class RecommendationAdapterTest {
         void testVeryLargeProductId() {
             // When: Get similar products for very large ID
             List<ProductRecommendation> recommendations = recommendationAdapter
-                .getSimilarProducts(Long.MAX_VALUE, 5);
+                .getSimilarProducts(String.valueOf(Long.MAX_VALUE), 5);
 
             // Then: Should return empty list (no exception)
             assertThat(recommendations).isNotNull();

@@ -70,7 +70,7 @@ public class ProductReviewAdapter implements ProductReviewPort {
 
     @Override
     @Transactional(readOnly = true)
-    public ReviewsPage getProductReviews(Long productId, int page, int size, SortBy sortBy) {
+    public ReviewsPage getProductReviews(String productId, int page, int size, SortBy sortBy) {
         log.debug("📖 Getting reviews for product {} (page: {}, size: {}, sort: {})", 
             productId, page, size, sortBy);
 
@@ -90,7 +90,7 @@ public class ProductReviewAdapter implements ProductReviewPort {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductReviewStats getProductReviewStats(Long productId) {
+    public ProductReviewStats getProductReviewStats(String productId) {
         log.debug("📊 Getting review stats for product {}", productId);
 
         Double avgRating = reviewRepository.calculateAverageRating(productId);
@@ -123,7 +123,7 @@ public class ProductReviewAdapter implements ProductReviewPort {
 
     @Override
     @Transactional
-    public void markHelpful(Long reviewId, Long customerId) {
+    public void markHelpful(Long reviewId, String customerId) {
         log.info("👍 Customer {} marking review {} as helpful", customerId, reviewId);
 
         // TODO: Track who voted to prevent duplicate votes
@@ -140,7 +140,7 @@ public class ProductReviewAdapter implements ProductReviewPort {
 
     @Override
     @Transactional
-    public void markNotHelpful(Long reviewId, Long customerId) {
+    public void markNotHelpful(Long reviewId, String customerId) {
         log.info("👎 Customer {} marking review {} as not helpful", customerId, reviewId);
 
         ProductReview review = reviewRepository.findById(reviewId)
@@ -154,7 +154,7 @@ public class ProductReviewAdapter implements ProductReviewPort {
 
     @Override
     @Transactional
-    public void flagReview(Long reviewId, Long customerId, String reason) {
+    public void flagReview(Long reviewId, String customerId, String reason) {
         log.warn("🚩 Customer {} flagging review {} (reason: {})", customerId, reviewId, reason);
 
         ProductReview review = reviewRepository.findById(reviewId)

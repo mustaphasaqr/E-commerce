@@ -94,6 +94,7 @@ public class PlaceOrderUseCase {
         // Step 3: Call domain methods (domain handles all business logic)
         // Confirm order (raises OrderPlacedEvent internally)
         order.confirm();
+        order.setPaymentMethod(command.getPaymentMethod());
         
         // Step 4: Save & publish events
         Order savedOrder = orderRepository.save(order);

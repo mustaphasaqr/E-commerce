@@ -24,7 +24,7 @@ public interface SpringDataCartRepository extends JpaRepository<CartJpaEntity, L
     /**
      * Find active cart by user ID
      */
-    Optional<CartJpaEntity> findByUserIdAndStatus(Long userId, CartStatusEntity status);
+    Optional<CartJpaEntity> findByUserIdAndStatus(String userId, CartStatusEntity status);
     
     /**
      * Find active cart by session ID
@@ -57,5 +57,5 @@ public interface SpringDataCartRepository extends JpaRepository<CartJpaEntity, L
     /**
      * Find carts by user ID (all statuses)
      */
-    List<CartJpaEntity> findByUserId(Long userId);
+    List<CartJpaEntity> findByUserId(String userId);
 }

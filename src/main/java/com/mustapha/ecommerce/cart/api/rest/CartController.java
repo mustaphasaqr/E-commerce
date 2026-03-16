@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.*;
 public class CartController {
     
     private static final Logger log = LoggerFactory.getLogger(CartController.class);
-    private static final java.util.regex.Pattern STRICT_NUMERIC_ID_PATTERN = java.util.regex.Pattern.compile("^(?:[A-Za-z_]+-)?(\\d+)$");
     
     private final CartFacade cartFacade;
     
@@ -80,7 +79,7 @@ public class CartController {
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
-        Long userId = parseUserId(userIdStr);
+        String userId = parseUserId(userIdStr);
         String sessionId = session.getId();
         
         log.debug("Getting cart for userId={}, sessionId={}", userId, sessionId);
@@ -138,7 +137,7 @@ public class CartController {
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
-        Long userId = parseUserId(userIdStr);
+        String userId = parseUserId(userIdStr);
         String sessionId = session.getId();
         
         log.info("Adding to cart: userId={}, sessionId={}, productId={}, quantity={}", 
@@ -167,7 +166,7 @@ public class CartController {
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
-        Long userId = parseUserId(userIdStr);
+        String userId = parseUserId(userIdStr);
         String sessionId = session.getId();
         
         log.info("Updating cart item: userId={}, sessionId={}, productId={}, quantity={}", 
@@ -193,7 +192,7 @@ public class CartController {
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
-        Long userId = parseUserId(userIdStr);
+        String userId = parseUserId(userIdStr);
         String sessionId = session.getId();
         
         log.info("Removing from cart: userId={}, sessionId={}, productId={}", 
@@ -244,7 +243,7 @@ public class CartController {
             @AuthenticationPrincipal String userIdStr,
             HttpSession session) {
         
-        Long userId = parseUserId(userIdStr);
+        String userId = parseUserId(userIdStr);
         String sessionId = session.getId();
         
         log.info("Clearing cart: userId={}, sessionId={}", userId, sessionId);
@@ -256,20 +255,10 @@ public class CartController {
     
     // Helper methods
     
-    private Long parseUserId(String userIdStr) {
-        if (userIdStr == null) {
+    private String parseUserId(String userIdStr) {
+        if (userIdStr == null || userIdStr.isBlank()) {
             return null;
         }
-        // Accept only numeric IDs or PREFIX-numeric format such as USER-123.
-        java.util.regex.Matcher matcher = STRICT_NUMERIC_ID_PATTERN.matcher(userIdStr);
-        if (!matcher.matches()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(matcher.group(1));
-        } catch (NumberFormatException ex) {
-            log.warn("Unable to parse authentication principal '{}' into numeric user ID", userIdStr);
-            return null;
-        }
+        return userIdStr.trim();
     }
 }

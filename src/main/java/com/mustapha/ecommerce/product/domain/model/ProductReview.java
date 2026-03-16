@@ -18,10 +18,10 @@ public class ProductReview {
     private Long id;
 
     @Column(name = "product_id", nullable = false)
-    private Long productId;
+    private String productId;
 
     @Column(name = "customer_id", nullable = false)
-    private Long customerId;
+    private String customerId;
 
     @Column(name = "customer_name", nullable = false)
     private String customerName;

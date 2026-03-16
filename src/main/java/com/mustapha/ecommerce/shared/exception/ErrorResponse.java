@@ -31,11 +31,6 @@ import java.util.Map;
  */
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class ErrorResponse {
-        /**
-         * Optional retry-after seconds for rate limit errors.
-         */
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        private final Long retryAfterSeconds;
     
     /**
      * HTTP status code (e.g., 400, 401, 404, 409, 500).
@@ -84,10 +79,6 @@ public class ErrorResponse {
      * Full constructor with all fields.
      */
     public ErrorResponse(ErrorCode errorCode, String message, String path, Map<String, String> details, int status) {
-        this(errorCode, message, path, details, status, null);
-    }
-
-    public ErrorResponse(ErrorCode errorCode, String message, String path, Map<String, String> details, int status, Long retryAfterSeconds) {
         this.status = status;
         this.timestamp = Instant.now();
         this.errorCode = errorCode.getCode();
@@ -95,25 +86,14 @@ public class ErrorResponse {
         this.error = this.message;  // Alias for backward compatibility
         this.path = path;
         this.details = details;
-        this.retryAfterSeconds = retryAfterSeconds;
-    }
-    
-    /**
-     * Constructor without custom message (uses default from ErrorCode).
-     */
-    public ErrorResponse(ErrorCode errorCode, String path, Map<String, String> details, int status) {
-        this(errorCode, errorCode.getDefaultMessage(), path, details, status);
     }
     
     /**
      * Constructor without details map (simple errors).
      */
     public ErrorResponse(ErrorCode errorCode, String message, String path, int status) {
-        this(errorCode, message, path, null, status, null);
+        this(errorCode, message, path, null, status);
     }
-        public Long getRetryAfterSeconds() {
-            return retryAfterSeconds;
-        }
     
     /**
      * Minimal constructor (error code + path only).

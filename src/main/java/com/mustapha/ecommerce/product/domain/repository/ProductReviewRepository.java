@@ -16,24 +16,24 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
     /**
      * Find all approved reviews for a product
      */
-    Page<ProductReview> findByProductIdAndStatus(Long productId, ReviewStatus status, Pageable pageable);
+    Page<ProductReview> findByProductIdAndStatus(String productId, ReviewStatus status, Pageable pageable);
 
     /**
      * Find customer's review for a specific product in an order
      */
     Optional<ProductReview> findByOrderIdAndProductIdAndCustomerId(
-        Long orderId, Long productId, Long customerId
+        Long orderId, String productId, String customerId
     );
 
     /**
      * Check if customer already reviewed a product in an order
      */
-    boolean existsByOrderIdAndProductIdAndCustomerId(Long orderId, Long productId, Long customerId);
+    boolean existsByOrderIdAndProductIdAndCustomerId(Long orderId, String productId, String customerId);
 
     /**
      * Get all reviews by customer
      */
-    List<ProductReview> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
+    List<ProductReview> findByCustomerIdOrderByCreatedAtDesc(String customerId);
 
     /**
      * Get pending reviews for moderation
@@ -44,12 +44,12 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
      * Calculate average rating for a product
      */
     @Query("SELECT AVG(r.rating) FROM ProductReview r WHERE r.productId = :productId AND r.status = 'APPROVED'")
-    Double calculateAverageRating(@Param("productId") Long productId);
+    Double calculateAverageRating(@Param("productId") String productId);
 
     /**
      * Count approved reviews for a product
      */
-    long countByProductIdAndStatus(Long productId, ReviewStatus status);
+    long countByProductIdAndStatus(String productId, ReviewStatus status);
 
     /**
      * Get rating distribution for a product
@@ -57,5 +57,5 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
     @Query("SELECT r.rating, COUNT(r) FROM ProductReview r " +
            "WHERE r.productId = :productId AND r.status = 'APPROVED' " +
            "GROUP BY r.rating ORDER BY r.rating DESC")
-    List<Object[]> getRatingDistribution(@Param("productId") Long productId);
+    List<Object[]> getRatingDistribution(@Param("productId") String productId);
 }

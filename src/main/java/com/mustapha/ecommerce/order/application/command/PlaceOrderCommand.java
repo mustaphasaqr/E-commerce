@@ -26,10 +26,11 @@ public class PlaceOrderCommand {
     private final String utmCampaign;
     private final String referrer;
     private final Long cartId;
+    private final String paymentMethod;
     
     public PlaceOrderCommand(CustomerId customerId, List<OrderItemData> items,
                             String shippingCity, String shippingState, String shippingCountry, String shippingZipCode,
-                            String utmSource, String utmCampaign, String referrer, Long cartId) {
+                            String utmSource, String utmCampaign, String referrer, Long cartId, String paymentMethod) {
         this.customerId = customerId;
         this.items = items;
         this.shippingCity = shippingCity;
@@ -40,6 +41,7 @@ public class PlaceOrderCommand {
         this.utmCampaign = utmCampaign;
         this.referrer = referrer;
         this.cartId = cartId;
+        this.paymentMethod = paymentMethod;
     }
     
     public CustomerId getCustomerId() {
@@ -80,6 +82,10 @@ public class PlaceOrderCommand {
     
     public Long getCartId() {
         return cartId;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
     }
     
     /**

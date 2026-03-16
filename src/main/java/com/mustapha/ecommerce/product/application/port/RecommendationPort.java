@@ -11,22 +11,22 @@ public interface RecommendationPort {
     /**
      * Get personalized recommendations for a customer
      */
-    List<ProductRecommendation> getRecommendationsForCustomer(Long customerId, int limit);
+    List<ProductRecommendation> getRecommendationsForCustomer(String customerId, int limit);
 
     /**
      * Get recommendations based on product (similar products)
      */
-    List<ProductRecommendation> getSimilarProducts(Long productId, int limit);
+    List<ProductRecommendation> getSimilarProducts(String productId, int limit);
 
     /**
      * Get "Frequently Bought Together" recommendations
      */
-    List<ProductRecommendation> getFrequentlyBoughtTogether(Long productId, int limit);
+    List<ProductRecommendation> getFrequentlyBoughtTogether(String productId, int limit);
 
     /**
      * Get recommendations based on cart contents
      */
-    List<ProductRecommendation> getRecommendationsForCart(List<Long> productIds, int limit);
+    List<ProductRecommendation> getRecommendationsForCart(List<String> productIds, int limit);
 
     /**
      * Get trending/popular products
@@ -36,20 +36,20 @@ public interface RecommendationPort {
     /**
      * Track product view (for personalization)
      */
-    void trackProductView(Long customerId, Long productId);
+    void trackProductView(String customerId, String productId);
 
     /**
      * Track add to cart event
      */
-    void trackAddToCart(Long customerId, Long productId);
+    void trackAddToCart(String customerId, String productId);
 
     /**
      * Track purchase event
      */
-    void trackPurchase(Long customerId, List<Long> productIds);
+    void trackPurchase(String customerId, List<String> productIds);
 
     record ProductRecommendation(
-        Long productId,
+        String productId,
         String productName,
         Double price,
         String imageUrl,

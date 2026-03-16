@@ -8,7 +8,7 @@ import java.util.List;
  */
 public record CartDTO(
     Long id,
-    Long userId,
+    String userId,
     String sessionId,
     List<CartItemDTO> items,
     BigDecimal totalAmount,

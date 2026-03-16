@@ -9,10 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * One-time schema patch runner for production environments where Flyway is disabled.
+ * One-time schema patch runner for environments where Flyway is disabled.
  *
- * This runner only executes when explicitly enabled via environment variable:
- * DB_AUTO_PATCH_CART_PRODUCT_ID=true
+ * Enable with: DB_AUTO_PATCH_CART_PRODUCT_ID=true
  */
 @Component
 public class CartProductIdSchemaPatchRunner implements ApplicationRunner {
@@ -34,16 +33,35 @@ public class CartProductIdSchemaPatchRunner implements ApplicationRunner {
             return;
         }
 
-        log.warn("DB auto patch enabled: verifying cart_items/order_cart_items product_id column types");
+        log.warn("DB auto patch enabled: validating cart/product identifier column types");
 
-        patchTableColumnIfNeeded("cart_items", "product_id");
-        patchTableColumnIfNeeded("order_cart_items", "product_id");
+        patchVarcharColumnIfNeeded("cart_items", "product_id", false);
+        patchVarcharColumnIfNeeded("order_cart_items", "product_id", false);
+        patchVarcharColumnIfNeeded("carts", "user_id", true);
+        patchVarcharColumnIfNeeded("product_reviews", "product_id", false);
+        patchVarcharColumnIfNeeded("product_reviews", "customer_id", false);
 
         log.warn("DB auto patch completed");
     }
 
-    private void patchTableColumnIfNeeded(String tableName, String columnName) {
+    private void patchVarcharColumnIfNeeded(String tableName, String columnName, boolean nullable) {
         try {
+            Integer tableExists = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                """,
+                Integer.class,
+                tableName
+            );
+
+            if (tableExists == null || tableExists == 0) {
+                log.warn("Schema patch skipped: table '{}' not found", tableName);
+                return;
+            }
+
             String currentType = jdbcTemplate.queryForObject(
                 """
                 SELECT DATA_TYPE
@@ -58,7 +76,7 @@ public class CartProductIdSchemaPatchRunner implements ApplicationRunner {
             );
 
             if (currentType == null) {
-                log.warn("Schema patch skipped: {}.{} not found", tableName, columnName);
+                log.warn("Schema patch skipped: column '{}.{}' not found", tableName, columnName);
                 return;
             }
 
@@ -67,9 +85,11 @@ public class CartProductIdSchemaPatchRunner implements ApplicationRunner {
                 return;
             }
 
-            log.warn("Applying schema patch: ALTER TABLE {} MODIFY COLUMN {} VARCHAR(255) NOT NULL", tableName, columnName);
-            jdbcTemplate.execute("ALTER TABLE " + tableName + " MODIFY COLUMN " + columnName + " VARCHAR(255) NOT NULL");
+            String nullability = nullable ? "NULL" : "NOT NULL";
+            log.warn("Applying schema patch: ALTER TABLE {} MODIFY COLUMN {} VARCHAR(255) {}", tableName, columnName, nullability);
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " MODIFY COLUMN " + columnName + " VARCHAR(255) " + nullability);
             log.info("Schema patch applied: {}.{} converted from {} to VARCHAR", tableName, columnName, currentType);
+
         } catch (Exception ex) {
             log.error("Schema patch failed for {}.{}: {}", tableName, columnName, ex.getMessage(), ex);
             throw ex;

@@ -33,6 +33,7 @@ public class OrderMapper {
         entity.setCarrier(order.getCarrier());
         entity.setDeliveredAt(order.getDeliveredAt());
         entity.setCancellationReason(order.getCancellationReason());
+        entity.setPaymentMethod(order.getPaymentMethod());
         entity.setCheckoutId(order.getCheckoutId());
         entity.setTransactionId(order.getTransactionId());
         entity.setVersion(order.getVersion()); // Preserve version for optimistic locking
@@ -63,6 +64,7 @@ public class OrderMapper {
                 entity.getCarrier(),
                 entity.getDeliveredAt(),
                 entity.getCancellationReason(),
+                entity.getPaymentMethod(),
                 entity.getCheckoutId(),
                 entity.getTransactionId(),
                 entity.getVersion() // Pass version for optimistic locking

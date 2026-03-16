@@ -10,8 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.*;
 
 /**
@@ -43,12 +41,12 @@ class ProductReviewAdapterTest {
     @Autowired
     private ProductReviewRepository reviewRepository;
 
-    // Use fixed UUIDs for testing instead of simple integers
-    private static final Long TEST_PRODUCT_ID = 999L;
-    private static final Long TEST_CUSTOMER_ID = 100L;
+    // Use string-based IDs to match current review API contract
+    private static final String TEST_PRODUCT_ID = "999";
+    private static final String TEST_CUSTOMER_ID = "100";
     private static final String TEST_CUSTOMER_NAME = "John Doe";
     private static final Long TEST_ORDER_ID = 12345L;
-    private static final Long TEST_NONEXISTENT_PRODUCT_ID = 999999L; // This product doesn't exist in DB
+    private static final String TEST_NONEXISTENT_PRODUCT_ID = "999999"; // This product doesn't exist in DB
 
     @BeforeEach
     void setUp() {
@@ -178,7 +176,7 @@ class ProductReviewAdapterTest {
         void testAllowMultipleProductsReviewBySameCustomer() {
             // Given: Review for first product
             SubmitReviewRequest firstProduct = new SubmitReviewRequest(
-                100L, // Product 1
+                "100", // Product 1
                 TEST_CUSTOMER_ID,
                 TEST_CUSTOMER_NAME,
                 TEST_ORDER_ID,
@@ -190,7 +188,7 @@ class ProductReviewAdapterTest {
 
             // When: Review for second product
             SubmitReviewRequest secondProduct = new SubmitReviewRequest(
-                200L, // Product 2
+                "200", // Product 2
                 TEST_CUSTOMER_ID,
                 TEST_CUSTOMER_NAME,
                 TEST_ORDER_ID,
@@ -218,7 +216,7 @@ class ProductReviewAdapterTest {
             for (int i = 1; i <= 5; i++) {
                 SubmitReviewRequest request = new SubmitReviewRequest(
                     TEST_PRODUCT_ID,
-                    TEST_CUSTOMER_ID + i,
+                    String.valueOf(100L + i),
                     "Customer " + i,
                     TEST_ORDER_ID + i,
                     4,
@@ -251,17 +249,17 @@ class ProductReviewAdapterTest {
         void testSortByNewest() throws InterruptedException {
             // Given: Three reviews submitted with slight delay
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 101L, "Alice", 1001L, 5, "First", "First review"
+                TEST_PRODUCT_ID, "101", "Alice", 1001L, 5, "First", "First review"
             ));
             Thread.sleep(10); // Small delay
 
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 102L, "Bob", 1002L, 4, "Second", "Second review"
+                TEST_PRODUCT_ID, "102", "Bob", 1002L, 4, "Second", "Second review"
             ));
             Thread.sleep(10);
 
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 103L, "Charlie", 1003L, 3, "Third", "Third review"
+                TEST_PRODUCT_ID, "103", "Charlie", 1003L, 3, "Third", "Third review"
             ));
 
             // When: Get reviews sorted by newest
@@ -280,13 +278,13 @@ class ProductReviewAdapterTest {
         void testSortByHighestRating() {
             // Given: Reviews with different ratings
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 101L, "Alice", 1001L, 3, "Okay", "3 star review"
+                TEST_PRODUCT_ID, "101", "Alice", 1001L, 3, "Okay", "3 star review"
             ));
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 102L, "Bob", 1002L, 5, "Perfect", "5 star review"
+                TEST_PRODUCT_ID, "102", "Bob", 1002L, 5, "Perfect", "5 star review"
             ));
             reviewAdapter.submitReview(new SubmitReviewRequest(
-                TEST_PRODUCT_ID, 103L, "Charlie", 1003L, 4, "Good", "4 star review"
+                TEST_PRODUCT_ID, "103", "Charlie", 1003L, 4, "Good", "4 star review"
             ));
 
             // When: Get reviews sorted by highest rating
@@ -305,7 +303,7 @@ class ProductReviewAdapterTest {
         @Transactional
         void testNoReviews() {
             // When: Get reviews for product with no reviews
-            ReviewsPage result = reviewAdapter.getProductReviews(999999L, 0, 10, SortBy.NEWEST);
+            ReviewsPage result = reviewAdapter.getProductReviews(TEST_NONEXISTENT_PRODUCT_ID, 0, 10, SortBy.NEWEST);
 
             // Then: Should return empty page
             assertThat(result.reviews()).isEmpty();
@@ -366,7 +364,7 @@ class ProductReviewAdapterTest {
         @Transactional
         void testNoReviewStats() {
             // When: Get stats for product without reviews
-            ProductReviewStats stats = reviewAdapter.getProductReviewStats(999999L);
+            ProductReviewStats stats = reviewAdapter.getProductReviewStats(TEST_NONEXISTENT_PRODUCT_ID);
 
             // Then: Should return zeros
             assertThat(stats.totalReviews()).isEqualTo(0);
@@ -488,7 +486,7 @@ class ProductReviewAdapterTest {
     private SubmitReviewRequest createReview(Long customerId, int rating) {
         return new SubmitReviewRequest(
             TEST_PRODUCT_ID,
-            customerId,
+            String.valueOf(customerId),
             "Customer " + customerId,
             TEST_ORDER_ID + customerId,
             rating,

@@ -102,7 +102,8 @@ public class OrderFacade {
             request.getUtmSource(),
             request.getUtmCampaign(),
             request.getReferrer(),
-            request.getCartId()
+            request.getCartId(),
+            request.getPaymentMethod()
         );
         
         // Step 2: Delegate to Use Case (handles @Transactional, events, business rules)

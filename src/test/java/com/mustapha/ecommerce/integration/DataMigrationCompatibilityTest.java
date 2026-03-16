@@ -173,9 +173,10 @@ class DataMigrationCompatibilityTest {
             null, // No carrier
             null, // Not delivered
             null, // Not cancelled
-            null, // No version (legacy order)
+            null, // No payment method (legacy order)
             null, // No checkoutId
-            null  // No transactionId
+            null, // No transactionId
+            null  // No version (legacy order)
         );
 
         // Save legacy order
@@ -217,7 +218,7 @@ class DataMigrationCompatibilityTest {
             OrderStatus.CONFIRMED,
             LocalDateTime.now().minusDays(15),
             LocalDateTime.now().minusDays(15),
-            null, null, null, null, null, null, null
+            null, null, null, null, null, null, null, null
         );
 
         Order savedOrder = orderRepository.save(legacyOrder);
@@ -279,7 +280,7 @@ class DataMigrationCompatibilityTest {
             OrderStatus.CONFIRMED,
             LocalDateTime.now().minusDays(60),
             LocalDateTime.now().minusDays(60),
-            null, null, null, null, null, null, null
+            null, null, null, null, null, null, null, null
         );
 
         orderRepository.save(legacyOrder);
@@ -351,7 +352,7 @@ class DataMigrationCompatibilityTest {
             OrderStatus.PROCESSING, // Must be PROCESSING to ship
             LocalDateTime.now().minusDays(5),
             LocalDateTime.now().minusDays(5),
-            null, null, null, null, null, null, null
+            null, null, null, null, null, null, null, null
         );
 
         orderRepository.save(legacyOrder);
@@ -394,7 +395,7 @@ class DataMigrationCompatibilityTest {
                 OrderStatus.CONFIRMED,
                 LocalDateTime.now().minusDays(90 - i), // Different ages
                 LocalDateTime.now().minusDays(90 - i),
-                null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
             );
 
             orderRepository.save(legacyOrder);
@@ -441,7 +442,7 @@ class DataMigrationCompatibilityTest {
             OrderStatus.CONFIRMED,
             LocalDateTime.now(),
             LocalDateTime.now(),
-            null, null, null, null, null, null, null
+            null, null, null, null, null, null, null, null
         );
 
         orderRepository.save(originalOrder);
@@ -491,9 +492,10 @@ class DataMigrationCompatibilityTest {
             null, // No carrier
             null, // No delivery date
             null, // No cancellation reason
-            null, // No version (legacy order)
+            null, // No payment method (legacy order)
             null, // No checkoutId
-            null  // No transactionId
+            null, // No transactionId
+            null  // No version (legacy order)
         );
 
         orderRepository.save(minimalOrder);

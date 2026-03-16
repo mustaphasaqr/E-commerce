@@ -20,27 +20,27 @@ public interface ProductReviewPort {
     /**
      * Get approved reviews for a product
      */
-    ReviewsPage getProductReviews(Long productId, int page, int size, SortBy sortBy);
+    ReviewsPage getProductReviews(String productId, int page, int size, SortBy sortBy);
 
     /**
      * Get review statistics for a product
      */
-    ProductReviewStats getProductReviewStats(Long productId);
+    ProductReviewStats getProductReviewStats(String productId);
 
     /**
      * Mark review as helpful
      */
-    void markHelpful(Long reviewId, Long customerId);
+    void markHelpful(Long reviewId, String customerId);
 
     /**
      * Mark review as not helpful
      */
-    void markNotHelpful(Long reviewId, Long customerId);
+    void markNotHelpful(Long reviewId, String customerId);
 
     /**
      * Flag review for moderation
      */
-    void flagReview(Long reviewId, Long customerId, String reason);
+    void flagReview(Long reviewId, String customerId, String reason);
 
     /**
      * Admin: Approve review
@@ -63,8 +63,8 @@ public interface ProductReviewPort {
     void sendReviewReminders();
 
     record SubmitReviewRequest(
-        Long productId,
-        Long customerId,
+        String productId,
+        String customerId,
         String customerName,
         Long orderId,
         int rating,  // 1-5
@@ -81,7 +81,7 @@ public interface ProductReviewPort {
 
     record ReviewSummary(
         Long id,
-        Long customerId,
+        String customerId,
         String customerName,
         int rating,
         String title,

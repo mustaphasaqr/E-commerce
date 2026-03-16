@@ -51,10 +51,10 @@ public class CartFacade {
     /**
      * Get or create cart
      */
-    public CartDTO getCart(Long userId, String sessionId) {
+    public CartDTO getCart(String userId, String sessionId) {
         GetCartQuery query = new GetCartQuery(
-            new UserId(userId),
-            new SessionId(sessionId)
+            toNullableUserId(userId),
+            toNullableSessionId(sessionId)
         );
         Cart cart = getOrCreateCartUseCase.execute(query);
         return toDTO(cart);
@@ -63,10 +63,10 @@ public class CartFacade {
     /**
      * Add product to cart
      */
-    public CartDTO addToCart(AddToCartRequest request, Long userId, String sessionId) {
+    public CartDTO addToCart(AddToCartRequest request, String userId, String sessionId) {
         AddToCartCommand command = new AddToCartCommand(
-            new UserId(userId),
-            new SessionId(sessionId),
+            toNullableUserId(userId),
+            toNullableSessionId(sessionId),
             new ProductId(request.productId()),
             request.quantity()
         );
@@ -77,10 +77,10 @@ public class CartFacade {
     /**
      * Update cart item quantity
      */
-    public CartDTO updateCartItem(UpdateCartItemRequest request, Long userId, String sessionId) {
+    public CartDTO updateCartItem(UpdateCartItemRequest request, String userId, String sessionId) {
         UpdateCartItemCommand command = new UpdateCartItemCommand(
-            new UserId(userId),
-            new SessionId(sessionId),
+            toNullableUserId(userId),
+            toNullableSessionId(sessionId),
             new ProductId(request.productId()),
             request.quantity()
         );
@@ -91,10 +91,10 @@ public class CartFacade {
     /**
      * Remove item from cart
      */
-    public CartDTO removeFromCart(String productId, Long userId, String sessionId) {
+    public CartDTO removeFromCart(String productId, String userId, String sessionId) {
         RemoveFromCartCommand command = new RemoveFromCartCommand(
-            new UserId(userId),
-            new SessionId(sessionId),
+            toNullableUserId(userId),
+            toNullableSessionId(sessionId),
             new ProductId(productId)
         );
         Cart cart = removeFromCartUseCase.execute(command);
@@ -104,13 +104,21 @@ public class CartFacade {
     /**
      * Clear cart
      */
-    public CartDTO clearCart(Long userId, String sessionId) {
+    public CartDTO clearCart(String userId, String sessionId) {
         ClearCartCommand command = new ClearCartCommand(
-            new UserId(userId),
-            new SessionId(sessionId)
+            toNullableUserId(userId),
+            toNullableSessionId(sessionId)
         );
         Cart cart = clearCartUseCase.execute(command);
         return toDTO(cart);
+    }
+
+    private UserId toNullableUserId(String userId) {
+        return userId == null || userId.isBlank() ? null : new UserId(userId);
+    }
+
+    private SessionId toNullableSessionId(String sessionId) {
+        return sessionId == null || sessionId.isBlank() ? null : new SessionId(sessionId);
     }
     
     /**

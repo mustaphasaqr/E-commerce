@@ -30,6 +30,9 @@ public class OrderResponse {
     // Shipping information (populated when status = SHIPPED or DELIVERED)
     private String trackingNumber;
     private String carrier;
+
+    // Checkout-selected payment method
+    private String paymentMethod;
     
     // Delivery information (populated when status = DELIVERED)
     private LocalDateTime deliveredAt;
@@ -43,7 +46,7 @@ public class OrderResponse {
 
     public OrderResponse(String orderId, String customerId, List<OrderItemResponse> items,
                         double totalAmount, String status, LocalDateTime createdAt, 
-                        LocalDateTime updatedAt, String trackingNumber, String carrier,
+                        LocalDateTime updatedAt, String trackingNumber, String carrier, String paymentMethod,
                         LocalDateTime deliveredAt, String cancellationReason) {
         this.orderId = orderId;
         this.customerId = customerId;
@@ -54,6 +57,7 @@ public class OrderResponse {
         this.updatedAt = updatedAt;
         this.trackingNumber = trackingNumber;
         this.carrier = carrier;
+        this.paymentMethod = paymentMethod;
         this.deliveredAt = deliveredAt;
         this.cancellationReason = cancellationReason;
     }
@@ -73,6 +77,7 @@ public class OrderResponse {
             order.getUpdatedAt(),
             order.getTrackingNumber(),
             order.getCarrier(),
+            order.getPaymentMethod(),
             order.getDeliveredAt(),
             order.getCancellationReason()
         );
@@ -149,6 +154,14 @@ public class OrderResponse {
 
     public void setCarrier(String carrier) {
         this.carrier = carrier;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public LocalDateTime getDeliveredAt() {

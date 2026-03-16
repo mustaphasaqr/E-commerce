@@ -24,7 +24,7 @@ public class RecommendationAdapter implements RecommendationPort {
     private final EntityManager entityManager;
 
     @Override
-    public List<ProductRecommendation> getRecommendationsForCustomer(Long customerId, int limit) {
+    public List<ProductRecommendation> getRecommendationsForCustomer(String customerId, int limit) {
         log.info("🎯 Getting personalized recommendations for customer {}", customerId);
 
         // Strategy: Recommend based on customer's past purchases and views
@@ -43,7 +43,7 @@ public class RecommendationAdapter implements RecommendationPort {
     }
 
     @Override
-    public List<ProductRecommendation> getSimilarProducts(Long productId, int limit) {
+    public List<ProductRecommendation> getSimilarProducts(String productId, int limit) {
         log.info("🔗 Getting similar products to product {}", productId);
 
         // Handle invalid limit
@@ -74,7 +74,7 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                convertToLong(row[0]),
+                convertToString(row[0]),
                 (String) row[1],
                 convertToDouble(row[2]),
                 null,  // imageUrl not available in database
@@ -88,7 +88,7 @@ public class RecommendationAdapter implements RecommendationPort {
     }
 
     @Override
-    public List<ProductRecommendation> getFrequentlyBoughtTogether(Long productId, int limit) {
+    public List<ProductRecommendation> getFrequentlyBoughtTogether(String productId, int limit) {
         log.info("🛒 Getting frequently bought together with product {}", productId);
 
         // Handle invalid limit
@@ -119,7 +119,7 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                convertToLong(row[0]),
+                convertToString(row[0]),
                 (String) row[1],
                 convertToDouble(row[2]),
                 null,  // imageUrl not available in database
@@ -133,7 +133,7 @@ public class RecommendationAdapter implements RecommendationPort {
     }
 
     @Override
-    public List<ProductRecommendation> getRecommendationsForCart(List<Long> productIds, int limit) {
+    public List<ProductRecommendation> getRecommendationsForCart(List<String> productIds, int limit) {
         log.info("🛒 Getting recommendations for cart with {} items", productIds.size());
 
         if (productIds.isEmpty()) {
@@ -143,7 +143,7 @@ public class RecommendationAdapter implements RecommendationPort {
         // Strategy: Get frequently bought together for all cart items
         Set<ProductRecommendation> recommendations = new HashSet<>();
 
-        for (Long productId : productIds) {
+        for (String productId : productIds) {
             recommendations.addAll(getFrequentlyBoughtTogether(productId, 3));
         }
 
@@ -189,7 +189,7 @@ public class RecommendationAdapter implements RecommendationPort {
 
         List<ProductRecommendation> recommendations = results.stream()
             .map(row -> new ProductRecommendation(
-                convertToLong(row[0]),
+                convertToString(row[0]),
                 (String) row[1],
                 convertToDouble(row[2]),
                 null,  // imageUrl not available in database
@@ -203,25 +203,25 @@ public class RecommendationAdapter implements RecommendationPort {
     }
 
     @Override
-    public void trackProductView(Long customerId, Long productId) {
+    public void trackProductView(String customerId, String productId) {
         log.debug("👁️ Customer {} viewed product {}", customerId, productId);
         // TODO: Store in customer_product_views table for personalization
         // For now, just log
     }
 
     @Override
-    public void trackAddToCart(Long customerId, Long productId) {
+    public void trackAddToCart(String customerId, String productId) {
         log.debug("🛒 Customer {} added product {} to cart", customerId, productId);
         // TODO: Store in customer_cart_events table for personalization
     }
 
     @Override
-    public void trackPurchase(Long customerId, List<Long> productIds) {
+    public void trackPurchase(String customerId, List<String> productIds) {
         log.info("✅ Customer {} purchased {} products", customerId, productIds.size());
         // TODO: Update recommendation model with purchase data
     }
 
-    private List<ProductRecommendation> getRecommendationsBasedOnPurchaseHistory(Long customerId, int limit) {
+    private List<ProductRecommendation> getRecommendationsBasedOnPurchaseHistory(String customerId, int limit) {
         // Get products not yet purchased by customer
         String sql = """
             SELECT p.id, p.name, CAST(p.price AS DOUBLE) as price
@@ -244,7 +244,7 @@ public class RecommendationAdapter implements RecommendationPort {
 
         return results.stream()
             .map(row -> new ProductRecommendation(
-                convertToLong(row[0]),
+                convertToString(row[0]),
                 (String) row[1],
                 convertToDouble(row[2]),
                 null,  // imageUrl not available in database
@@ -254,27 +254,11 @@ public class RecommendationAdapter implements RecommendationPort {
             .toList();
     }
 
-    /**
-     * Helper method to convert ID value to long
-     * Handles both Number and String types (H2 DB compatibility)
-     */
-    private long convertToLong(Object value) {
+    private String convertToString(Object value) {
         if (value == null) {
-            return 0L;
+            return "";
         }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        if (value instanceof String string) {
-            try {
-                return Long.parseLong(string);
-            } catch (NumberFormatException e) {
-                log.warn("⚠️ Failed to parse ID value: {}", string);
-                return 0L;
-            }
-        }
-        log.warn("⚠️ Unexpected ID type: {}", value.getClass());
-        return 0L;
+        return String.valueOf(value);
     }
 
     /**

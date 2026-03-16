@@ -23,7 +23,7 @@ import java.util.Objects;
  */
 public final class UserId {
     
-    private final Long value;
+    private final String value;
     
     /**
      * Create a UserId with validation
@@ -31,12 +31,9 @@ public final class UserId {
      * @param value The user identifier
      * @throws IllegalArgumentException if value is null or not positive
      */
-    public UserId(Long value) {
-        if (value == null) {
+    public UserId(String value) {
+        if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("User ID cannot be null");
-        }
-        if (value <= 0) {
-            throw new IllegalArgumentException("User ID must be positive, got: " + value);
         }
         
         this.value = value;
@@ -45,7 +42,7 @@ public final class UserId {
     /**
      * Get the raw value (for persistence layer)
      */
-    public Long getValue() {
+    public String getValue() {
         return value;
     }
     

@@ -77,6 +77,7 @@ public class Order {
     private LocalDateTime deliveredAt;
     
     // Payment information - populated during payment flow
+    private String paymentMethod;
     private String checkoutId; // Accept (Paymob) payment key / checkout session ID
     private String transactionId; // Accept transaction ID after successful payment
     
@@ -123,6 +124,7 @@ public class Order {
             String carrier,
             LocalDateTime deliveredAt,
             String cancellationReason,
+            String paymentMethod,
             String checkoutId,
             String transactionId,
             Long version) {
@@ -137,6 +139,7 @@ public class Order {
         order.carrier = carrier;
         order.deliveredAt = deliveredAt;
         order.cancellationReason = cancellationReason;
+        order.paymentMethod = paymentMethod;
         order.checkoutId = checkoutId;
         order.transactionId = transactionId;
         order.version = version;
@@ -437,6 +440,15 @@ public class Order {
     
     public String getCheckoutId() {
         return checkoutId;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setCheckoutId(String checkoutId) {
