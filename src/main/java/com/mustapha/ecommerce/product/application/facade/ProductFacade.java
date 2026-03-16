@@ -12,7 +12,6 @@ import com.mustapha.ecommerce.product.dto.ProductRequest;
 import com.mustapha.ecommerce.product.dto.ProductResponse;
 import com.mustapha.ecommerce.shared.service.storage.FileStorageService;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -118,7 +117,6 @@ public class ProductFacade {
      * - Only ONE thread queries DB when cache expires, others wait
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = "products", key = "#productId", sync = true)
     public ProductResponse getProductById(String productId) {
         GetProductByIdQuery query = new GetProductByIdQuery(ProductId.of(productId));
         Product product = getProductByIdUseCase.execute(query);
@@ -133,7 +131,6 @@ public class ProductFacade {
      * - Prevents thundering herd when cache expires under load
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = "products", key = "#sku", sync = true)
     public ProductResponse getProductBySku(String sku) {
         GetProductBySkuQuery query = new GetProductBySkuQuery(sku);
         Product product = getProductBySkuUseCase.execute(query);

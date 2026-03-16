@@ -22,7 +22,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -450,20 +449,14 @@ public class ProductController {
                     .body(Map.of("error", "Only image files are allowed"));
         }
         
-        try {
-            String imageUrl = productFacade.uploadProductImage(id, file);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("productId", id);
-            response.put("imageUrl", imageUrl);
-            response.put("message", "Image uploaded successfully");
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-            
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to upload image: " + e.getMessage()));
-        }
+        String imageUrl = productFacade.uploadProductImage(id, file);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("productId", id);
+        response.put("imageUrl", imageUrl);
+        response.put("message", "Image uploaded successfully");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     /**
@@ -474,19 +467,13 @@ public class ProductController {
     public ResponseEntity<Map<String, String>> deleteImage(
             @PathVariable String id,
             @RequestParam("imageUrl") String imageUrl) {
-        
-        try {
-            productFacade.deleteProductImage(id, imageUrl);
-            
-            return ResponseEntity.status(HttpStatus.OK).body(Map.of(
-                    "productId", id,
-                    "message", "Image deleted successfully"
-            ));
-            
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to delete image: " + e.getMessage()));
-        }
+
+        productFacade.deleteProductImage(id, imageUrl);
+
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of(
+            "productId", id,
+            "message", "Image deleted successfully"
+        ));
     }
 
     // ========== REVIEW ENDPOINTS ==========
@@ -497,7 +484,7 @@ public class ProductController {
      */
     @GetMapping("/{id}/reviews")
     public ResponseEntity<ReviewsPage> getProductReviews(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
@@ -511,7 +498,7 @@ public class ProductController {
      * GET /api/products/{id}/reviews/stats
      */
     @GetMapping("/{id}/reviews/stats")
-    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable String id) {
+    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable Long id) {
         ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
@@ -523,7 +510,7 @@ public class ProductController {
      */
     @PostMapping("/{id}/reviews")
     public ResponseEntity<Map<String, Object>> submitReview(
-            @PathVariable String id,
+            @PathVariable Long id,
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody SubmitReviewRequest request) {
         
@@ -538,16 +525,11 @@ public class ProductController {
      */
     @PostMapping("/{productId}/reviews/{reviewId}/helpful")
     public ResponseEntity<Map<String, String>> markReviewHelpful(
-            @PathVariable String productId,
+            @PathVariable Long productId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal String userId) {
-
-        String customerId = parseUserId(userId);
-        if (customerId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required to mark a review as helpful");
-        }
-
-        productReviewPort.markHelpful(reviewId, customerId);
+        
+        productReviewPort.markHelpful(reviewId, Long.parseLong(userId));
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Review marked as helpful"));
     }
 
@@ -573,14 +555,9 @@ public class ProductController {
     public ResponseEntity<List<ProductRecommendation>> getPersonalizedRecommendations(
             @AuthenticationPrincipal String userId,
             @RequestParam(defaultValue = "10") int limit) {
-
-        String customerId = parseUserId(userId);
-        if (customerId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(java.util.Collections.emptyList());
-        }
-
-        List<ProductRecommendation> recommendations =
-            recommendationPort.getRecommendationsForCustomer(customerId, limit);
+        
+        List<ProductRecommendation> recommendations = 
+            recommendationPort.getRecommendationsForCustomer(Long.parseLong(userId), limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
@@ -590,18 +567,11 @@ public class ProductController {
      */
     @GetMapping("/{id}/recommendations/frequently-bought-together")
     public ResponseEntity<List<ProductRecommendation>> getFrequentlyBoughtTogether(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestParam(defaultValue = "5") int limit) {
         
         List<ProductRecommendation> recommendations = 
             recommendationPort.getFrequentlyBoughtTogether(id, limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
-    }
-
-    private String parseUserId(String userIdStr) {
-        if (userIdStr == null || userIdStr.isBlank()) {
-            return null;
-        }
-        return userIdStr.trim();
     }
 }
