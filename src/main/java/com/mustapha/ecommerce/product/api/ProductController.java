@@ -484,7 +484,7 @@ public class ProductController {
      */
     @GetMapping("/{id}/reviews")
     public ResponseEntity<ReviewsPage> getProductReviews(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "MOST_HELPFUL") SortBy sortBy) {
@@ -498,7 +498,7 @@ public class ProductController {
      * GET /api/products/{id}/reviews/stats
      */
     @GetMapping("/{id}/reviews/stats")
-    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable String id) {
+    public ResponseEntity<ProductReviewStats> getProductReviewStats(@PathVariable Long id) {
         ProductReviewStats stats = productReviewPort.getProductReviewStats(id);
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
@@ -510,7 +510,7 @@ public class ProductController {
      */
     @PostMapping("/{id}/reviews")
     public ResponseEntity<Map<String, Object>> submitReview(
-            @PathVariable String id,
+            @PathVariable Long id,
             @AuthenticationPrincipal String userId,
             @Valid @RequestBody SubmitReviewRequest request) {
         
@@ -525,11 +525,11 @@ public class ProductController {
      */
     @PostMapping("/{productId}/reviews/{reviewId}/helpful")
     public ResponseEntity<Map<String, String>> markReviewHelpful(
-            @PathVariable String productId,
+            @PathVariable Long productId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal String userId) {
         
-        productReviewPort.markHelpful(reviewId, userId);
+        productReviewPort.markHelpful(reviewId, Long.parseLong(userId));
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Review marked as helpful"));
     }
 
@@ -555,13 +555,9 @@ public class ProductController {
     public ResponseEntity<List<ProductRecommendation>> getPersonalizedRecommendations(
             @AuthenticationPrincipal String userId,
             @RequestParam(defaultValue = "10") int limit) {
-
-        if (userId == null || userId.isBlank()) {
-            return ResponseEntity.status(HttpStatus.OK).body(java.util.Collections.emptyList());
-        }
         
         List<ProductRecommendation> recommendations = 
-            recommendationPort.getRecommendationsForCustomer(userId, limit);
+            recommendationPort.getRecommendationsForCustomer(Long.parseLong(userId), limit);
         return ResponseEntity.status(HttpStatus.OK).body(recommendations);
     }
 
@@ -571,7 +567,7 @@ public class ProductController {
      */
     @GetMapping("/{id}/recommendations/frequently-bought-together")
     public ResponseEntity<List<ProductRecommendation>> getFrequentlyBoughtTogether(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestParam(defaultValue = "5") int limit) {
         
         List<ProductRecommendation> recommendations = 
