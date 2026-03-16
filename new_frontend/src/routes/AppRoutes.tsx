@@ -3,8 +3,16 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
-import { HomePage, AccountPage, OrderDetailPage } from '@/pages'
 import {
+  HomePage,
+  AccountPage,
+  CartPage,
+  CheckoutPage,
+  OrderDetailPage,
+  ProductDetailPage,
+} from '@/pages'
+import {
+  ProductsPage as AdminProductsPage,
   OrdersPage as AdminOrdersPage,
   UsersPage,
   AnalyticsPage
@@ -34,7 +42,7 @@ export function AppRoutes() {
         {/* Authentication Routes */}
         <Route 
           path="/login" 
-          element={<LoginForm onLoginSuccess={() => navigate('/products')} />} 
+          element={<LoginForm onLoginSuccess={() => navigate('/')} />} 
         />
         <Route 
           path="/register" 
@@ -45,9 +53,9 @@ export function AppRoutes() {
           element={<VerifyEmailPage />}
         />
 
-        {/* Products Listing (Public) */}
-        <Route path="/products" element={<div className="p-4">Products Page (Coming Soon)</div>} />
-        <Route path="/products/:id" element={<div className="p-4">Product Detail (Coming Soon)</div>} />
+        {/* Products listing is merged into Home section */}
+        <Route path="/products" element={<Navigate to="/" replace />} />
+        <Route path="/products/:id" element={<ProductDetailPage />} />
 
         {/* ========== PROTECTED ROUTES ========== */}
         {/* Requires: isAuthenticated = true */}
@@ -67,7 +75,16 @@ export function AppRoutes() {
           path="/cart"
           element={
             <ProtectedRoute>
-              <div className="p-4">Shopping Cart (Coming Soon)</div>
+              <CartPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
+              <CheckoutPage />
             </ProtectedRoute>
           }
         />
@@ -110,6 +127,14 @@ export function AppRoutes() {
           element={
             <ProtectedRoute requiredRole="OWNER">
               <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute requiredRole="OWNER">
+              <AdminProductsPage />
             </ProtectedRoute>
           }
         />

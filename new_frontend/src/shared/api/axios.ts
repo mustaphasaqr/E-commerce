@@ -21,6 +21,60 @@ const ANALYTICS_MAX_REQUESTS_PER_WINDOW = 40
 const analyticsRequestTimestamps: number[] = []
 let analyticsCooldownUntil = 0
 
+const ERROR_CODE_MESSAGE_MAP: Record<string, string> = {
+  PROD_CONFLICT_003: 'This product is discontinued. Activate and image upload are not allowed.',
+}
+
+const extractBackendErrorCode = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const typedPayload = payload as {
+    code?: string
+    errorCode?: string
+    message?: string
+    error?: { code?: string; errorCode?: string; message?: string } | string
+  }
+
+  const directCode = typedPayload.code || typedPayload.errorCode
+  if (typeof directCode === 'string' && directCode.trim().length > 0) {
+    return directCode
+  }
+
+  if (typedPayload.error && typeof typedPayload.error === 'object') {
+    const nestedCode = typedPayload.error.code || typedPayload.error.errorCode
+    if (typeof nestedCode === 'string' && nestedCode.trim().length > 0) {
+      return nestedCode
+    }
+  }
+
+  const message =
+    typedPayload.message ||
+    (typeof typedPayload.error === 'string' ? typedPayload.error : typedPayload.error?.message) ||
+    ''
+
+  const matchedCode = message.match(/\b[A-Z]+_[A-Z]+_\d{3}\b/)
+  return matchedCode ? matchedCode[0] : null
+}
+
+const isProductStateConflict = (status?: number, url?: string, message?: string, errorCode?: string | null): boolean => {
+  if (status !== 409 || typeof url !== 'string') {
+    return false
+  }
+
+  const isProductStateEndpoint = /\/products\/[^/]+\/(activate|images)$/.test(url)
+  if (!isProductStateEndpoint) {
+    return false
+  }
+
+  if (errorCode === 'PROD_CONFLICT_003') {
+    return true
+  }
+
+  return typeof message === 'string' && /invalid product state/i.test(message)
+}
+
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -132,11 +186,15 @@ const refreshAccessToken = async (): Promise<string | null> => {
     )
 
     const newAccessToken = response.data?.accessToken as string | undefined
+    const newRefreshToken = response.data?.refreshToken as string | undefined
     if (!newAccessToken) {
       return null
     }
 
     setInStorage('authToken', newAccessToken)
+    if (newRefreshToken) {
+      setInStorage('authRefreshToken', newRefreshToken)
+    }
     return newAccessToken
   } catch {
     return null
@@ -190,6 +248,26 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     // Console monitoring - error response with detailed info
     const errorData = error.response?.data as any
+    const backendErrorCode = extractBackendErrorCode(errorData)
+    const rawMessage =
+      errorData?.message ||
+      errorData?.error?.message ||
+      errorData?.error ||
+      error.message
+    const fallbackMappedMessage = isProductStateConflict(error.response?.status, error.config?.url, rawMessage, backendErrorCode)
+      ? ERROR_CODE_MESSAGE_MAP.PROD_CONFLICT_003
+      : undefined
+    const mappedMessage = fallbackMappedMessage
+
+    if (mappedMessage && errorData && typeof errorData === 'object') {
+      errorData.message = mappedMessage
+      if (errorData.error && typeof errorData.error === 'object') {
+        errorData.error.message = mappedMessage
+      }
+      error.message = mappedMessage
+    } else if (mappedMessage) {
+      error.message = mappedMessage
+    }
     const errorMessage = 
       errorData?.message || 
       errorData?.error?.message ||
