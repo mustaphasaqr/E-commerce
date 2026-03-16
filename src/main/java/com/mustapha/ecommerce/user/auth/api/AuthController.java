@@ -1,6 +1,5 @@
 package com.mustapha.ecommerce.user.auth.api;
 
-import com.mustapha.ecommerce.shared.security.ratelimit.RateLimit;
 import com.mustapha.ecommerce.shared.security.ratelimit.RateLimitScope;
 import com.mustapha.ecommerce.user.auth.application.facade.AuthFacade;
 import com.mustapha.ecommerce.user.dto.*;
@@ -153,7 +152,7 @@ public class AuthController {
         )
     })
     @PostMapping("/login")
-    @RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.PARAMETER, message = "Too many login attempts for this account. Please try again in 5 minutes.", parameterName = "email")
+    @com.mustapha.ecommerce.shared.security.ratelimit.RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.PARAMETER, message = "Too many login attempts for this account. Please try again in 5 minutes.", parameterName = "email")
     public ResponseEntity<LoginResponse> login(
             @Parameter(description = "Login credentials (email/username + password)", required = true)
             @Valid @RequestBody LoginRequest request,
@@ -362,7 +361,7 @@ public class AuthController {
         )
     })
     @PostMapping("/password-reset/request")
-    @RateLimit(maxRequests = 3, windowSeconds = 300, scope = RateLimitScope.IP, 
+    @com.mustapha.ecommerce.shared.security.ratelimit.RateLimit(maxRequests = 3, windowSeconds = 300, scope = RateLimitScope.IP, 
                message = "Too many password reset requests. Please try again in 5 minutes.")
     public ResponseEntity<Void> requestPasswordReset(
             @Parameter(description = "Email address for password reset", required = true)
@@ -424,7 +423,7 @@ public class AuthController {
         )
     })
     @PostMapping("/password-reset/complete")
-    @RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.IP,
+    @com.mustapha.ecommerce.shared.security.ratelimit.RateLimit(maxRequests = 5, windowSeconds = 300, scope = RateLimitScope.IP,
                message = "Too many password reset attempts. Please try again in 5 minutes.")
     public ResponseEntity<Void> completePasswordReset(
             @Parameter(description = "Reset token and new password", required = true)

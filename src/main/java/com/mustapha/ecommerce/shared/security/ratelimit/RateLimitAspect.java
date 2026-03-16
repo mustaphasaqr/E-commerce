@@ -106,11 +106,17 @@ public class RateLimitAspect {
     }
 
     private String buildRateLimitKey(JoinPoint joinPoint, RateLimit rateLimit, HttpServletRequest request) {
-        String identifier = switch (rateLimit.scope()) {
-            case IP -> extractIpAddress(request);
-            case USER -> extractUserId(request);
-            case PARAMETER -> extractParameterValue(joinPoint, request, rateLimit.parameterName());
-        };
+        RateLimitScope scope = rateLimit.scope();
+        String identifier;
+
+        if (scope == RateLimitScope.IP) {
+            identifier = extractIpAddress(request);
+        } else if (scope == RateLimitScope.USER) {
+            identifier = extractUserId(request);
+        } else {
+            identifier = extractParameterValue(joinPoint, request, rateLimit.parameterName());
+        }
+
         return RATE_LIMIT_PREFIX + rateLimit.scope() + ":" + identifier + ":" + request.getRequestURI();
     }
 
