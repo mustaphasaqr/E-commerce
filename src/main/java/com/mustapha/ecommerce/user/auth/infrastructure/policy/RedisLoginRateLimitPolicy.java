@@ -1,6 +1,8 @@
 package com.mustapha.ecommerce.user.auth.infrastructure.policy;
 
 import com.mustapha.ecommerce.user.auth.domain.policy.LoginRateLimitPolicy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
 
+    private static final Logger logger = LoggerFactory.getLogger(RedisLoginRateLimitPolicy.class);
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final boolean rateLimitingEnabled;
     private static final String USER_KEY_PREFIX = "rate_limit:user:";
@@ -44,35 +48,39 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
         if (!rateLimitingEnabled) {
             return RateLimitResult.allowed();
         }
-        
-        String keyPattern = USER_KEY_PREFIX + userId + ":*";
-        Set<String> keys = redisTemplate.keys(keyPattern);
-        
-        if (keys == null || keys.isEmpty()) {
-            return RateLimitResult.allowed();
-        }
-        
-        // Count attempts in last 30 minutes
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(LOCKOUT_DURATION_MINUTES);
-        long attemptCount = keys.stream()
-            .map(this::extractTimestamp)
-            .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
-            .count();
-        
-        if (attemptCount >= MAX_ATTEMPTS_PER_USER) {
-            LocalDateTime firstAttempt = keys.stream()
+
+        try {
+            String keyPattern = USER_KEY_PREFIX + userId + ":*";
+            Set<String> keys = redisTemplate.keys(keyPattern);
+
+            if (keys == null || keys.isEmpty()) {
+                return RateLimitResult.allowed();
+            }
+
+            // Count attempts in last 30 minutes
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(LOCKOUT_DURATION_MINUTES);
+            long attemptCount = keys.stream()
                 .map(this::extractTimestamp)
                 .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
-                .min(LocalDateTime::compareTo)
-                .orElse(LocalDateTime.now());
-            
-            LocalDateTime lockedUntil = firstAttempt.plusMinutes(LOCKOUT_DURATION_MINUTES);
-            return RateLimitResult.denied(
-                "Too many failed login attempts. Try again after " + lockedUntil,
-                lockedUntil
-            );
+                .count();
+
+            if (attemptCount >= MAX_ATTEMPTS_PER_USER) {
+                LocalDateTime firstAttempt = keys.stream()
+                    .map(this::extractTimestamp)
+                    .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
+                    .min(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.now());
+
+                LocalDateTime lockedUntil = firstAttempt.plusMinutes(LOCKOUT_DURATION_MINUTES);
+                return RateLimitResult.denied(
+                    "Too many failed login attempts. Try again after " + lockedUntil,
+                    lockedUntil
+                );
+            }
+        } catch (Exception e) {
+            logger.warn("Redis unavailable during user rate-limit check for '{}'. Failing open. Cause: {}", userId, e.getMessage());
         }
-        
+
         return RateLimitResult.allowed();
     }
 
@@ -81,35 +89,39 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
         if (!rateLimitingEnabled) {
             return RateLimitResult.allowed();
         }
-        
-        String keyPattern = IP_KEY_PREFIX + ipAddress + ":*";
-        Set<String> keys = redisTemplate.keys(keyPattern);
-        
-        if (keys == null || keys.isEmpty()) {
-            return RateLimitResult.allowed();
-        }
-        
-        // Count attempts in last 60 minutes
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(IP_LOCKOUT_DURATION_MINUTES);
-        long attemptCount = keys.stream()
-            .map(this::extractTimestamp)
-            .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
-            .count();
-        
-        if (attemptCount >= MAX_ATTEMPTS_PER_IP) {
-            LocalDateTime firstAttempt = keys.stream()
+
+        try {
+            String keyPattern = IP_KEY_PREFIX + ipAddress + ":*";
+            Set<String> keys = redisTemplate.keys(keyPattern);
+
+            if (keys == null || keys.isEmpty()) {
+                return RateLimitResult.allowed();
+            }
+
+            // Count attempts in last 60 minutes
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(IP_LOCKOUT_DURATION_MINUTES);
+            long attemptCount = keys.stream()
                 .map(this::extractTimestamp)
                 .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
-                .min(LocalDateTime::compareTo)
-                .orElse(LocalDateTime.now());
-            
-            LocalDateTime lockedUntil = firstAttempt.plusMinutes(IP_LOCKOUT_DURATION_MINUTES);
-            return RateLimitResult.denied(
-                "Too many failed login attempts from this IP. Try again after " + lockedUntil,
-                lockedUntil
-            );
+                .count();
+
+            if (attemptCount >= MAX_ATTEMPTS_PER_IP) {
+                LocalDateTime firstAttempt = keys.stream()
+                    .map(this::extractTimestamp)
+                    .filter(timestamp -> timestamp != null && timestamp.isAfter(cutoff))
+                    .min(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.now());
+
+                LocalDateTime lockedUntil = firstAttempt.plusMinutes(IP_LOCKOUT_DURATION_MINUTES);
+                return RateLimitResult.denied(
+                    "Too many failed login attempts from this IP. Try again after " + lockedUntil,
+                    lockedUntil
+                );
+            }
+        } catch (Exception e) {
+            logger.warn("Redis unavailable during IP rate-limit check for '{}'. Failing open. Cause: {}", ipAddress, e.getMessage());
         }
-        
+
         return RateLimitResult.allowed();
     }
 
@@ -118,17 +130,22 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
         if (!rateLimitingEnabled) {
             return;
         }
-        
-        LocalDateTime now = LocalDateTime.now();
-        String timestamp = now.format(FORMATTER);
-        
-        // Record user attempt with TTL
-        String userKey = USER_KEY_PREFIX + userId + ":" + timestamp;
-        redisTemplate.opsForValue().set(userKey, "failed", LOCKOUT_DURATION_MINUTES, TimeUnit.MINUTES);
-        
-        // Record IP attempt with TTL
-        String ipKey = IP_KEY_PREFIX + ipAddress + ":" + timestamp;
-        redisTemplate.opsForValue().set(ipKey, "failed", IP_LOCKOUT_DURATION_MINUTES, TimeUnit.MINUTES);
+
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            String timestamp = now.format(FORMATTER);
+
+            // Record user attempt with TTL
+            String userKey = USER_KEY_PREFIX + userId + ":" + timestamp;
+            redisTemplate.opsForValue().set(userKey, "failed", LOCKOUT_DURATION_MINUTES, TimeUnit.MINUTES);
+
+            // Record IP attempt with TTL
+            String ipKey = IP_KEY_PREFIX + ipAddress + ":" + timestamp;
+            redisTemplate.opsForValue().set(ipKey, "failed", IP_LOCKOUT_DURATION_MINUTES, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            logger.warn("Redis unavailable while recording failed login attempt for user='{}' ip='{}'. Cause: {}",
+                userId, ipAddress, e.getMessage());
+        }
     }
 
     @Override
@@ -136,13 +153,18 @@ public class RedisLoginRateLimitPolicy implements LoginRateLimitPolicy {
         if (!rateLimitingEnabled) {
             return;
         }
-        
-        // Clear user attempts (IP tracking remains for distributed attack detection)
-        String keyPattern = USER_KEY_PREFIX + userId + ":*";
-        Set<String> keys = redisTemplate.keys(keyPattern);
-        
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
+
+        try {
+            // Clear user attempts (IP tracking remains for distributed attack detection)
+            String keyPattern = USER_KEY_PREFIX + userId + ":*";
+            Set<String> keys = redisTemplate.keys(keyPattern);
+
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            logger.warn("Redis unavailable while clearing successful-login rate-limit keys for user='{}'. Cause: {}",
+                userId, e.getMessage());
         }
     }
 

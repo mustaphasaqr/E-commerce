@@ -27,15 +27,24 @@ public class RecommendationAdapter implements RecommendationPort {
     public List<ProductRecommendation> getRecommendationsForCustomer(String customerId, int limit) {
         log.info("🎯 Getting personalized recommendations for customer {}", customerId);
 
+        if (customerId == null || customerId.isBlank() || limit <= 0) {
+            return List.of();
+        }
+
         // Strategy: Recommend based on customer's past purchases and views
         List<ProductRecommendation> recommendations = new ArrayList<>();
 
-        // 1. Get products in same categories as past purchases
-        recommendations.addAll(getRecommendationsBasedOnPurchaseHistory(customerId, limit));
+        try {
+            // 1. Get products in same categories as past purchases
+            recommendations.addAll(getRecommendationsBasedOnPurchaseHistory(customerId, limit));
 
-        // 2. Get popular products customer hasn't bought
-        if (recommendations.size() < limit) {
-            recommendations.addAll(getTrendingProducts(limit - recommendations.size()));
+            // 2. Get popular products customer hasn't bought
+            if (recommendations.size() < limit) {
+                recommendations.addAll(getTrendingProducts(limit - recommendations.size()));
+            }
+        } catch (Exception e) {
+            log.warn("Recommendation generation failed for customer {}. Returning empty list. Cause: {}", customerId, e.getMessage());
+            return List.of();
         }
 
         log.info("✅ Generated {} recommendations for customer {}", recommendations.size(), customerId);
@@ -47,7 +56,7 @@ public class RecommendationAdapter implements RecommendationPort {
         log.info("🔗 Getting similar products to product {}", productId);
 
         // Handle invalid limit
-        if (limit <= 0) {
+        if (limit <= 0 || productId == null || productId.isBlank()) {
             log.warn("⚠️ Invalid limit {} requested, returning empty list", limit);
             return List.of();
         }
@@ -65,26 +74,31 @@ public class RecommendationAdapter implements RecommendationPort {
             LIMIT :limit
             """;
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("productId", productId);
-        query.setParameter("limit", limit);
+        try {
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("productId", productId);
+            query.setParameter("limit", limit);
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = query.getResultList();
 
-        List<ProductRecommendation> recommendations = results.stream()
-            .map(row -> new ProductRecommendation(
-                convertToString(row[0]),
-                (String) row[1],
-                convertToDouble(row[2]),
-                null,  // imageUrl not available in database
-                0.8, // High confidence for similar products
-                "Similar products with comparable pricing"
-            ))
-            .toList();
+            List<ProductRecommendation> recommendations = results.stream()
+                .map(row -> new ProductRecommendation(
+                    convertToString(row[0]),
+                    (String) row[1],
+                    convertToDouble(row[2]),
+                    null,  // imageUrl not available in database
+                    0.8, // High confidence for similar products
+                    "Similar products with comparable pricing"
+                ))
+                .toList();
 
-        log.info("✅ Found {} similar products", recommendations.size());
-        return recommendations;
+            log.info("✅ Found {} similar products", recommendations.size());
+            return recommendations;
+        } catch (Exception e) {
+            log.warn("Similar products query failed for productId={}. Returning empty list. Cause: {}", productId, e.getMessage());
+            return List.of();
+        }
     }
 
     @Override
@@ -92,7 +106,7 @@ public class RecommendationAdapter implements RecommendationPort {
         log.info("🛒 Getting frequently bought together with product {}", productId);
 
         // Handle invalid limit
-        if (limit <= 0) {
+        if (limit <= 0 || productId == null || productId.isBlank()) {
             log.warn("⚠️ Invalid limit {} requested, returning empty list", limit);
             return List.of();
         }
@@ -110,26 +124,31 @@ public class RecommendationAdapter implements RecommendationPort {
             LIMIT :limit
             """;
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("productId", productId);
-        query.setParameter("limit", limit);
+        try {
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("productId", productId);
+            query.setParameter("limit", limit);
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = query.getResultList();
 
-        List<ProductRecommendation> recommendations = results.stream()
-            .map(row -> new ProductRecommendation(
-                convertToString(row[0]),
-                (String) row[1],
-                convertToDouble(row[2]),
-                null,  // imageUrl not available in database
-                0.9, // Very high confidence for co-purchased items
-                "Customers who bought this also bought"
-            ))
-            .toList();
+            List<ProductRecommendation> recommendations = results.stream()
+                .map(row -> new ProductRecommendation(
+                    convertToString(row[0]),
+                    (String) row[1],
+                    convertToDouble(row[2]),
+                    null,  // imageUrl not available in database
+                    0.9, // Very high confidence for co-purchased items
+                    "Customers who bought this also bought"
+                ))
+                .toList();
 
-        log.info("✅ Found {} frequently bought together items", recommendations.size());
-        return recommendations;
+            log.info("✅ Found {} frequently bought together items", recommendations.size());
+            return recommendations;
+        } catch (Exception e) {
+            log.warn("Frequently bought together query failed for productId={}. Returning empty list. Cause: {}", productId, e.getMessage());
+            return List.of();
+        }
     }
 
     @Override
@@ -181,25 +200,30 @@ public class RecommendationAdapter implements RecommendationPort {
             LIMIT :limit
             """;
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("limit", limit);
+        try {
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("limit", limit);
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = query.getResultList();
 
-        List<ProductRecommendation> recommendations = results.stream()
-            .map(row -> new ProductRecommendation(
-                convertToString(row[0]),
-                (String) row[1],
-                convertToDouble(row[2]),
-                null,  // imageUrl not available in database
-                0.7, // Medium confidence for trending
-                "Trending now"
-            ))
-            .toList();
+            List<ProductRecommendation> recommendations = results.stream()
+                .map(row -> new ProductRecommendation(
+                    convertToString(row[0]),
+                    (String) row[1],
+                    convertToDouble(row[2]),
+                    null,  // imageUrl not available in database
+                    0.7, // Medium confidence for trending
+                    "Trending now"
+                ))
+                .toList();
 
-        log.info("✅ Found {} trending products", recommendations.size());
-        return recommendations;
+            log.info("✅ Found {} trending products", recommendations.size());
+            return recommendations;
+        } catch (Exception e) {
+            log.warn("Trending products query failed. Returning empty list. Cause: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     @Override
@@ -235,23 +259,28 @@ public class RecommendationAdapter implements RecommendationPort {
             LIMIT :limit
             """;
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("customerId", customerId);
-        query.setParameter("limit", limit);
+        try {
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("customerId", customerId);
+            query.setParameter("limit", limit);
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = query.getResultList();
 
-        return results.stream()
-            .map(row -> new ProductRecommendation(
-                convertToString(row[0]),
-                (String) row[1],
-                convertToDouble(row[2]),
-                null,  // imageUrl not available in database
-                0.75,
-                "Based on your purchase history"
-            ))
-            .toList();
+            return results.stream()
+                .map(row -> new ProductRecommendation(
+                    convertToString(row[0]),
+                    (String) row[1],
+                    convertToDouble(row[2]),
+                    null,  // imageUrl not available in database
+                    0.75,
+                    "Based on your purchase history"
+                ))
+                .toList();
+        } catch (Exception e) {
+            log.warn("Purchase-history recommendations failed for customerId={}. Cause: {}", customerId, e.getMessage());
+            return List.of();
+        }
     }
 
     private String convertToString(Object value) {
