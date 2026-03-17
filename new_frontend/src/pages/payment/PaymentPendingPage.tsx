@@ -19,7 +19,7 @@ export default function PaymentPendingPage() {
           <p>Your payment is still pending confirmation.</p>
           <p>Transaction ID: <span className="font-semibold">{transactionId}</span></p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate('/payment/tools')}>Check Status in Payment Tools</Button>
+            <Button onClick={() => navigate('/')}>Back to Home</Button>
             <Button variant="outline" onClick={() => navigate('/account?tab=orders')}>Back to My Orders</Button>
           </div>
         </CardContent>

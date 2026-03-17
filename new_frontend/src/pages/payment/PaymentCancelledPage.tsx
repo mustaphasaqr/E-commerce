@@ -16,7 +16,7 @@ export default function PaymentCancelledPage() {
         <CardContent className="space-y-4 text-sm text-slate-800">
           <p>The payment was cancelled before completion.</p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate('/checkout')}>Return to Checkout</Button>
+            <Button onClick={() => navigate('/cart')}>Return to Checkout</Button>
             <Button variant="outline" onClick={() => navigate('/account?tab=orders')}>Back to My Orders</Button>
           </div>
         </CardContent>

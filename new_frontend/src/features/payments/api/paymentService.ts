@@ -54,14 +54,23 @@ export const paymentService = {
   },
 
   async webhookVerify(checkoutId: string): Promise<PaymentVerifyResponse> {
+    const webhookBase = import.meta.env.DEV
+      ? '/api'
+      : (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api'
     const response = await axios.get<PaymentVerifyResponse>('/webhooks/payment/verify', {
       params: { checkoutId },
+      baseURL: webhookBase,
     })
     return response.data
   },
 
   async webhookHealth(): Promise<Record<string, string>> {
-    const response = await axios.get<Record<string, string>>('/webhooks/payment/health')
+    const webhookBase = import.meta.env.DEV
+      ? '/api'
+      : (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api'
+    const response = await axios.get<Record<string, string>>('/webhooks/payment/health', {
+      baseURL: webhookBase,
+    })
     return response.data
   },
 }

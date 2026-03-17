@@ -8,6 +8,7 @@ import type { CartDTO } from '@/features/cart/types'
 import AccountPage from '@/pages/account/AccountPage'
 import { UsersPage } from '@/features/admin'
 import CartPage from '@/pages/cart/CartPage'
+import PaymentToolsPanel from '@/features/payments/components/PaymentToolsPanel'
 
 interface NavigationProps {}
 
@@ -60,6 +61,7 @@ export function Navigation({}: NavigationProps) {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false)
   const [isUsersPanelOpen, setIsUsersPanelOpen] = useState(false)
+  const [isPaymentToolsOpen, setIsPaymentToolsOpen] = useState(false)
   const [_isCartLoading, setIsCartLoading] = useState(false)
   const [localCartItems, setLocalCartItems] = useState<LocalCartItem[]>(loadLocalDrawerCart)
   const [cart, setCart] = useState<CartDTO>({
@@ -189,12 +191,12 @@ export function Navigation({}: NavigationProps) {
   }, [canUseBackendCart, isAuthenticated])
 
   useEffect(() => {
-    if (!isCartOpen && !isAccountPanelOpen && !isUsersPanelOpen) return
+    if (!isCartOpen && !isAccountPanelOpen && !isUsersPanelOpen && !isPaymentToolsOpen) return
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = ''
     }
-  }, [isCartOpen, isAccountPanelOpen, isUsersPanelOpen])
+  }, [isCartOpen, isAccountPanelOpen, isUsersPanelOpen, isPaymentToolsOpen])
 
   // Check if we can go back
   const canGoBack = location.pathname !== '/'
@@ -380,7 +382,7 @@ export function Navigation({}: NavigationProps) {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/payment/tools')
+                          setIsPaymentToolsOpen(true)
                           setProfileMenuOpen(false)
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
@@ -538,6 +540,14 @@ export function Navigation({}: NavigationProps) {
           <UsersPage />
         </aside>
       </>
+    )}
+
+    {isPaymentToolsOpen && (
+      <PaymentToolsPanel
+        onClose={() => setIsPaymentToolsOpen(false)}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenAccount={() => setIsAccountPanelOpen(true)}
+      />
     )}
     </>
   )

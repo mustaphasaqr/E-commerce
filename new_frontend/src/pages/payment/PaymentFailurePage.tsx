@@ -19,8 +19,8 @@ export default function PaymentFailurePage() {
           <p>The payment did not complete successfully.</p>
           <p>Reason: <span className="font-semibold break-all">{reason}</span></p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate('/payment/tools')}>Open Payment Tools</Button>
-            <Button variant="outline" onClick={() => navigate('/checkout')}>Retry Checkout</Button>
+            <Button onClick={() => navigate('/')}>Back to Home</Button>
+            <Button variant="outline" onClick={() => navigate('/cart')}>Retry Checkout</Button>
           </div>
         </CardContent>
       </Card>
