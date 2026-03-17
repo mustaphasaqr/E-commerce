@@ -29,10 +29,9 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuthStore()
-  const authenticated = typeof isAuthenticated === 'function' ? isAuthenticated() : Boolean(isAuthenticated)
 
   // Check if user is authenticated
-  if (!authenticated) {
+  if (!isAuthenticated) {
     console.warn('🔐 Route protected: User not authenticated, redirecting to /login')
     return <Navigate to="/login" replace />
   }

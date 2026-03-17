@@ -1,8 +1,3 @@
 export { HomePage } from './HomePage'
 export { default as AccountPage } from './account/AccountPage'
-export { default as CartPage } from './cart/CartPage'
-export { default as CheckoutPage } from './checkout/CheckoutPage'
 export { default as OrdersPage } from './orders/OrdersPage'
-export { default as OrderDetailPage } from './orders/OrderDetailPage'
-export { default as ProductDetailPage } from './products/ProductDetailPage'
-export { default as ProductsPage } from './products/ProductsPage'

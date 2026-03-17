@@ -1,40 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { AdminMenu } from '@/features/admin'
 import { Loader2 } from 'lucide-react'
 import { ShoppingCart, User, Menu, X, LogOut, ChevronLeft } from 'lucide-react'
-import cartService from '@/features/cart/api/cartService'
-import type { CartDTO } from '@/features/cart/types'
-import AccountPage from '@/pages/account/AccountPage'
-import { UsersPage } from '@/features/admin'
-import CartPage from '@/pages/cart/CartPage'
 
 interface NavigationProps {}
-
-interface LocalCartItem {
-  productId: string
-  productName: string
-  quantity: number
-  price: number
-  subtotal: number
-}
-
-const LOCAL_DRAWER_CART_KEY = 'localDrawerCartItems'
-
-const loadLocalDrawerCart = (): LocalCartItem[] => {
-  if (typeof window === 'undefined' || !localStorage) {
-    return []
-  }
-
-  try {
-    const raw = localStorage.getItem(LOCAL_DRAWER_CART_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 /**
  * Navigation Component (Preline UI + shadcn/ui)
@@ -57,49 +28,7 @@ export function Navigation({}: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [showLogoutLoader, setShowLogoutLoader] = useState(false)
-  const [isCartOpen, setIsCartOpen] = useState(false)
-  const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false)
-  const [isUsersPanelOpen, setIsUsersPanelOpen] = useState(false)
-  const [isCartLoading, setIsCartLoading] = useState(false)
-  const [localCartItems, setLocalCartItems] = useState<LocalCartItem[]>(loadLocalDrawerCart)
-  const [cart, setCart] = useState<CartDTO>({
-    id: null,
-    userId: null,
-    sessionId: '',
-    items: [],
-    totalAmount: 0,
-    status: 'ACTIVE',
-    totalItems: 0,
-  })
   const profileMenuRef = useRef<HTMLDivElement>(null)
-
-  const localItemsCount = localCartItems.reduce((sum, item) => sum + item.quantity, 0)
-  const hasBackendItems = cart.items.length > 0
-  const displayItemsCount = hasBackendItems ? cart.totalItems : localItemsCount
-  const canUseBackendCart = isAuthenticated
-
-  const loadCart = async (openAfterLoad = false) => {
-    if (!canUseBackendCart) {
-      if (openAfterLoad) {
-        setIsCartOpen(true)
-      }
-      return
-    }
-    setIsCartLoading(true)
-    try {
-      const current = await cartService.getCart()
-      setCart(current)
-      if (openAfterLoad) {
-        setIsCartOpen(true)
-      }
-    } catch {
-      if (openAfterLoad) {
-        setIsCartOpen(true)
-      }
-    } finally {
-      setIsCartLoading(false)
-    }
-  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -118,109 +47,11 @@ export function Navigation({}: NavigationProps) {
     }
   }, [profileMenuOpen])
 
-  // Always close the profile dropdown when route changes.
-  useEffect(() => {
-    setProfileMenuOpen(false)
-  }, [location.pathname])
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setCart({
-        id: null,
-        userId: null,
-        sessionId: '',
-        items: [],
-        totalAmount: 0,
-        status: 'ACTIVE',
-        totalItems: 0,
-      })
-      setIsCartOpen(false)
-    }
-  }, [isAuthenticated])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !localStorage) {
-      return
-    }
-
-    localStorage.setItem(LOCAL_DRAWER_CART_KEY, JSON.stringify(localCartItems))
-  }, [localCartItems])
-
-  useEffect(() => {
-    const onCartUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent<{
-        open?: boolean
-        localItem?: LocalCartItem
-      }>
-
-      if (customEvent.detail?.localItem) {
-        const item = customEvent.detail.localItem
-        setLocalCartItems((prev) => {
-          const existing = prev.find((entry) => entry.productId === item.productId)
-          if (!existing) {
-            return [...prev, { ...item }]
-          }
-
-          return prev.map((entry) =>
-            entry.productId === item.productId
-              ? {
-                  ...entry,
-                  quantity: entry.quantity + item.quantity,
-                  subtotal: (entry.quantity + item.quantity) * entry.price,
-                }
-              : entry
-          )
-        })
-      }
-
-      if (!customEvent.detail?.localItem && canUseBackendCart) {
-        void loadCart(Boolean(customEvent.detail?.open))
-      }
-
-      if (customEvent.detail?.open) {
-        setIsCartOpen(true)
-      }
-    }
-
-    window.addEventListener('cart:updated', onCartUpdated)
-    return () => {
-      window.removeEventListener('cart:updated', onCartUpdated)
-    }
-  }, [canUseBackendCart, isAuthenticated])
-
-  useEffect(() => {
-    if (!isCartOpen && !isAccountPanelOpen && !isUsersPanelOpen) return
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isCartOpen, isAccountPanelOpen, isUsersPanelOpen])
-
   // Check if we can go back
   const canGoBack = location.pathname !== '/'
 
   const handleProfileClick = () => {
     setProfileMenuOpen(!profileMenuOpen)
-  }
-
-  const goToProductsSection = () => {
-    if (location.pathname !== '/') {
-      navigate('/')
-      setTimeout(() => {
-        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-      return
-    }
-
-    document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const openCart = () => {
-    if (!isAuthenticated) {
-      navigate('/login?redirect=cart')
-      return
-    }
-    void loadCart(true)
   }
 
   const handleLogout = async () => {
@@ -232,17 +63,7 @@ export function Navigation({}: NavigationProps) {
     }, 2000); // 2 seconds
   }
 
-  const openUsersManagement = () => {
-    // Dense user-action table works better in full page on smaller screens.
-    if (typeof window !== 'undefined' && window.innerWidth < 1440) {
-      navigate('/admin/users')
-      return
-    }
-    setIsUsersPanelOpen(true)
-  }
-
   return (
-    <>
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
       {showLogoutLoader && (
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white bg-opacity-90">
@@ -275,7 +96,7 @@ export function Navigation({}: NavigationProps) {
             <button onClick={() => navigate('/')} className="text-gray-600 hover:text-gray-900">
               Home
             </button>
-            <button onClick={goToProductsSection} className="text-gray-600 hover:text-gray-900">
+            <button onClick={() => navigate('/products')} className="text-gray-600 hover:text-gray-900">
               Products
             </button>
             <a href="#" className="text-gray-600 hover:text-gray-900">
@@ -290,16 +111,14 @@ export function Navigation({}: NavigationProps) {
           <div className="flex items-center gap-4">
             {/* Cart Icon */}
             <button
-              onClick={openCart}
+              onClick={() => (isAuthenticated ? navigate('/cart') : navigate('/login?redirect=cart'))}
               className="p-2 hover:bg-gray-100 rounded-lg relative"
               aria-label="Shopping cart"
             >
               <ShoppingCart size={24} className="text-gray-600" />
-              {displayItemsCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  {displayItemsCount > 99 ? '99+' : displayItemsCount}
-                </span>
-              )}
+              <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                0
+              </span>
             </button>
 
             {/* Profile Icon with Dropdown */}
@@ -340,56 +159,30 @@ export function Navigation({}: NavigationProps) {
               {isAuthenticated && profileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10">
                   {/* Admin/Owner menu */}
-                  {user?.role === 'OWNER' && (
+                  {(user?.role === 'OWNER' || user?.role === 'ADMIN') && (
                     <>
-                      <button
-                        onClick={() => {
-                          navigate('/admin')
-                          setProfileMenuOpen(false)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                      >
-                        Commerce Insights
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate('/admin/products')
-                          setProfileMenuOpen(false)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                      >
-                        Products
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate('/admin/orders')
-                          setProfileMenuOpen(false)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                      >
-                        Orders
-                      </button>
-                      <button
-                        onClick={() => {
-                          openUsersManagement()
-                          setProfileMenuOpen(false)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                      >
-                        Users
-                      </button>
+                      <AdminMenu />
                       <hr className="my-2" />
                     </>
                   )}
                   {/* User menu */}
                   <button
                     onClick={() => {
-                      setIsAccountPanelOpen(true)
+                      navigate('/account')
                       setProfileMenuOpen(false)
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                   >
                     My Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('/orders')
+                      setProfileMenuOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                  >
+                    My Orders
                   </button>
                   <hr className="my-2" />
                   <button
@@ -427,7 +220,7 @@ export function Navigation({}: NavigationProps) {
             </button>
             <button
               onClick={() => {
-                goToProductsSection()
+                navigate('/products')
                 setMobileMenuOpen(false)
               }}
               className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded"
@@ -436,100 +229,16 @@ export function Navigation({}: NavigationProps) {
             </button>
             <button
               onClick={() => {
-                if (!isAuthenticated) {
-                  navigate('/login?redirect=account')
-                } else {
-                  setIsAccountPanelOpen(true)
-                }
+                navigate('/profile')
                 setMobileMenuOpen(false)
               }}
               className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded"
             >
               Account
             </button>
-            {user?.role === 'OWNER' && (
-              <button
-                onClick={() => {
-                  navigate('/admin/products')
-                  setMobileMenuOpen(false)
-                }}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded"
-              >
-                Admin Products
-              </button>
-            )}
           </div>
         )}
       </div>
     </nav>
-    {isCartOpen && (
-      <>
-        <button
-          className="fixed inset-0 z-[80] bg-black/30"
-          aria-label="Close cart panel"
-          onClick={() => setIsCartOpen(false)}
-        />
-        <aside className="fixed right-0 top-0 z-[81] h-full w-full max-w-6xl overflow-y-auto border-l border-gray-200 bg-white shadow-2xl">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">Cart Panel</h2>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <CartPage />
-        </aside>
-      </>
-    )}
-
-    {isAccountPanelOpen && (
-      <>
-        <button
-          className="fixed inset-0 z-[82] bg-black/30"
-          aria-label="Close account panel"
-          onClick={() => setIsAccountPanelOpen(false)}
-        />
-        <aside className="fixed right-0 top-0 z-[83] h-full w-full max-w-6xl overflow-y-auto border-l border-gray-200 bg-white shadow-2xl">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">My Account</h2>
-            <button
-              onClick={() => setIsAccountPanelOpen(false)}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <AccountPage />
-        </aside>
-      </>
-    )}
-
-    {isUsersPanelOpen && (
-      <>
-        <button
-          className="fixed inset-0 z-[84] bg-black/30"
-          aria-label="Close users panel"
-          onClick={() => setIsUsersPanelOpen(false)}
-        />
-        <aside className="fixed right-0 top-0 z-[85] h-full w-full max-w-[96vw] overflow-y-auto border-l border-gray-200 bg-white shadow-2xl xl:max-w-[90rem]">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">Users</h2>
-            <button
-              onClick={() => setIsUsersPanelOpen(false)}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <UsersPage />
-        </aside>
-      </>
-    )}
-    </>
   )
 }

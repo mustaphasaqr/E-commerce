@@ -1,71 +1,44 @@
 import axios from '@/shared/api/axios'
 import type {
-	CreateProductPayload,
 	ProductDetail,
 	ProductListItem,
-	ProductRecommendation,
-	ProductReviewsPage,
 	ProductReviewStats,
-	ReviewSortBy,
-	SubmitReviewPayload,
+	ProductReviewsPage,
+	SubmitReviewRequest,
 } from '../types'
 
+const toNumber = (value: unknown, fallback = 0): number => {
+	if (typeof value === 'number' && Number.isFinite(value)) return value
+	if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value)
+	return fallback
+}
+
+const normalizeProduct = (raw: Record<string, unknown>): ProductListItem => ({
+	id: String(raw.id ?? ''),
+	sku: String(raw.sku ?? ''),
+	name: String(raw.name ?? ''),
+	price: toNumber(raw.price),
+	currency: String(raw.currency ?? 'USD'),
+	availableStock: toNumber(raw.availableStock),
+	totalStock: toNumber(raw.totalStock ?? raw.availableStock),
+	active: Boolean(raw.active ?? true),
+	discontinued: Boolean(raw.discontinued ?? false),
+})
+
 export const productService = {
-	async createProduct(payload: CreateProductPayload): Promise<ProductDetail> {
-		const response = await axios.post<ProductDetail>('/products', payload)
-		return response.data
-	},
-
 	async listProducts(): Promise<ProductListItem[]> {
-		const response = await axios.get<ProductListItem[]>('/products')
-		return Array.isArray(response.data) ? response.data : []
+		const response = await axios.get('/products')
+		const items = Array.isArray(response.data) ? response.data : []
+		return items.map((item) => normalizeProduct(item as Record<string, unknown>))
 	},
 
-	async searchProducts(name: string): Promise<ProductListItem[]> {
-		const response = await axios.get<ProductListItem[]>('/products/search', {
-			params: { name },
-		})
-		return Array.isArray(response.data) ? response.data : []
-	},
-
-	async getProductById(id: string): Promise<ProductDetail> {
-		const response = await axios.get<ProductDetail>(`/products/${id}`)
-		return response.data
-	},
-
-	async getProductBySku(sku: string): Promise<ProductDetail> {
-		const response = await axios.get<ProductDetail>('/products', {
-			params: { sku },
-		})
-		return response.data
-	},
-
-	async getTrendingProducts(limit = 10): Promise<ProductRecommendation[]> {
-		const response = await axios.get<ProductRecommendation[]>('/products/recommendations/trending', {
-			params: { limit },
-		})
-		return Array.isArray(response.data) ? response.data : []
-	},
-
-	async getPersonalizedRecommendations(limit = 10): Promise<ProductRecommendation[]> {
-		const response = await axios.get<ProductRecommendation[]>('/products/recommendations/for-you', {
-			params: { limit },
-		})
-		return Array.isArray(response.data) ? response.data : []
-	},
-
-	async getFrequentlyBoughtTogether(productId: string, limit = 5): Promise<ProductRecommendation[]> {
-		const response = await axios.get<ProductRecommendation[]>(`/products/${productId}/recommendations/frequently-bought-together`, {
-			params: { limit },
-		})
-		return Array.isArray(response.data) ? response.data : []
-	},
-
-	async getProductReviews(productId: string, page = 0, size = 5, sortBy: ReviewSortBy = 'MOST_HELPFUL'): Promise<ProductReviewsPage> {
-		const response = await axios.get<ProductReviewsPage>(`/products/${productId}/reviews`, {
-			params: { page, size, sortBy },
-		})
-		return response.data
+	async getProductById(productId: string): Promise<ProductDetail> {
+		const response = await axios.get(`/products/${productId}`)
+		const normalized = normalizeProduct(response.data as Record<string, unknown>)
+		return {
+			...normalized,
+			description: String((response.data as Record<string, unknown>).description ?? ''),
+		}
 	},
 
 	async getProductReviewStats(productId: string): Promise<ProductReviewStats> {
@@ -73,60 +46,19 @@ export const productService = {
 		return response.data
 	},
 
-	async submitReview(productId: string, payload: SubmitReviewPayload): Promise<{ reviewId: number; message: string }> {
-		const response = await axios.post<{ reviewId: number; message: string }>(`/products/${productId}/reviews`, payload)
+	async getProductReviews(productId: string, page = 0, size = 5, sortBy = 'MOST_HELPFUL'): Promise<ProductReviewsPage> {
+		const response = await axios.get<ProductReviewsPage>(`/products/${productId}/reviews`, {
+			params: { page, size, sortBy },
+		})
 		return response.data
+	},
+
+	async submitReview(productId: string, payload: SubmitReviewRequest): Promise<void> {
+		await axios.post(`/products/${productId}/reviews`, payload)
 	},
 
 	async markReviewHelpful(productId: string, reviewId: number): Promise<void> {
 		await axios.post(`/products/${productId}/reviews/${reviewId}/helpful`)
-	},
-
-	async updatePrice(id: string, newPrice: number, currencyCode: string): Promise<ProductDetail> {
-		const response = await axios.put<ProductDetail>(`/products/${id}/price`, null, {
-			params: { newPrice, currencyCode },
-		})
-		return response.data
-	},
-
-	async updateProductDetails(id: string, name: string, description: string): Promise<ProductDetail> {
-		const response = await axios.put<ProductDetail>(`/products/${id}/details`, null, {
-			params: { name, description },
-		})
-		return response.data
-	},
-
-	async activateProduct(id: string): Promise<ProductDetail> {
-		const response = await axios.post<ProductDetail>(`/products/${id}/activate`)
-		return response.data
-	},
-
-	async deactivateProduct(id: string): Promise<ProductDetail> {
-		const response = await axios.post<ProductDetail>(`/products/${id}/deactivate`)
-		return response.data
-	},
-
-	async discontinueProduct(id: string): Promise<ProductDetail> {
-		const response = await axios.post<ProductDetail>(`/products/${id}/discontinue`)
-		return response.data
-	},
-
-	async uploadProductImage(id: string, file: File): Promise<{ productId: string; imageUrl: string; message: string }> {
-		const formData = new FormData()
-		formData.append('file', file)
-		const response = await axios.post<{ productId: string; imageUrl: string; message: string }>(`/products/${id}/images`, formData, {
-			headers: {
-				'Content-Type': 'multipart/form-data',
-			},
-		})
-		return response.data
-	},
-
-	async deleteProductImage(id: string, imageUrl: string): Promise<{ productId?: string; message?: string; error?: string }> {
-		const response = await axios.delete<{ productId?: string; message?: string; error?: string }>(`/products/${id}/images`, {
-			params: { imageUrl },
-		})
-		return response.data
 	},
 }
 

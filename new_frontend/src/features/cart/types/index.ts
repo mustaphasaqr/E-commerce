@@ -1,5 +1,5 @@
 export interface CartItem {
-	productId: string
+	productId: number
 	productName: string
 	quantity: number
 	price: number
@@ -8,7 +8,7 @@ export interface CartItem {
 
 export interface CartDTO {
 	id: number | null
-	userId: string | null
+	userId: number | null
 	sessionId: string
 	items: CartItem[]
 	totalAmount: number
@@ -17,11 +17,11 @@ export interface CartDTO {
 }
 
 export interface AddToCartRequest {
-	productId: string
+	productId: number | string
 	quantity: number
 }
 
 export interface UpdateCartItemRequest {
-	productId: string
+	productId: number | string
 	quantity: number
 }

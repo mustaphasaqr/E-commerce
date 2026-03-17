@@ -3,19 +3,15 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
+import { HomePage, AccountPage, OrdersPage } from '@/pages'
 import {
-  HomePage,
-  AccountPage,
-  CartPage,
-  CheckoutPage,
-  OrderDetailPage,
-  ProductDetailPage,
-} from '@/pages'
-import {
-  ProductsPage as AdminProductsPage,
+  AdminDashboard,
+  DashboardPage,
+  ProductsPage,
   OrdersPage as AdminOrdersPage,
   UsersPage,
-  AnalyticsPage
+  AnalyticsPage,
+  SettingsPage
 } from '@/features/admin'
 
 /** ============================================
@@ -42,7 +38,7 @@ export function AppRoutes() {
         {/* Authentication Routes */}
         <Route 
           path="/login" 
-          element={<LoginForm onLoginSuccess={() => navigate('/')} />} 
+          element={<LoginForm onLoginSuccess={() => navigate('/products')} />} 
         />
         <Route 
           path="/register" 
@@ -53,9 +49,9 @@ export function AppRoutes() {
           element={<VerifyEmailPage />}
         />
 
-        {/* Products listing is merged into Home section */}
-        <Route path="/products" element={<Navigate to="/" replace />} />
-        <Route path="/products/:id" element={<ProductDetailPage />} />
+        {/* Products Listing (Public) */}
+        <Route path="/products" element={<div className="p-4">Products Page (Coming Soon)</div>} />
+        <Route path="/products/:id" element={<div className="p-4">Product Detail (Coming Soon)</div>} />
 
         {/* ========== PROTECTED ROUTES ========== */}
         {/* Requires: isAuthenticated = true */}
@@ -75,16 +71,7 @@ export function AppRoutes() {
           path="/cart"
           element={
             <ProtectedRoute>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
-              <CheckoutPage />
+              <div className="p-4">Shopping Cart (Coming Soon)</div>
             </ProtectedRoute>
           }
         />
@@ -94,8 +81,8 @@ export function AppRoutes() {
         <Route
           path="/orders"
           element={
-            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
-              <Navigate to="/account?tab=orders" replace />
+            <ProtectedRoute>
+              <OrdersPage />
             </ProtectedRoute>
           }
         />
@@ -104,7 +91,7 @@ export function AppRoutes() {
         <Route
           path="/account"
           element={
-            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
+            <ProtectedRoute>
               <AccountPage />
             </ProtectedRoute>
           }
@@ -114,8 +101,8 @@ export function AppRoutes() {
         <Route
           path="/orders/:id"
           element={
-            <ProtectedRoute requiredRole={['OWNER', 'CUSTOMER']}>
-              <OrderDetailPage />
+            <ProtectedRoute>
+              <div className="p-4">Order Detail (Coming Soon)</div>
             </ProtectedRoute>
           }
         />
@@ -125,32 +112,35 @@ export function AppRoutes() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute requiredRole="OWNER">
-              <AnalyticsPage />
+            <ProtectedRoute requiredRole={["OWNER", "ADMIN"]}>
+              <AdminDashboard />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="orders" element={<AdminOrdersPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+
+        {/* Manage Products */}
         <Route
           path="/admin/products"
           element={
-            <ProtectedRoute requiredRole="OWNER">
-              <AdminProductsPage />
+            <ProtectedRoute requiredRole="ADMIN">
+              <div className="p-4">Manage Products (Coming Soon)</div>
             </ProtectedRoute>
           }
         />
+
+        {/* View Analytics */}
         <Route
-          path="/admin/orders"
+          path="/admin/analytics"
           element={
-            <ProtectedRoute requiredRole="OWNER">
-              <AdminOrdersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute requiredRole="OWNER">
-              <UsersPage />
+            <ProtectedRoute requiredRole="ADMIN">
+              <div className="p-4">Analytics Dashboard (Coming Soon)</div>
             </ProtectedRoute>
           }
         />

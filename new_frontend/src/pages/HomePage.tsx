@@ -39,22 +39,13 @@ import {
 export function HomePage() {
   const navigate = useNavigate()
 
-  const goToProductsSection = () => {
-    const section = document.getElementById('products-section')
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      return
-    }
-    navigate('/')
-  }
-
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
       <Navigation />
 
       {/* Hero Section - Preline UI */}
-      <HeroSection onGetStartedClick={goToProductsSection} />
+      <HeroSection onGetStartedClick={() => navigate('/products')} />
 
       {/* Featured Products Section */}
       <FeaturedProductsSection />

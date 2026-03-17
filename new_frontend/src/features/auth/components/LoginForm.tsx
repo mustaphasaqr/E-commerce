@@ -31,14 +31,16 @@ interface LoginFormProps {
  */
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const navigate = useNavigate()
-  const { login, loading, fieldErrors, retryAfter, rateLimitedEmail, clearRateLimitState } = useLogin?.() ?? {}
+  const { login, loading, error: loginError, fieldErrors, retryAfter, rateLimitedEmail, clearRateLimitState } = useLogin?.() ?? {}
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [localFieldErrors, setLocalFieldErrors] = useState<{ email?: string; password?: string }>({})
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
+    resetField,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onBlur',
@@ -56,34 +58,28 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     // Do not clear generalError here; only clear on input change
     const result = await login(data)
 
-    if (!result.ok) {
-      const errorMsg = result.message || 'Login failed. Please try again.'
-      if (result.status === 429 || errorMsg.toLowerCase().includes('too many failed')) {
+    if (!result) {
+      // Always show the registration suggestion for any login failure except rate limit
+      let errorMsg = loginError || 'Login failed. Please try again.'
+      if (errorMsg.toLowerCase().includes('too many failed')) {
         // Get the current email input value
         const emailInput = (document.getElementById('email') as HTMLInputElement)?.value?.trim()?.toLowerCase() || ''
-        const limitedEmail = result.rateLimitedEmail || rateLimitedEmail
-        if (!limitedEmail || (limitedEmail && limitedEmail.toLowerCase() === emailInput)) {
+        if (!rateLimitedEmail || (rateLimitedEmail && rateLimitedEmail.toLowerCase() === emailInput)) {
           setGeneralError(errorMsg)
         } else {
-          setGeneralError('Login failed. Please try again.')
+          // If another user is rate limited, show generic error with registration suggestion
+          setGeneralError('Login failed. Please try again.<br/>' + registrationSuggestion)
         }
       } else {
-        const isAuthFailure = result.status === 401
-        const isOwnerLogin = data.email.trim().toLowerCase().startsWith('owner@')
-        if (isAuthFailure && isOwnerLogin) {
-          setGeneralError(
-            'Invalid OWNER credentials or owner account not initialized in backend. Use login only (no sign up).'
-          )
-        } else if (isAuthFailure) {
-          setGeneralError('Invalid email or password.<br/>' + registrationSuggestion)
-        } else {
-          setGeneralError(errorMsg)
-        }
+        // Always append the registration suggestion
+        setGeneralError(
+          'Login failed. Please try again.<br/>' + registrationSuggestion
+        )
       }
       return
     }
 
-    if (result.ok) {
+    if (result) {
       setGeneralError(null)
       onLoginSuccess?.()
       // Redirect to previous page or home

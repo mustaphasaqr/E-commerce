@@ -7,18 +7,19 @@ export const cartService = {
 		return response.data
 	},
 
-	async addToCart(request: AddToCartRequest): Promise<CartDTO> {
-		const response = await axios.post<CartDTO>('/cart/items', request)
+	async addToCart(payload: AddToCartRequest): Promise<CartDTO> {
+		const response = await axios.post<CartDTO>('/cart/items', payload)
 		return response.data
 	},
 
-	async updateCartItem(request: UpdateCartItemRequest): Promise<CartDTO> {
-		const response = await axios.put<CartDTO>('/cart/items', request)
+	async updateCartItem(payload: UpdateCartItemRequest): Promise<CartDTO> {
+		const response = await axios.put<CartDTO>('/cart/items', payload)
 		return response.data
 	},
 
-	async removeFromCart(productId: string): Promise<CartDTO> {
-		const response = await axios.delete<CartDTO>(`/cart/items/${productId}`)
+	async removeFromCart(productId: number | string): Promise<CartDTO> {
+		const numericId = Number(productId)
+		const response = await axios.delete<CartDTO>(`/cart/items/${numericId}`)
 		return response.data
 	},
 

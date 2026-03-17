@@ -4,6 +4,7 @@ export { default as OrdersPage } from './pages/OrdersPage';
 export { default as UsersPage } from './pages/UsersPage';
 export { default as AnalyticsPage } from './pages/AnalyticsPage.tsx';
 export { default as SettingsPage } from './pages/SettingsPage';
+export { default as AdminDashboard } from './components/AdminDashboard';
 
 export { adminService } from './api/adminService';
 export type {
