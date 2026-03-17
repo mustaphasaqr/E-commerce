@@ -60,10 +60,10 @@ public class OrderJpaEntity extends AuditedEntity {
     private LocalDateTime deliveredAt;
     
     // Payment information - populated during payment flow
-    @Column(name = "checkout_id")
+    @Column(name = "checkout_id", length = 2000)
     private String checkoutId;
     
-    @Column(name = "transaction_id")
+    @Column(name = "transaction_id", length = 2000)
     private String transactionId;
     
     @Column(name = "payment_method", length = 50)

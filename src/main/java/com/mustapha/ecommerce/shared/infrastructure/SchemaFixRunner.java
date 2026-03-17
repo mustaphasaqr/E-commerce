@@ -25,6 +25,7 @@ public class SchemaFixRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         fixOrderItemsPriceColumn();
+        fixOrdersPaymentColumns();
     }
 
     private void fixOrderItemsPriceColumn() {
@@ -43,6 +44,21 @@ public class SchemaFixRunner implements ApplicationRunner {
             }
         } catch (Exception e) {
             logger.warn("Schema fix for order_items.price skipped: {}", e.getMessage());
+        }
+    }
+
+    private void fixOrdersPaymentColumns() {
+        try {
+            // Paymob returns JWT tokens that exceed VARCHAR(255)
+            jdbcTemplate.execute(
+                "ALTER TABLE orders MODIFY COLUMN checkout_id VARCHAR(2000) NULL"
+            );
+            jdbcTemplate.execute(
+                "ALTER TABLE orders MODIFY COLUMN transaction_id VARCHAR(2000) NULL"
+            );
+            logger.info("Schema fix: expanded orders.checkout_id and transaction_id to VARCHAR(2000)");
+        } catch (Exception e) {
+            logger.warn("Schema fix for orders payment columns skipped: {}", e.getMessage());
         }
     }
 }
