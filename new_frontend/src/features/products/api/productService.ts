@@ -1,5 +1,6 @@
 import axios from '@/shared/api/axios'
 import type {
+	CreateProductPayload,
 	ProductDetail,
 	ProductListItem,
 	ProductRecommendation,
@@ -10,8 +11,20 @@ import type {
 } from '../types'
 
 export const productService = {
+	async createProduct(payload: CreateProductPayload): Promise<ProductDetail> {
+		const response = await axios.post<ProductDetail>('/products', payload)
+		return response.data
+	},
+
 	async listProducts(): Promise<ProductListItem[]> {
 		const response = await axios.get<ProductListItem[]>('/products')
+		return Array.isArray(response.data) ? response.data : []
+	},
+
+	async searchProducts(name: string): Promise<ProductListItem[]> {
+		const response = await axios.get<ProductListItem[]>('/products/search', {
+			params: { name },
+		})
 		return Array.isArray(response.data) ? response.data : []
 	},
 

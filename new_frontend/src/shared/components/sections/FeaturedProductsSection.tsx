@@ -24,6 +24,18 @@ interface DisplayProduct {
 
 const isBackendProductId = (id: string): boolean => id.trim().length > 0 && !id.startsWith('demo-')
 
+const numericFromId = (value: string | null | undefined): number | null => {
+  const digits = (value ?? '').replace(/[^0-9]/g, '')
+  if (!digits) return null
+  const parsed = Number(digits)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const resolveReviewProductId = (value: string): string => {
+  const numeric = numericFromId(value)
+  return numeric ? String(numeric) : value
+}
+
 /**
  * Featured Products Section (Preline UI Style)
  *
@@ -43,6 +55,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   const [error, setError] = useState<string | null>(null)
   const [busyProductId, setBusyProductId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchApiProducts, setSearchApiProducts] = useState<DisplayProduct[] | null>(null)
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'low-stock'>('all')
   const [trending, setTrending] = useState<ProductRecommendation[]>([])
   const [forYou, setForYou] = useState<ProductRecommendation[]>([])
@@ -59,6 +72,37 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   const [ownerActionStatus, setOwnerActionStatus] = useState<string | null>(null)
   const [ownerActionError, setOwnerActionError] = useState<string | null>(null)
   const [isOwnerBusy, setIsOwnerBusy] = useState(false)
+
+  const mapProductListItem = (item: ProductListItem, stats?: ProductReviewStats | null): DisplayProduct => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    isActive: item.active,
+    availableStock: item.availableStock,
+    image: getEmojiForProduct(item.name),
+    badge: !item.active ? 'Inactive' : item.availableStock <= 3 ? 'Low Stock' : null,
+    rating: stats?.averageRating ?? 0,
+    reviews: Number(stats?.totalReviews ?? 0),
+  })
+
+  const mapWithReviewStats = async (list: ProductListItem[]): Promise<DisplayProduct[]> => {
+    const statsResults = await Promise.allSettled(
+      list.map(async (item) => {
+        const stats = await productService.getProductReviewStats(resolveReviewProductId(item.id))
+        return [item.id, stats] as const
+      })
+    )
+
+    const statsById = new Map<string, ProductReviewStats>()
+    statsResults.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const [id, stats] = result.value
+        statsById.set(id, stats)
+      }
+    })
+
+    return list.map((item) => mapProductListItem(item, statsById.get(item.id) ?? null))
+  }
 
   useEffect(() => {
     const loadFeatured = async () => {
@@ -77,17 +121,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
           return
         }
 
-        const mapped: DisplayProduct[] = visibleList.map((item: ProductListItem) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          isActive: item.active,
-          availableStock: item.availableStock,
-          image: getEmojiForProduct(item.name),
-          badge: !item.active ? 'Inactive' : item.availableStock <= 3 ? 'Low Stock' : null,
-          rating: 4.0,
-          reviews: Math.max(item.availableStock, 1),
-        }))
+        const mapped: DisplayProduct[] = await mapWithReviewStats(visibleList)
         setProducts(mapped)
       } catch {
         setError('Products API unavailable. Unable to load backend products.')
@@ -99,6 +133,37 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
 
     void loadFeatured()
   }, [user?.role])
+
+  useEffect(() => {
+    const trimmedSearch = searchTerm.trim()
+    if (trimmedSearch.length === 0) {
+      setSearchApiProducts(null)
+      return
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const list = await productService.searchProducts(trimmedSearch)
+        const isOwner = user?.role === 'OWNER'
+        const visibleList = isOwner ? list : list.filter((item) => item.active)
+        const mapped = await mapWithReviewStats(visibleList)
+
+        // Fallback to local filtering when backend search endpoint returns empty unexpectedly.
+        if (mapped.length === 0) {
+          const localMatches = products.filter((item) =>
+            item.name.toLowerCase().includes(trimmedSearch.toLowerCase())
+          )
+          setSearchApiProducts(localMatches.length > 0 ? null : [])
+        } else {
+          setSearchApiProducts(mapped)
+        }
+      } catch {
+        setSearchApiProducts(null)
+      }
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchTerm, user?.role, products])
 
   useEffect(() => {
     const loadRecommendations = async () => {
@@ -250,6 +315,15 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
     }
   }
 
+  const guardDiscontinuedModification = (): boolean => {
+    if (!selectedProductDetail?.discontinued) {
+      return true
+    }
+    setOwnerActionStatus(null)
+    setOwnerActionError('This product is discontinued and cannot be modified by backend rules.')
+    return false
+  }
+
   const handleAddToCart = async (product: DisplayProduct) => {
     if (!isAuthenticated) {
       navigate('/login?redirect=add-to-cart')
@@ -279,8 +353,9 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
     )
   }
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
+  const sourceProducts = searchApiProducts ?? products
+  const filteredProducts = sourceProducts.filter((product) => {
+    const matchesSearch = searchApiProducts !== null || product.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
     const matchesStock =
       stockFilter === 'all' ||
       (stockFilter === 'in-stock' && product.availableStock > 3) ||
@@ -292,9 +367,14 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   const selectedProductSupportsOwnerActions = Boolean(
     selectedProduct && isBackendProductId(selectedProduct.id)
   )
+  const selectedProductIsDiscontinued = Boolean(selectedProductDetail?.discontinued)
   const isOwnerUser = user?.role === 'OWNER'
 
   const getRecommendationEmoji = (name: string): string => getEmojiForProduct(name)
+
+  const openProductPage = (productId: string) => {
+    navigate(`/products/${productId}`)
+  }
 
   return (
     <section id="products-section" className="bg-white py-20">
@@ -430,7 +510,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
 
               {/* Product Info */}
               <div className="p-6 space-y-4">
-                <button onClick={() => void openQuickView(product)} className="cursor-pointer text-left">
+                <button onClick={() => openProductPage(product.id)} className="cursor-pointer text-left">
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition">
                     {product.name}
                   </h3>
@@ -485,6 +565,13 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                 >
                   <MessageCircle className="mr-2 h-4 w-4" /> Quick View
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => openProductPage(product.id)}
+                  className="w-full"
+                >
+                  Open Product Page
+                </Button>
               </div>
             </div>
           ))}
@@ -536,6 +623,13 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                           ? 'Inactive'
                           : 'Add to Cart'}
                   </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => openProductPage(selectedProduct.id)}
+                      className="mt-2 w-full"
+                    >
+                      Open Full Product Screen
+                    </Button>
                 </div>
 
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -610,6 +704,12 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                       <p className="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{ownerActionError}</p>
                     )}
 
+                    {selectedProductIsDiscontinued && (
+                      <p className="mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        This product is discontinued. Actions stay enabled, but blocked modifications are prevented client-side.
+                      </p>
+                    )}
+
                     <div className="space-y-3">
                         <div className="grid gap-2 sm:grid-cols-3">
                           <input
@@ -630,6 +730,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                             onClick={() =>
                               void runOwnerAction(async () => {
                                 if (!selectedProduct) return
+                                if (!guardDiscontinuedModification()) return
                                 const nextPrice = Number(ownerPrice)
                                 if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
                                   throw new Error('Invalid price')
@@ -662,6 +763,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                             onClick={() =>
                               void runOwnerAction(async () => {
                                 if (!selectedProduct) return
+                                if (!guardDiscontinuedModification()) return
                                 await productService.updateProductDetails(selectedProduct.id, ownerName.trim(), ownerDescription.trim())
                               }, 'Product details updated successfully.')
                             }
@@ -678,6 +780,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                             onClick={() =>
                               void runOwnerAction(async () => {
                                 if (!selectedProduct) return
+                                if (!guardDiscontinuedModification()) return
                                 await productService.deactivateProduct(selectedProduct.id)
                               }, 'Product deactivated.')
                             }
@@ -691,6 +794,7 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
                             onClick={() =>
                               void runOwnerAction(async () => {
                                 if (!selectedProduct) return
+                                if (!guardDiscontinuedModification()) return
                                 await productService.discontinueProduct(selectedProduct.id)
                               }, 'Product discontinued.')
                             }

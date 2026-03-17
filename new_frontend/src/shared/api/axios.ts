@@ -22,7 +22,7 @@ const analyticsRequestTimestamps: number[] = []
 let analyticsCooldownUntil = 0
 
 const ERROR_CODE_MESSAGE_MAP: Record<string, string> = {
-  PROD_CONFLICT_003: 'This product is discontinued. Activate and image upload are not allowed.',
+  PROD_CONFLICT_003: 'This product is discontinued and cannot be modified.',
 }
 
 const extractBackendErrorCode = (payload: unknown): string | null => {
@@ -63,7 +63,7 @@ const isProductStateConflict = (status?: number, url?: string, message?: string,
     return false
   }
 
-  const isProductStateEndpoint = /\/products\/[^/]+\/(activate|images)$/.test(url)
+  const isProductStateEndpoint = /\/products\/[^/]+\/(activate|deactivate|price|details|images)$/.test(url)
   if (!isProductStateEndpoint) {
     return false
   }

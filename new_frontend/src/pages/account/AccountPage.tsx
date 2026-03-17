@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Activity, ArrowRight, Crown, Mail, Package2, RefreshCw, ShieldCheck, User } from 'lucide-react';
 import axios from '@/shared/api/axios';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui';
+import { Button, Card, CardContent } from '@/shared/components/ui';
 
 interface UserProfile {
   id: string;

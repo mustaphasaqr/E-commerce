@@ -368,6 +368,15 @@ export function Navigation({}: NavigationProps) {
                       </button>
                       <button
                         onClick={() => {
+                          navigate('/admin/products')
+                          setProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                      >
+                        Products
+                      </button>
+                      <button
+                        onClick={() => {
                           navigate('/admin/orders')
                           setProfileMenuOpen(false)
                         }}
@@ -449,6 +458,17 @@ export function Navigation({}: NavigationProps) {
             >
               Account
             </button>
+            {user?.role === 'OWNER' && (
+              <button
+                onClick={() => {
+                  navigate('/admin/products')
+                  setMobileMenuOpen(false)
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded"
+              >
+                Admin Products
+              </button>
+            )}
           </div>
         )}
       </div>

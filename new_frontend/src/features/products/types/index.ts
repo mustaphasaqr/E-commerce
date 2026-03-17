@@ -17,6 +17,15 @@ export interface ProductDetail extends ProductListItem {
 	discontinued: boolean
 }
 
+export interface CreateProductPayload {
+	sku: string
+	name: string
+	description?: string
+	price: number
+	currencyCode: string
+	initialStock: number
+}
+
 export interface ProductQueryParams {
 	page: number
 	pageSize: number

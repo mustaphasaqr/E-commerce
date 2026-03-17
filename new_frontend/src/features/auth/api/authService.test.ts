@@ -15,7 +15,6 @@ import type {
   RegisterRequest,
   RefreshTokenRequest,
   TokenResponse,
-  RegisterResponse,
   PasswordResetRequestRequest,
   PasswordResetCompleteRequest,
 } from '../types'
@@ -150,6 +149,7 @@ describe('Auth Service', () => {
 
       const expectedResponse: TokenResponse = {
         accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh...',
         expiresIn: 3600000,
       }
 
@@ -322,15 +322,21 @@ describe('Auth Service', () => {
         termsAccepted: true,
       }
 
-      const expectedResponse: RegisterResponse = {
-        id: 'USR-654321',
-        username: 'newuser',
-        email: 'newuser@example.com',
-        role: 'CUSTOMER',
-        status: 'PENDING',
-        emailVerified: false,
-        createdAt: '2026-03-12T00:00:00Z',
-        updatedAt: '2026-03-12T00:00:00Z',
+      const expectedResponse: LoginResponse = {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.register...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.register.refresh...',
+        expiresIn: 3600000,
+        sessionId: '550e8400-e29b-41d4-a716-446655440999',
+        user: {
+          id: 'USR-654321',
+          username: 'newuser',
+          email: 'newuser@example.com',
+          role: 'CUSTOMER',
+          status: 'PENDING',
+          emailVerified: false,
+          createdAt: '2026-03-12T00:00:00Z',
+          updatedAt: '2026-03-12T00:00:00Z',
+        },
       }
 
       vi.mocked(axios.post).mockResolvedValueOnce({ data: expectedResponse })
@@ -339,8 +345,8 @@ describe('Auth Service', () => {
 
       expect(axios.post).toHaveBeenCalledWith('/users', request)
       expect(result).toEqual(expectedResponse)
-      expect(result.status).toBe('PENDING')
-      expect(result.emailVerified).toBe(false)
+      expect(result.user.status).toBe('PENDING')
+      expect(result.user.emailVerified).toBe(false)
     })
 
     it('should handle duplicate email (400)', async () => {
