@@ -152,12 +152,22 @@ public class AcceptPaymobClient implements PaymentGatewayClient {
             
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
             
-            ResponseEntity<AuthTokenResponse> response = restTemplate.postForEntity(
-                url, request, AuthTokenResponse.class
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                url, HttpMethod.POST, request, String.class
             );
             
-            if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
-                String token = response.getBody().token();
+            logger.info("Auth response: status={}, body={}", rawResponse.getStatusCode(), rawResponse.getBody());
+            
+            if (rawResponse.getStatusCode().is2xxSuccessful() && rawResponse.getBody() != null) {
+                // Parse the token from JSON response
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(rawResponse.getBody());
+                String token = node.has("token") ? node.get("token").asText() : null;
+                
+                if (token == null || token.isEmpty()) {
+                    logger.error("❌ Auth token missing in response: {}", rawResponse.getBody());
+                    return null;
+                }
                 
                 // Cache token for 25 minutes (5 min buffer before 30 min expiry)
                 cachedAuthToken = token;
@@ -166,55 +176,82 @@ public class AcceptPaymobClient implements PaymentGatewayClient {
                 logger.debug("✅ Auth token obtained");
                 return token;
             } else {
-                logger.error("❌ Failed to get auth token: status={}", response.getStatusCode());
+                logger.error("❌ Failed to get auth token: status={}, body={}", rawResponse.getStatusCode(), rawResponse.getBody());
                 return null;
             }
             
-        } catch (RestClientException e) {
-            logger.error("❌ Auth API error: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("❌ Auth API error: {}", e.getMessage(), e);
             return null;
         }
     }
     
     /**
      * Step 2: Register order with Accept
+     * Handles 422 "duplicate" by retrying with a suffixed merchant_order_id
      */
     private String registerOrder(String authToken, String orderId, double amount, String currency) {
-        try {
-            String url = config.getBaseUrl() + "/ecommerce/orders";
-            
-            // Convert amount to cents (Accept expects integer in cents)
-            int amountCents = (int) (amount * 100);
-            
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("auth_token", authToken);
-            requestBody.put("delivery_needed", "false");
-            requestBody.put("amount_cents", String.valueOf(amountCents));
-            requestBody.put("currency", currency);
-            requestBody.put("merchant_order_id", orderId); // Your internal order ID
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            
-            ResponseEntity<OrderResponse> response = restTemplate.postForEntity(
-                url, request, OrderResponse.class
-            );
-            
-            if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
-                String acceptOrderId = String.valueOf(response.getBody().id());
-                logger.debug("✅ Order registered: acceptOrderId={}", acceptOrderId);
-                return acceptOrderId;
-            } else {
-                logger.error("❌ Failed to register order: status={}", response.getStatusCode());
+        // Try with original orderId first, then with retry suffix if duplicate
+        String[] merchantOrderIds = { orderId, orderId + "-retry-" + System.currentTimeMillis() };
+        
+        for (String merchantOrderId : merchantOrderIds) {
+            try {
+                String url = config.getBaseUrl() + "/ecommerce/orders";
+                
+                // Convert amount to cents (Accept expects integer in cents)
+                int amountCents = (int) (amount * 100);
+                
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("auth_token", authToken);
+                requestBody.put("delivery_needed", "false");
+                requestBody.put("amount_cents", String.valueOf(amountCents));
+                requestBody.put("currency", currency);
+                requestBody.put("merchant_order_id", merchantOrderId);
+                
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                
+                HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+                
+                logger.info("Registering order with Accept: merchantOrderId={}, amountCents={}", merchantOrderId, amountCents);
+                
+                ResponseEntity<String> rawResponse = restTemplate.exchange(
+                    url, HttpMethod.POST, request, String.class
+                );
+                
+                logger.info("Order registration response: status={}, body={}", rawResponse.getStatusCode(), rawResponse.getBody());
+                
+                if (rawResponse.getStatusCode().is2xxSuccessful() && rawResponse.getBody() != null) {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(rawResponse.getBody());
+                    long ordId = node.has("id") ? node.get("id").asLong() : 0;
+                    if (ordId == 0) {
+                        logger.error("❌ Order ID missing in response: {}", rawResponse.getBody());
+                        return null;
+                    }
+                    String acceptOrderId = String.valueOf(ordId);
+                    logger.info("✅ Order registered: acceptOrderId={}", acceptOrderId);
+                    return acceptOrderId;
+                } else {
+                    logger.error("❌ Failed to register order: status={}, body={}", rawResponse.getStatusCode(), rawResponse.getBody());
+                    return null;
+                }
+                
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                if (e.getStatusCode().value() == 422 && e.getResponseBodyAsString().contains("duplicate")) {
+                    logger.warn("⚠️ Duplicate merchant_order_id={}, retrying with suffix...", merchantOrderId);
+                    continue; // Try next merchantOrderId with suffix
+                }
+                logger.error("❌ Order registration HTTP error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+                return null;
+            } catch (Exception e) {
+                logger.error("❌ Order registration error: {}", e.getMessage(), e);
                 return null;
             }
-            
-        } catch (RestClientException e) {
-            logger.error("❌ Order registration error: {}", e.getMessage());
-            return null;
         }
+        
+        logger.error("❌ Order registration failed after retry");
+        return null;
     }
     
     /**
@@ -260,21 +297,32 @@ public class AcceptPaymobClient implements PaymentGatewayClient {
             
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             
-            ResponseEntity<PaymentKeyResponse> response = restTemplate.postForEntity(
-                url, request, PaymentKeyResponse.class
+            logger.info("Getting payment key: url={}", url);
+            
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                url, HttpMethod.POST, request, String.class
             );
             
-            if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
-                String paymentKey = response.getBody().token();
+            logger.info("Payment key response: status={}, body length={}", rawResponse.getStatusCode(), 
+                        rawResponse.getBody() != null ? rawResponse.getBody().length() : 0);
+            
+            if (rawResponse.getStatusCode().is2xxSuccessful() && rawResponse.getBody() != null) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(rawResponse.getBody());
+                String paymentKey = node.has("token") ? node.get("token").asText() : null;
+                if (paymentKey == null || paymentKey.isEmpty()) {
+                    logger.error("❌ Payment key missing in response: {}", rawResponse.getBody());
+                    return null;
+                }
                 logger.debug("✅ Payment key obtained");
                 return paymentKey;
             } else {
-                logger.error("❌ Failed to get payment key: status={}", response.getStatusCode());
+                logger.error("❌ Failed to get payment key: status={}, body={}", rawResponse.getStatusCode(), rawResponse.getBody());
                 return null;
             }
             
-        } catch (RestClientException e) {
-            logger.error("❌ Payment key error: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("❌ Payment key error: {}", e.getMessage(), e);
             return null;
         }
     }
