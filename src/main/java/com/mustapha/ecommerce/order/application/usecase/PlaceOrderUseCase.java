@@ -55,6 +55,13 @@ public class PlaceOrderUseCase {
                 );
             }
             
+            // Validate product is available for purchase
+            if (!productPort.isAvailableForPurchase(itemData.getProductId())) {
+                throw new IllegalArgumentException(
+                    "Product " + itemData.getProductId().getValue() + " is not available for purchase"
+                );
+            }
+            
             // Validate price matches catalog
             Money catalogPrice = productPort.getProductPrice(itemData.getProductId());
             if (!catalogPrice.equals(itemData.getUnitPrice())) {

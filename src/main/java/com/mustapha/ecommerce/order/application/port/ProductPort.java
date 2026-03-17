@@ -60,6 +60,16 @@ public interface ProductPort {
      * @throws ProductNotFoundException if product doesn't exist
      */
     boolean isDiscontinued(ProductId productId);
+
+    /**
+     * Check if product is available for purchase
+     * Products must be active + available for purchase to be ordered
+     * 
+     * @param productId Product to check
+     * @return true if product is available for purchase, false otherwise
+     * @throws ProductNotFoundException if product doesn't exist
+     */
+    boolean isAvailableForPurchase(ProductId productId);
     
     /**
      * Reserve stock for an order

@@ -371,6 +371,7 @@ public class Product {
         
         // Execute state change
         this.active = true;
+        this.availableForPurchase = true;
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
         

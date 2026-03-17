@@ -102,6 +102,16 @@ public class ProductServiceAdapter implements ProductPort {
     }
 
     @Override
+    public boolean isAvailableForPurchase(ProductId productId) {
+        try {
+            ProductResponse response = productFacade.getProductById(productId.getValue());
+            return response.isAvailableForPurchase();
+        } catch (com.mustapha.ecommerce.product.infrastructure.exception.ProductNotFoundException e) {
+            throw new ProductNotFoundException(productId);
+        }
+    }
+
+    @Override
     public void reserveStock(ProductId productId, String orderId, int quantity) {
         try {
             // Translate Order ProductId → String (facade accepts primitives)
