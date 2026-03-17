@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Box, Minus, Plus, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, Box, Minus, Plus, ShoppingCart, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui'
 import productService from '@/features/products/api/productService'
 import cartService from '@/features/cart/api/cartService'
 import orderService from '@/features/orders/api/orderService'
+import CartPage from '@/pages/cart/CartPage'
 import type { ProductDetail } from '@/features/products/types'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import type { ProductReviewStats, ProductReviewsPage } from '@/features/products/types'
@@ -40,6 +41,7 @@ export default function ProductDetailPage() {
   const [availableOrderIds, setAvailableOrderIds] = useState<string[]>([])
   const [isLoadingOrderIds, setIsLoadingOrderIds] = useState(false)
   const [orderIdHint, setOrderIdHint] = useState('Order ID is required by backend validation and is auto-selected from your orders for this product.')
+  const [isCartPanelOpen, setIsCartPanelOpen] = useState(false)
 
   const numericFromId = (value: string | null | undefined): number | null => {
     const digits = (value ?? '').replace(/[^0-9]/g, '')
@@ -185,7 +187,7 @@ export default function ProductDetailPage() {
     setError(null)
     try {
       await cartService.addToCart({ productId: product.id, quantity })
-      navigate('/cart')
+      setIsCartPanelOpen(true)
     } catch {
       setError('Failed to add product to cart. Please retry.')
     } finally {
@@ -328,10 +330,11 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <Button variant="outline" onClick={() => navigate('/products')}>
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
-      </Button>
+    <>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <Button variant="outline" onClick={() => navigate('/products')}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+        </Button>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-2">
         <section className="space-y-3">
@@ -487,6 +490,30 @@ export default function ProductDetailPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+
+      {isCartPanelOpen && (
+        <>
+          <button
+            className="fixed inset-0 z-[90] bg-black/35"
+            onClick={() => setIsCartPanelOpen(false)}
+            aria-label="Close cart panel"
+          />
+          <aside className="fixed right-0 top-0 z-[95] h-full w-full max-w-6xl overflow-y-auto border-l border-slate-200 bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+              <h3 className="text-base font-semibold text-slate-900">Cart Panel</h3>
+              <button
+                onClick={() => setIsCartPanelOpen(false)}
+                className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <CartPage />
+          </aside>
+        </>
+      )}
+    </>
   )
 }

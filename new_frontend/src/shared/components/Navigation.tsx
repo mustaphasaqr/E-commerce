@@ -5,6 +5,8 @@ import { Loader2 } from 'lucide-react'
 import { ShoppingCart, User, Menu, X, LogOut, ChevronLeft, ArrowRight, Trash2 } from 'lucide-react'
 import cartService from '@/features/cart/api/cartService'
 import type { CartDTO } from '@/features/cart/types'
+import AccountPage from '@/pages/account/AccountPage'
+import { UsersPage } from '@/features/admin'
 
 interface NavigationProps {}
 
@@ -55,6 +57,8 @@ export function Navigation({}: NavigationProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [showLogoutLoader, setShowLogoutLoader] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false)
+  const [isUsersPanelOpen, setIsUsersPanelOpen] = useState(false)
   const [isCartLoading, setIsCartLoading] = useState(false)
   const [isCartMutating, setIsCartMutating] = useState(false)
   const [cartError, setCartError] = useState<string | null>(null)
@@ -194,12 +198,12 @@ export function Navigation({}: NavigationProps) {
   }, [canUseBackendCart, isAuthenticated])
 
   useEffect(() => {
-    if (!isCartOpen) return
+    if (!isCartOpen && !isAccountPanelOpen && !isUsersPanelOpen) return
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = ''
     }
-  }, [isCartOpen])
+  }, [isCartOpen, isAccountPanelOpen, isUsersPanelOpen])
 
   // Check if we can go back
   const canGoBack = location.pathname !== '/'
@@ -254,6 +258,15 @@ export function Navigation({}: NavigationProps) {
     setTimeout(() => {
       window.location.href = '/';
     }, 2000); // 2 seconds
+  }
+
+  const openUsersManagement = () => {
+    // Dense user-action table works better in full page on smaller screens.
+    if (typeof window !== 'undefined' && window.innerWidth < 1440) {
+      navigate('/admin/users')
+      return
+    }
+    setIsUsersPanelOpen(true)
   }
 
   return (
@@ -386,7 +399,7 @@ export function Navigation({}: NavigationProps) {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/admin/users')
+                          openUsersManagement()
                           setProfileMenuOpen(false)
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
@@ -399,7 +412,7 @@ export function Navigation({}: NavigationProps) {
                   {/* User menu */}
                   <button
                     onClick={() => {
-                      navigate('/account?tab=account')
+                      setIsAccountPanelOpen(true)
                       setProfileMenuOpen(false)
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
@@ -451,7 +464,11 @@ export function Navigation({}: NavigationProps) {
             </button>
             <button
               onClick={() => {
-                navigate('/profile')
+                if (!isAuthenticated) {
+                  navigate('/login?redirect=account')
+                } else {
+                  setIsAccountPanelOpen(true)
+                }
                 setMobileMenuOpen(false)
               }}
               className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded"
@@ -567,6 +584,52 @@ export function Navigation({}: NavigationProps) {
               </button>
             </div>
           </div>
+        </aside>
+      </>
+    )}
+
+    {isAccountPanelOpen && (
+      <>
+        <button
+          className="fixed inset-0 z-[82] bg-black/30"
+          aria-label="Close account panel"
+          onClick={() => setIsAccountPanelOpen(false)}
+        />
+        <aside className="fixed right-0 top-0 z-[83] h-full w-full max-w-6xl overflow-y-auto border-l border-gray-200 bg-white shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
+            <h2 className="text-lg font-semibold text-gray-900">My Account</h2>
+            <button
+              onClick={() => setIsAccountPanelOpen(false)}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <AccountPage />
+        </aside>
+      </>
+    )}
+
+    {isUsersPanelOpen && (
+      <>
+        <button
+          className="fixed inset-0 z-[84] bg-black/30"
+          aria-label="Close users panel"
+          onClick={() => setIsUsersPanelOpen(false)}
+        />
+        <aside className="fixed right-0 top-0 z-[85] h-full w-full max-w-[96vw] overflow-y-auto border-l border-gray-200 bg-white shadow-2xl xl:max-w-[90rem]">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
+            <h2 className="text-lg font-semibold text-gray-900">Users</h2>
+            <button
+              onClick={() => setIsUsersPanelOpen(false)}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <UsersPage />
         </aside>
       </>
     )}

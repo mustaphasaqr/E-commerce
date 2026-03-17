@@ -5,6 +5,7 @@ import { Flame, Heart, MessageCircle, Search, ShoppingCart, Sparkles, Star, X } 
 import { Button } from '@/shared/components/ui'
 import productService from '@/features/products/api/productService'
 import cartService from '@/features/cart/api/cartService'
+import CartPage from '@/pages/cart/CartPage'
 import type { ProductDetail, ProductListItem, ProductRecommendation, ProductReviewStats, ProductReviewsPage } from '@/features/products/types'
 
 interface FeaturedProductsSectionProps {}
@@ -35,6 +36,16 @@ const resolveReviewProductId = (value: string): string => {
   const numeric = numericFromId(value)
   return numeric ? String(numeric) : value
 }
+
+type CachedStatsEntry = { stats: ProductReviewStats; cachedAt: number }
+const PRODUCT_STATS_TTL_MS = 60 * 1000
+const PRODUCT_LIST_TTL_MS = 20 * 1000
+const RECOMMENDATIONS_TTL_MS = 30 * 1000
+const productStatsCache = new Map<string, CachedStatsEntry>()
+let cachedProductsSnapshot: { items: ProductListItem[]; cachedAt: number } | null = null
+let cachedRecommendationsSnapshot: { trending: ProductRecommendation[]; forYou: ProductRecommendation[]; cachedAt: number } | null = null
+
+const isFresh = (timestamp: number, ttl: number) => Date.now() - timestamp <= ttl
 
 /**
  * Featured Products Section (Preline UI Style)
@@ -72,6 +83,16 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   const [ownerActionStatus, setOwnerActionStatus] = useState<string | null>(null)
   const [ownerActionError, setOwnerActionError] = useState<string | null>(null)
   const [isOwnerBusy, setIsOwnerBusy] = useState(false)
+  const [isCartPanelOpen, setIsCartPanelOpen] = useState(false)
+
+  const extractRateLimitMessage = (error: unknown, fallback: string): string => {
+    const responseData = (error as { response?: { data?: { message?: string } } })?.response?.data
+    const status = (error as { response?: { status?: number } })?.response?.status
+    if (status === 429) {
+      return responseData?.message || 'Too many requests. Please wait a moment and retry.'
+    }
+    return fallback
+  }
 
   const mapProductListItem = (item: ProductListItem, stats?: ProductReviewStats | null): DisplayProduct => ({
     id: item.id,
@@ -86,18 +107,31 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   })
 
   const mapWithReviewStats = async (list: ProductListItem[]): Promise<DisplayProduct[]> => {
+    const now = Date.now()
+    const missingItems = list.filter((item) => {
+      const cached = productStatsCache.get(item.id)
+      return !cached || !isFresh(cached.cachedAt, PRODUCT_STATS_TTL_MS)
+    })
+
     const statsResults = await Promise.allSettled(
-      list.map(async (item) => {
+      missingItems.map(async (item) => {
         const stats = await productService.getProductReviewStats(resolveReviewProductId(item.id))
         return [item.id, stats] as const
       })
     )
 
-    const statsById = new Map<string, ProductReviewStats>()
     statsResults.forEach((result) => {
       if (result.status === 'fulfilled') {
         const [id, stats] = result.value
-        statsById.set(id, stats)
+        productStatsCache.set(id, { stats, cachedAt: now })
+      }
+    })
+
+    const statsById = new Map<string, ProductReviewStats>()
+    list.forEach((item) => {
+      const cached = productStatsCache.get(item.id)
+      if (cached) {
+        statsById.set(item.id, cached.stats)
       }
     })
 
@@ -105,33 +139,53 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   }
 
   useEffect(() => {
+    let cancelled = false
     const loadFeatured = async () => {
       setIsLoading(true)
       setError(null)
       try {
-        const list = await productService.listProducts()
+        const list = cachedProductsSnapshot && isFresh(cachedProductsSnapshot.cachedAt, PRODUCT_LIST_TTL_MS)
+          ? cachedProductsSnapshot.items
+          : await productService.listProducts()
+
+        if (!cachedProductsSnapshot || !isFresh(cachedProductsSnapshot.cachedAt, PRODUCT_LIST_TTL_MS)) {
+          cachedProductsSnapshot = { items: list, cachedAt: Date.now() }
+        }
+
         const isOwner = user?.role === 'OWNER'
         const visibleList = isOwner ? list : list.filter((item) => item.active)
 
         if (visibleList.length === 0) {
-          setProducts([])
-          setError(isOwner
-            ? 'No backend products found.'
-            : 'No active backend products found. Activate products first to enable cart and quick-view actions.')
+          if (!cancelled) {
+            setProducts([])
+            setError(isOwner
+              ? 'No backend products found.'
+              : 'No active backend products found. Activate products first to enable cart and quick-view actions.')
+          }
           return
         }
 
         const mapped: DisplayProduct[] = await mapWithReviewStats(visibleList)
-        setProducts(mapped)
-      } catch {
-        setError('Products API unavailable. Unable to load backend products.')
-        setProducts([])
+        if (!cancelled) {
+          setProducts(mapped)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(extractRateLimitMessage(e, 'Products API unavailable. Unable to load backend products.'))
+          setProducts([])
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     void loadFeatured()
+
+    return () => {
+      cancelled = true
+    }
   }, [user?.role])
 
   useEffect(() => {
@@ -166,22 +220,44 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
   }, [searchTerm, user?.role, products])
 
   useEffect(() => {
+    let cancelled = false
     const loadRecommendations = async () => {
       try {
-        const [trendingRecommendations, forYouRecommendations] = await Promise.all([
-          productService.getTrendingProducts(6),
-          isAuthenticated ? productService.getPersonalizedRecommendations(6) : Promise.resolve([]),
-        ])
+        const useCache = cachedRecommendationsSnapshot && isFresh(cachedRecommendationsSnapshot.cachedAt, RECOMMENDATIONS_TTL_MS)
+        if (useCache) {
+          if (!cancelled) {
+            setTrending(cachedRecommendationsSnapshot!.trending)
+            setForYou(cachedRecommendationsSnapshot!.forYou)
+          }
+          return
+        }
 
-        setTrending(trendingRecommendations)
-        setForYou(forYouRecommendations)
+        const trendingRecommendations = await productService.getTrendingProducts(6)
+        const forYouRecommendations = isAuthenticated ? await productService.getPersonalizedRecommendations(6) : []
+
+        cachedRecommendationsSnapshot = {
+          trending: trendingRecommendations,
+          forYou: forYouRecommendations,
+          cachedAt: Date.now(),
+        }
+
+        if (!cancelled) {
+          setTrending(trendingRecommendations)
+          setForYou(forYouRecommendations)
+        }
       } catch {
-        setTrending([])
-        setForYou([])
+        if (!cancelled) {
+          setTrending([])
+          setForYou([])
+        }
       }
     }
 
     void loadRecommendations()
+
+    return () => {
+      cancelled = true
+    }
   }, [isAuthenticated])
 
   const syncDisplayProduct = (detail: ProductDetail) => {
@@ -334,7 +410,8 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
     try {
       await cartService.addToCart({ productId: product.id, quantity: 1 })
       setSelectedProduct(null)
-      window.dispatchEvent(new CustomEvent('cart:updated', { detail: { open: true } }))
+      window.dispatchEvent(new CustomEvent('cart:updated', { detail: { open: false } }))
+      setIsCartPanelOpen(true)
     } catch {
       setError('Failed to add item to cart. Please retry.')
     } finally {
@@ -815,6 +892,29 @@ export function FeaturedProductsSection({}: FeaturedProductsSectionProps) {
         )}
 
       </div>
+
+      {isCartPanelOpen && (
+        <>
+          <button
+            className="fixed inset-0 z-[90] bg-black/35"
+            onClick={() => setIsCartPanelOpen(false)}
+            aria-label="Close cart panel"
+          />
+          <aside className="fixed right-0 top-0 z-[95] h-full w-full max-w-6xl overflow-y-auto border-l border-slate-200 bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+              <h3 className="text-base font-semibold text-slate-900">Cart Panel</h3>
+              <button
+                onClick={() => setIsCartPanelOpen(false)}
+                className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <CartPage />
+          </aside>
+        </>
+      )}
     </section>
   )
 }
