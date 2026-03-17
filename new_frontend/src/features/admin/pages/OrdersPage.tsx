@@ -64,11 +64,11 @@ const DeltaBadge: React.FC<{ delta: number | null; higherIsBetter?: boolean }> =
   );
 };
 
-const runSettledInBatches = async <T,>(
-  tasks: Array<() => Promise<T>>,
+const runSettledInBatches = async (
+  tasks: Array<() => Promise<{ data: unknown }>>,
   batchSize = 2
-): Promise<Array<PromiseSettledResult<T>>> => {
-  const results: Array<PromiseSettledResult<T>> = [];
+): Promise<Array<PromiseSettledResult<{ data: unknown }>>> => {
+  const results: Array<PromiseSettledResult<{ data: unknown }>> = [];
 
   for (let i = 0; i < tasks.length; i += batchSize) {
     const chunk = tasks.slice(i, i + batchSize).map((task) => task());
@@ -80,7 +80,7 @@ const runSettledInBatches = async <T,>(
 };
 
 const getSettledData = <T,>(
-  result: PromiseSettledResult<{ data: T }> | undefined,
+  result: PromiseSettledResult<{ data: unknown }> | undefined,
   fallback: T
 ): T => {
   if (result?.status === 'fulfilled') {
@@ -162,8 +162,7 @@ const OrdersPage: React.FC = () => {
       2
     )
       .then((results) => {
-        const [summaryRes, previousSummaryRes, dailyRes, refundRes, previousRefundRes] =
-          results as Array<PromiseSettledResult<{ data: any }>>;
+        const [summaryRes, previousSummaryRes, dailyRes, refundRes, previousRefundRes] = results;
 
         const failedCalls = results.filter((item) => item.status === 'rejected').length;
         if (failedCalls === results.length) {

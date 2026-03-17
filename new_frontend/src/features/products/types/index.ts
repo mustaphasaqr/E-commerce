@@ -5,21 +5,52 @@ export interface ProductListItem {
 	price: number
 	currency: string
 	availableStock: number
-	totalStock: number
 	active: boolean
-	discontinued?: boolean
 }
 
 export interface ProductDetail extends ProductListItem {
-	description?: string
+	description: string
+	totalStock: number
+	reservedStock: number
+	visible: boolean
+	availableForPurchase: boolean
+	discontinued: boolean
 }
 
-export interface ProductReview {
+export interface CreateProductPayload {
+	sku: string
+	name: string
+	description?: string
+	price: number
+	currencyCode: string
+	initialStock: number
+}
+
+export interface ProductQueryParams {
+	page: number
+	pageSize: number
+	search: string
+	category: string
+	sort: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-desc'
+}
+
+export interface ProductRecommendation {
+	productId: string
+	productName: string
+	price: number
+	imageUrl?: string | null
+	confidence?: number
+	reason?: string
+}
+
+export type ReviewSortBy = 'NEWEST' | 'OLDEST' | 'HIGHEST_RATING' | 'LOWEST_RATING' | 'MOST_HELPFUL'
+
+export interface ProductReviewSummary {
 	id: number
 	customerId: string
 	customerName: string
 	rating: number
-	title?: string
+	title: string
 	reviewText: string
 	isVerifiedPurchase: boolean
 	helpfulCount: number
@@ -29,7 +60,7 @@ export interface ProductReview {
 }
 
 export interface ProductReviewsPage {
-	reviews: ProductReview[]
+	reviews: ProductReviewSummary[]
 	totalReviews: number
 	page: number
 	size: number
@@ -42,12 +73,12 @@ export interface ProductReviewStats {
 	verifiedPurchasePercentage: number
 }
 
-export interface SubmitReviewRequest {
+export interface SubmitReviewPayload {
 	productId: string
 	customerId: string
 	customerName: string
 	orderId: number
 	rating: number
-	title?: string
+	title: string
 	reviewText: string
 }

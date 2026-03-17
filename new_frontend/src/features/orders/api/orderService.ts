@@ -1,11 +1,5 @@
 import axios from '@/shared/api/axios'
-import type {
-	CreateOrderRequest,
-	OrderListResponse,
-	OrderResponse,
-	TaxCalculationRequest,
-	TaxCalculationResponse,
-} from '../types'
+import type { CreateOrderRequest, OrderListResponse, OrderResponse } from '../types'
 
 export const orderService = {
 	async listOrders(): Promise<OrderListResponse[]> {
@@ -23,7 +17,7 @@ export const orderService = {
 			headers: idempotencyKey
 				? {
 						'Idempotency-Key': idempotencyKey,
-				  }
+					}
 				: undefined,
 		})
 		return response.data
@@ -33,37 +27,6 @@ export const orderService = {
 		const response = await axios.post<OrderResponse>(`/orders/${orderId}/cancel`, null, {
 			params: { reason },
 		})
-		return response.data
-	},
-
-	async payOrder(orderId: string, payload: {
-		paymentMethod: string
-		paymentToken: string
-		amount: number
-	}): Promise<OrderResponse> {
-		const response = await axios.post<OrderResponse>(`/orders/${orderId}/pay`, null, {
-			params: payload,
-		})
-		return response.data
-	},
-
-	async shipOrder(orderId: string, payload: {
-		trackingNumber: string
-		carrier: string
-	}): Promise<OrderResponse> {
-		const response = await axios.post<OrderResponse>(`/orders/${orderId}/ship`, null, {
-			params: payload,
-		})
-		return response.data
-	},
-
-	async deliverOrder(orderId: string): Promise<OrderResponse> {
-		const response = await axios.post<OrderResponse>(`/orders/${orderId}/deliver`)
-		return response.data
-	},
-
-	async calculateTax(payload: TaxCalculationRequest): Promise<TaxCalculationResponse> {
-		const response = await axios.post<TaxCalculationResponse>('/orders/calculate-tax', payload)
 		return response.data
 	},
 }

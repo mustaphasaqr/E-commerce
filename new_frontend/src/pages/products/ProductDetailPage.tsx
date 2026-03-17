@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
       const optimisticId = Date.now()
       const optimisticTitle = reviewTitle.trim()
       const optimisticText = reviewText.trim() || 'No additional details provided.'
-      setReviewsPage((prev: ProductReviewsPage | null) => {
+      setReviewsPage((prev) => {
         const currentReviews = prev?.reviews ?? []
         return {
           reviews: [
@@ -262,7 +262,7 @@ export default function ProductDetailPage() {
           size: prev?.size ?? 5,
         }
       })
-      setReviewStats((prev: ProductReviewStats | null) => {
+      setReviewStats((prev) => {
         const oldTotal = prev?.totalReviews ?? 0
         const oldAverage = prev?.averageRating ?? 0
         const newTotal = oldTotal + 1
