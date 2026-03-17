@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
-import { ShoppingCart, User, Menu, X, LogOut, ChevronLeft, ArrowRight, Trash2 } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, LogOut, ChevronLeft } from 'lucide-react'
 import cartService from '@/features/cart/api/cartService'
 import type { CartDTO } from '@/features/cart/types'
 import AccountPage from '@/pages/account/AccountPage'
 import { UsersPage } from '@/features/admin'
+import CartPage from '@/pages/cart/CartPage'
 
 interface NavigationProps {}
 
@@ -60,8 +61,6 @@ export function Navigation({}: NavigationProps) {
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false)
   const [isUsersPanelOpen, setIsUsersPanelOpen] = useState(false)
   const [isCartLoading, setIsCartLoading] = useState(false)
-  const [isCartMutating, setIsCartMutating] = useState(false)
-  const [cartError, setCartError] = useState<string | null>(null)
   const [localCartItems, setLocalCartItems] = useState<LocalCartItem[]>(loadLocalDrawerCart)
   const [cart, setCart] = useState<CartDTO>({
     id: null,
@@ -74,14 +73,9 @@ export function Navigation({}: NavigationProps) {
   })
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
-  const formatMoney = (value: number): string =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value ?? 0)
-
   const localItemsCount = localCartItems.reduce((sum, item) => sum + item.quantity, 0)
-  const localSubtotal = localCartItems.reduce((sum, item) => sum + item.subtotal, 0)
   const hasBackendItems = cart.items.length > 0
   const displayItemsCount = hasBackendItems ? cart.totalItems : localItemsCount
-  const displaySubtotal = hasBackendItems ? cart.totalAmount : localSubtotal
   const canUseBackendCart = isAuthenticated
 
   const loadCart = async (openAfterLoad = false) => {
@@ -89,19 +83,16 @@ export function Navigation({}: NavigationProps) {
       if (openAfterLoad) {
         setIsCartOpen(true)
       }
-      setCartError(null)
       return
     }
     setIsCartLoading(true)
-    setCartError(null)
     try {
       const current = await cartService.getCart()
       setCart(current)
       if (openAfterLoad) {
         setIsCartOpen(true)
       }
-    } catch (err: any) {
-      setCartError('Failed to load cart.')
+    } catch {
       if (openAfterLoad) {
         setIsCartOpen(true)
       }
@@ -230,25 +221,6 @@ export function Navigation({}: NavigationProps) {
       return
     }
     void loadCart(true)
-  }
-
-  const removeCartItem = async (productId: string) => {
-    setCartError(null)
-
-    if (hasBackendItems) {
-      setIsCartMutating(true)
-      try {
-        const updated = await cartService.removeFromCart(productId)
-        setCart(updated)
-      } catch {
-        setCartError('Failed to remove item. Please retry.')
-      } finally {
-        setIsCartMutating(false)
-      }
-      return
-    }
-
-    setLocalCartItems((prev) => prev.filter((item) => item.productId !== productId))
   }
 
   const handleLogout = async () => {
@@ -493,97 +465,22 @@ export function Navigation({}: NavigationProps) {
     {isCartOpen && (
       <>
         <button
-          className="fixed inset-0 z-[70] bg-black/30"
-          aria-label="Close cart drawer"
+          className="fixed inset-0 z-[80] bg-black/30"
+          aria-label="Close cart panel"
           onClick={() => setIsCartOpen(false)}
         />
-        <aside className="fixed right-0 top-0 z-[80] h-full w-full max-w-md border-l border-gray-200 bg-white shadow-2xl">
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">Your Cart</h2>
-              <button
-                onClick={() => setIsCartOpen(false)}
-                className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {isCartLoading ? (
-                <p className="text-sm text-gray-600">Loading cart...</p>
-              ) : cartError ? (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{cartError}</p>
-              ) : !hasBackendItems && localCartItems.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
-                  <p className="text-sm text-gray-700">Your cart is empty.</p>
-                  <button
-                    onClick={() => {
-                      setIsCartOpen(false)
-                      goToProductsSection()
-                    }}
-                    className="mt-3 text-sm font-semibold text-blue-700 hover:text-blue-800"
-                  >
-                    Browse products
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {(hasBackendItems
-                    ? cart.items.map((item) => ({
-                        productId: String(item.productId),
-                        productName: item.productName,
-                        quantity: item.quantity,
-                        subtotal: item.subtotal,
-                        price: item.price,
-                        source: 'backend' as const,
-                      }))
-                    : localCartItems.map((item) => ({ ...item, source: 'local' as const }))
-                  ).map((item) => (
-                    <div key={`${item.productId}`} className="rounded-lg border border-gray-200 p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-900">{item.productName}</p>
-                        <button
-                          onClick={() => void removeCartItem(item.productId)}
-                          disabled={isCartMutating || isCartLoading}
-                          className="rounded-md p-1 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
-                        <span>Qty: {item.quantity}</span>
-                        <span>{formatMoney(item.subtotal)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-gray-200 p-5">
-              <div className="mb-3 flex items-center justify-between text-sm text-gray-700">
-                <span>Items</span>
-                <span className="font-semibold text-gray-900">{displayItemsCount}</span>
-              </div>
-              <div className="mb-4 flex items-center justify-between text-base text-gray-900">
-                <span>Subtotal</span>
-                <span className="text-xl font-bold">{formatMoney(displaySubtotal)}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setIsCartOpen(false)
-                  navigate('/checkout')
-                }}
-                disabled={displayItemsCount === 0 || isCartLoading || isCartMutating || !hasBackendItems}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-              >
-                Checkout <ArrowRight size={16} />
-              </button>
-            </div>
+        <aside className="fixed right-0 top-0 z-[81] h-full w-full max-w-6xl overflow-y-auto border-l border-gray-200 bg-white shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
+            <h2 className="text-lg font-semibold text-gray-900">Cart Panel</h2>
+            <button
+              onClick={() => setIsCartOpen(false)}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
           </div>
+          <CartPage />
         </aside>
       </>
     )}
