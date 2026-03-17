@@ -17,6 +17,12 @@ import {
   UsersPage,
   AnalyticsPage
 } from '@/features/admin'
+import PaymentToolsPage from '@/pages/payment/PaymentToolsPage'
+import PaymentReturnPage from '@/pages/payment/PaymentReturnPage'
+import PaymentSuccessPage from '@/pages/payment/PaymentSuccessPage'
+import PaymentPendingPage from '@/pages/payment/PaymentPendingPage'
+import PaymentFailurePage from '@/pages/payment/PaymentFailurePage'
+import PaymentCancelledPage from '@/pages/payment/PaymentCancelledPage'
 
 /** ============================================
  * ROUTE CONFIGURATION
@@ -154,6 +160,18 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        {/* ========== PAYMENT ROUTES ========== */}
+        <Route path="/payment/tools" element={
+          <ProtectedRoute requiredRole="OWNER">
+            <PaymentToolsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/payment/return" element={<PaymentReturnPage />} />
+        <Route path="/payment/success" element={<PaymentSuccessPage />} />
+        <Route path="/payment/pending" element={<PaymentPendingPage />} />
+        <Route path="/payment/failure" element={<PaymentFailurePage />} />
+        <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
 
         {/* ========== 404 NOT FOUND ========== */}
         <Route path="*" element={<Navigate to="/" replace />} />

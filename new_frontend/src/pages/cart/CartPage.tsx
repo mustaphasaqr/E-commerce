@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Minus, Plus, RefreshCw, ShoppingBag, Trash2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Minus, Plus, RefreshCw, ShoppingBag, Trash2 } from 'lucide-react'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui'
 import cartService from '@/features/cart/api/cartService'
 import type { CartDTO, CartItem } from '@/features/cart/types'
+import CheckoutPanel from './CheckoutPanel'
 
 const formatMoney = (value: number): string =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value ?? 0)
@@ -19,11 +19,11 @@ const emptyCart: CartDTO = {
 }
 
 export default function CartPage() {
-  const navigate = useNavigate()
   const [cart, setCart] = useState<CartDTO>(emptyCart)
   const [isLoading, setIsLoading] = useState(true)
   const [isMutating, setIsMutating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showCheckout, setShowCheckout] = useState(false)
 
   const subtotal = useMemo(() => cart.totalAmount ?? 0, [cart.totalAmount])
 
@@ -92,7 +92,7 @@ export default function CartPage() {
             {cart.items.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
                 <p className="text-gray-700">Your cart is empty.</p>
-                <Button className="mt-4" onClick={() => navigate('/products')}>
+                <Button className="mt-4" onClick={() => { window.location.href = '/products' }}>
                   Browse Products
                 </Button>
               </div>
@@ -169,14 +169,25 @@ export default function CartPage() {
             </div>
             <Button
               className="w-full"
-              onClick={() => navigate('/checkout')}
+              onClick={() => setShowCheckout(true)}
               disabled={cart.items.length === 0 || isMutating}
             >
-              Proceed to Checkout <ArrowRight className="ml-2 h-4 w-4" />
+              Proceed to Checkout
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {showCheckout && (
+        <CheckoutPanel
+          cart={cart}
+          onClose={() => setShowCheckout(false)}
+          onOrderPlaced={() => {
+            setShowCheckout(false)
+            void loadCart()
+          }}
+        />
+      )}
     </div>
   )
 }

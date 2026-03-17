@@ -60,7 +60,7 @@ export function Navigation({}: NavigationProps) {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false)
   const [isUsersPanelOpen, setIsUsersPanelOpen] = useState(false)
-  const [isCartLoading, setIsCartLoading] = useState(false)
+  const [_isCartLoading, setIsCartLoading] = useState(false)
   const [localCartItems, setLocalCartItems] = useState<LocalCartItem[]>(loadLocalDrawerCart)
   const [cart, setCart] = useState<CartDTO>({
     id: null,
@@ -377,6 +377,15 @@ export function Navigation({}: NavigationProps) {
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                       >
                         Users
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/payment/tools')
+                          setProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                      >
+                        Payment Tools
                       </button>
                       <hr className="my-2" />
                     </>
