@@ -39,7 +39,9 @@ public class PaymentAdapter implements PaymentPort {
     private final PaymentGatewayClient paymentGatewayClient;
     
     private static final String DEFAULT_CURRENCY = "EGP"; // Egyptian Pound
-    private static final String IFRAME_ID = "5560263"; // Accept integration ID for iframe
+
+    @org.springframework.beans.factory.annotation.Value("${payment.accept.iframe-id:1010744}")
+    private String iframeId;
 
     public PaymentAdapter(PaymentGatewayClient paymentGatewayClient) {
         this.paymentGatewayClient = paymentGatewayClient;
@@ -370,6 +372,6 @@ public class PaymentAdapter implements PaymentPort {
     private String buildPaymentIframeUrl(String paymentKey) {
         // Accept (Paymob) iframe URL format
         return String.format("https://accept.paymob.com/api/acceptance/iframes/%s?payment_token=%s", 
-                           IFRAME_ID, paymentKey);
+                           iframeId, paymentKey);
     }
 }
