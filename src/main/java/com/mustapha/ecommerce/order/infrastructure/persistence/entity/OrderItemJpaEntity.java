@@ -12,7 +12,7 @@ import java.math.BigDecimal;
     @Index(name = "idx_order_item_product", columnList = "product_id")
 })
 @Check(name = "chk_order_item_qty_positive", constraints = "quantity > 0")
-@Check(name = "chk_order_item_price_positive", constraints = "price >= 0")
+@Check(name = "chk_order_item_price_positive", constraints = "unit_price >= 0")
 public class OrderItemJpaEntity {
 
     @Id
@@ -28,7 +28,7 @@ public class OrderItemJpaEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "price", nullable = false, precision = 19, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 19, scale = 2)
     private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
