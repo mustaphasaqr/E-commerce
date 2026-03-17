@@ -34,8 +34,7 @@ public class OrderJpaEntity extends AuditedEntity {
     @Column(name = "customer_id", nullable = false)
     private String customerId;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemJpaEntity> items = new ArrayList<>();
 
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
@@ -144,7 +143,26 @@ public class OrderJpaEntity extends AuditedEntity {
     }
 
     public void setItems(List<OrderItemJpaEntity> items) {
-        this.items = items;
+        this.items.clear();
+        if (items != null) {
+            items.forEach(this::addItem);
+        }
+    }
+
+    public void addItem(OrderItemJpaEntity item) {
+        if (item == null) {
+            return;
+        }
+        item.setOrder(this);
+        this.items.add(item);
+    }
+
+    public void removeItem(OrderItemJpaEntity item) {
+        if (item == null) {
+            return;
+        }
+        this.items.remove(item);
+        item.setOrder(null);
     }
 
     public BigDecimal getTotalAmount() {

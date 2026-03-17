@@ -31,6 +31,10 @@ public class OrderItemJpaEntity {
     @Column(name = "price", nullable = false, precision = 19, scale = 2)
     private BigDecimal price;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false)
+    private OrderJpaEntity order;
+
     // Constructors
     public OrderItemJpaEntity() {
     }
@@ -74,5 +78,13 @@ public class OrderItemJpaEntity {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public OrderJpaEntity getOrder() {
+        return order;
+    }
+
+    public void setOrder(OrderJpaEntity order) {
+        this.order = order;
     }
 }

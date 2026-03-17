@@ -38,9 +38,9 @@ public class OrderMapper {
         entity.setTransactionId(order.getTransactionId());
         entity.setVersion(order.getVersion()); // Preserve version for optimistic locking
         
-        entity.setItems(order.getItems().stream()
-                .map(this::toItemEntity)
-                .collect(Collectors.toList()));
+        order.getItems().stream()
+            .map(this::toItemEntity)
+            .forEach(entity::addItem);
         
         return entity;
     }

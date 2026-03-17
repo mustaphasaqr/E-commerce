@@ -37,7 +37,7 @@ import java.util.Map;
  * https://docs.paymob.com/docs/accept-standard-redirect
  */
 @RestController
-@RequestMapping("/api/webhooks/payment")
+@RequestMapping({"/api/webhooks/payment", "/api/v1/api/webhooks/payment"})
 public class PaymentWebhookController {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentWebhookController.class);
