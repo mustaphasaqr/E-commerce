@@ -99,7 +99,8 @@ public class SecurityConfig {
                     corsConfig.setAllowedOrigins(java.util.List.of(
                         "http://localhost:3000",  // React dev server
                         "http://localhost:4200",  // Angular dev server
-                        "http://localhost:5173"   // Vite dev server
+                        "http://localhost:5173",  // Vite dev server
+                        "http://localhost:5174"   // Vite dev server (fallback port)
                     ));
                 }
                 
